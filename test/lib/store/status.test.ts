@@ -70,27 +70,30 @@ describe("status store", () => {
   });
 
   it("should mark all services up when every health endpoint succeeds", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
-      const requestUrl = String(input);
-      if (requestUrl.includes("/api/database/heartbeat")) {
+    const fetchMock = // @ts-expect-error - Bun type workaround
+      vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
+        const requestUrl = String(input);
+        if (requestUrl.includes("/api/database/heartbeat")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                status: "healthy",
+                detail: "Database heartbeat query succeeded",
+                timestamp: new Date().toISOString(),
+                pools: [
+                  { name: "primary", role: "primary", healthy: true, latencyMs: 5 },
+                  { name: "replica-1", role: "replica", healthy: true, latencyMs: 3 },
+                  { name: "replica-2", role: "replica", healthy: true, latencyMs: 4 },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
         return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              status: "healthy",
-              detail: "Database heartbeat query succeeded",
-              timestamp: new Date().toISOString(),
-              pools: [
-                { name: "primary", role: "primary", healthy: true, latencyMs: 5 },
-                { name: "replica-1", role: "replica", healthy: true, latencyMs: 3 },
-                { name: "replica-2", role: "replica", healthy: true, latencyMs: 4 },
-              ],
-            }),
-            { status: 200 },
-          ),
+          new Response(JSON.stringify({ status: "healthy" }), { status: 200 }),
         );
-      }
-      return Promise.resolve(new Response(JSON.stringify({ status: "healthy" }), { status: 200 }));
-    });
+      });
 
     await checkStatusHealth();
 
@@ -112,7 +115,8 @@ describe("status store", () => {
 
   it("should mark failed services down when fetch rejects", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
-    fetchMock.mockImplementation((input) => {
+    // @ts-expect-error - Bun fetch types don't match mock pattern
+    fetchMock.mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/auth/health")) {
         return Promise.reject(new Error("network failure"));
@@ -148,22 +152,25 @@ describe("status store", () => {
   });
 
   it("should trigger health check from refreshStatusHealth helper", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
-      const requestUrl = String(input);
-      if (requestUrl.includes("/api/database/heartbeat")) {
+    const fetchMock = // @ts-expect-error - Bun type workaround
+      vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
+        const requestUrl = String(input);
+        if (requestUrl.includes("/api/database/heartbeat")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                status: "healthy",
+                detail: "Database heartbeat query succeeded",
+                timestamp: new Date().toISOString(),
+              }),
+              { status: 200 },
+            ),
+          );
+        }
         return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              status: "healthy",
-              detail: "Database heartbeat query succeeded",
-              timestamp: new Date().toISOString(),
-            }),
-            { status: 200 },
-          ),
+          new Response(JSON.stringify({ status: "healthy" }), { status: 200 }),
         );
-      }
-      return Promise.resolve(new Response(JSON.stringify({ status: "healthy" }), { status: 200 }));
-    });
+      });
 
     const triggered = refreshStatusHealth();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -194,7 +201,8 @@ describe("status store", () => {
 
   it("should handle database heartbeat network or runtime failure gracefully", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
-    fetchMock.mockImplementation((input) => {
+    // @ts-expect-error - Bun fetch types
+    fetchMock.mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/database/heartbeat")) {
         return Promise.resolve(new Response(JSON.stringify({ status: 123 }), { status: 200 }));
@@ -214,7 +222,8 @@ describe("status store", () => {
   });
 
   it("should include pool information in tooltip when database has replicas", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    // @ts-expect-error - Bun type workaround
+    vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/database/heartbeat")) {
         return Promise.resolve(
@@ -249,7 +258,8 @@ describe("status store", () => {
   });
 
   it("should include databaseType in Database service response", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    // @ts-expect-error - Bun type workaround
+    vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/database/heartbeat")) {
         return Promise.resolve(
@@ -278,7 +288,8 @@ describe("status store", () => {
   });
 
   it("should include backend in Redis service response", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    // @ts-expect-error - Bun type workaround
+    vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/redis/heartbeat")) {
         return Promise.resolve(
@@ -307,7 +318,8 @@ describe("status store", () => {
   });
 
   it("should handle Redis LRU backend type", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    // @ts-expect-error - Bun type workaround
+    vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/redis/heartbeat")) {
         return Promise.resolve(
@@ -335,7 +347,8 @@ describe("status store", () => {
   });
 
   it("should include latencyMs in other services", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    // @ts-expect-error - Bun type workaround
+    vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/database/heartbeat")) {
         return Promise.resolve(

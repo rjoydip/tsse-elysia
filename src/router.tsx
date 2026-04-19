@@ -4,12 +4,22 @@
  */
 
 import { createRouter } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { routeTree } from "./routeTree.gen";
-import { getErrorMessage, getErrorStatus, isAuthError, isServerError } from "~/lib/errors";
-import { authActions } from "./lib/stores/auth-store";
-import { logger } from "./lib/logger";
+import { initLog } from "evlog/client";
+import { toast } from "sonner";
+import { routeTree } from "~/routeTree.gen";
+import { authActions } from "~/lib/stores/auth-store";
+import { logger } from "~/lib/logger";
+import { isServerError, isAuthError, getErrorStatus, getErrorMessage } from "~/lib/errors";
+
+initLog({
+  service: "app",
+  transport: {
+    enabled: import.meta.env.PROD,
+    endpoint: "/api/_evlog/ingest", // default endpoint
+  },
+});
+logger.info("Application started");
 
 const router = createRouter({
   routeTree,

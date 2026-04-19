@@ -187,7 +187,7 @@ src/
 │   │   └── schema.ts
 │   ├── redis/        # Storage & Pub/Sub
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
-│   │   └── pubsub.ts  # Redis Pub/Sub (requires REDIS_URL)
+│   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
 │   ├── cache/        # Cache layer (Unstorage-backed)
 │   │   └── index.ts   # Multi-backend cache support
 │   ├── realtime/      # WebSocket realtime
@@ -198,7 +198,7 @@ src/
 │   │   └── status.ts
 │   ├── blog/         # Blog data
 │   ├── changelog/    # Changelog data
-│   └── logger.ts     # Logger configuration
+│   └── logger.ts     # Structured logger built on Evlog
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts
 │   ├── helmet.ts
@@ -234,6 +234,7 @@ src/
 │       └── modules/ # API modules
 ├── server.ts         # Server entry point
 ├── types/            # TypeScript types
+│   ├── evlog.ts      # Evlog type definitions
 │   └── subscription.ts
 ├── app.css          # Global styles (Tailwind CSS + shadcn theme)
 └── router.tsx       # TanStack Router configuration

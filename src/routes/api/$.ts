@@ -1,19 +1,20 @@
 /**
- * Main API route handler.
+ * Main API route handler (Splat Route).
+ * Handles all requests under `/api/*` and routes them to the Elysia application.
  * Sets up the core API application with middleware and routes.
- * Provides health checks and service information endpoints.
  */
 
 import { Elysia } from "elysia";
-import { treaty } from "@elysiajs/eden";
 import { createFileRoute } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { API_PREFIX, APP_NAME, HOST, PORT, isBrowser } from "~/config";
 import { composedMiddleware, errorFn, traceFn } from "~/middlewares";
 import { websocketPlugin } from "~/plugins/websocket";
+import { evlogPlugin, evlogIngestEndpoint } from "~/plugins/evlog-plugin";
 import { coreRoutes } from "./modules/-core";
 import { mcpCoreRoutes } from "./mcp/modules/-core";
 import { authCoreRoutes } from "./auth/modules/-core";
+import { treaty } from "@elysiajs/eden";
 
 /**
  * Main API application instance factory.
@@ -24,24 +25,42 @@ export const createApiRoutes = () =>
     name: "root.api",
     prefix: API_PREFIX,
   })
+    // Disable caching for all API responses to ensure fresh data
+    .onRequest(({ set }) => {
+      set.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
+      set.headers["Pragma"] = "no-cache";
+      set.headers["Expires"] = "0";
+      set.headers["Surrogate-Control"] = "no-store";
+    })
     // Apply composed middleware (CORS, Helmet, Rate Limit, OpenTelemetry)
     .use(
       composedMiddleware({
         OPENAPI_NAME: APP_NAME,
       }),
     )
+    // Custom evlog plugin for request/response logging
+    .use(
+      evlogPlugin({
+        logRequests: true,
+        logTiming: true,
+        logErrors: true,
+        excludePaths: ["/_evlog"],
+      }),
+    )
     // Request tracing for performance monitoring
     .trace(traceFn)
-    // Centralized error handling
+    // Custom error handler for JSON error responses
     .onError(errorFn)
-    // Mount realtime websocket plugin so /api/ws and /api/ws/health are reachable.
-    .use(websocketPlugin)
     /**
      * Compose modular route groups so endpoint ownership is explicit and maintainable.
      */
+    // Mount realtime websocket plugin so /api/ws and /api/ws/health are reachable.
+    .use(websocketPlugin)
     .use(coreRoutes)
     .use(authCoreRoutes)
-    .use(mcpCoreRoutes);
+    .use(mcpCoreRoutes)
+    // Evlog client ingestion endpoint for browser logs
+    .use(evlogIngestEndpoint());
 
 /**
  * Main API application instance (singleton).
@@ -55,13 +74,13 @@ export const apiRoutes = createApiRoutes();
  * Request handler wrapper for TanStack Start integration.
  * Adapts Elysia handler to TanStack Start's server handler interface.
  */
-const handle = ({ request }: { request: Request }) => apiRoutes.fetch(request);
+export const handle = ({ request }: { request: Request }) => apiRoutes.fetch(request);
 
 /**
- * TanStack Start route definition.
- * Exposes API endpoints to the server for SSR and API handling.
+ * TanStack Start splat route definition.
+ * Catches all requests starting with `/api` and delegates to Elysia.
  */
-export const Route = createFileRoute(`/api/$`)({
+export const Route = createFileRoute("/api/$")({
   server: {
     handlers: {
       GET: handle,

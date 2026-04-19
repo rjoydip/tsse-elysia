@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiIndexRouteImport } from './routes/api/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as landingTermsRouteImport } from './routes/(landing)/terms'
 import { Route as landingStatusRouteImport } from './routes/(landing)/status'
@@ -51,6 +52,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiIndexRoute = ApiIndexRouteImport.update({
+  id: '/api/',
+  path: '/api/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/status': typeof landingStatusRoute
   '/terms': typeof landingTermsRoute
   '/api/$': typeof ApiSplatRoute
+  '/api/': typeof ApiIndexRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsRouteRouteWithChildren
   '/docs/$': typeof landingDocsSplatRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
@@ -280,6 +287,7 @@ export interface FileRoutesByTo {
   '/status': typeof landingStatusRoute
   '/terms': typeof landingTermsRoute
   '/api/$': typeof ApiSplatRoute
+  '/api': typeof ApiIndexRoute
   '/docs/$': typeof landingDocsSplatRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/docs': typeof landingDocsIndexRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/(landing)/status': typeof landingStatusRoute
   '/(landing)/terms': typeof landingTermsRoute
   '/api/$': typeof ApiSplatRoute
+  '/api/': typeof ApiIndexRoute
   '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRouteRouteWithChildren
   '/(landing)/docs/$': typeof landingDocsSplatRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/terms'
     | '/api/$'
+    | '/api/'
     | '/dashboard/settings'
     | '/docs/$'
     | '/errors/$error'
@@ -387,6 +397,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/terms'
     | '/api/$'
+    | '/api'
     | '/docs/$'
     | '/errors/$error'
     | '/docs'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/(landing)/status'
     | '/(landing)/terms'
     | '/api/$'
+    | '/api/'
     | '/_authenticated/dashboard/settings'
     | '/(landing)/docs/$'
     | '/_authenticated/errors/$error'
@@ -459,6 +471,7 @@ export interface RootRouteChildren {
   landingStatusRoute: typeof landingStatusRoute
   landingTermsRoute: typeof landingTermsRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  ApiIndexRoute: typeof ApiIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/': {
+      id: '/api/'
+      path: '/api'
+      fullPath: '/api/'
+      preLoaderRoute: typeof ApiIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -791,6 +811,7 @@ const rootRouteChildren: RootRouteChildren = {
   landingStatusRoute: landingStatusRoute,
   landingTermsRoute: landingTermsRoute,
   ApiSplatRoute: ApiSplatRoute,
+  ApiIndexRoute: ApiIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

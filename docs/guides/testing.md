@@ -12,10 +12,10 @@ This project uses two testing approaches: unit tests with Bun and E2E tests with
 ### Running Tests
 
 ```bash
-bun test:unit              # Run all tests
-bun test:unit --watch      # Watch mode
-bun test:unit --coverage  # With coverage report
-bun test:unit test/config/docs.test.ts  # Run specific test file
+bun test              # Run all tests
+bun test --watch      # Watch mode
+bun test --coverage  # With coverage report
+bun test test/config/docs.test.ts  # Run specific test file
 ```
 
 ### Test Structure

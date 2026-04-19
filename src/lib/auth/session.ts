@@ -38,7 +38,7 @@ export class StorageSessionAdapter {
    * @param userId - User ID
    * @param sessionId - Session ID
    */
-  private getKey(userId: string, sessionId: string): string {
+  getKey(userId: string, sessionId: string): string {
     return `session:${userId}:${sessionId}`;
   }
 

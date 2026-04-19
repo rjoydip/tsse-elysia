@@ -21,7 +21,7 @@ import { APP_NAME } from "~/config";
 import { cors, corsWithCredentials } from "./cors";
 import { helmet } from "./helmet";
 import { rateLimitMiddleware } from "./rate-limit";
-import { logger } from "~/lib/logger";
+import { apiLogger } from "~/lib/logger";
 
 /**
  * Request trace handler for monitoring performance at each pipeline stage.
@@ -43,7 +43,7 @@ export const traceFn: TraceHandler = async ({
     onStop(({ end }) => {
       const duration =
         typeof begin === "number" && typeof end === "number" ? (end - begin).toFixed(4) : "0.00";
-      logger.debug(`BeforeHandle took ${duration} ms`);
+      apiLogger.debug(`BeforeHandle took ${duration} ms`);
     });
   });
 
@@ -52,7 +52,7 @@ export const traceFn: TraceHandler = async ({
     onStop(({ end }) => {
       const duration =
         typeof begin === "number" && typeof end === "number" ? (end - begin).toFixed(4) : "0.00";
-      logger.debug(`AfterHandle took ${duration} ms`);
+      apiLogger.debug(`AfterHandle took ${duration} ms`);
     });
   });
 
@@ -64,23 +64,18 @@ export const traceFn: TraceHandler = async ({
       set.headers["X-Elapsed"] = elapsed;
       if (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(`Error: ${errorMessage}, ${elapsed} ms`);
+        apiLogger.error(`Error: ${errorMessage}, ${elapsed} ms`);
       }
     });
   });
 
   // Track total request handling time
   onHandle((traceContext) => {
-    const request = (traceContext as { request?: Request }).request;
-    const endpoint = request
-      ? `${request.method} ${new URL(request.url).pathname}`
-      : "UNKNOWN /unknown";
-
     const { onStop } = traceContext;
     onStop(({ elapsed }) => {
       const elapsedTime = typeof elapsed === "number" ? elapsed.toFixed(4) : "0.00";
       set.headers["X-Elapsed"] = elapsedTime;
-      logger.debug(`Trace ${endpoint} took ${elapsedTime} ms`);
+      apiLogger.debug(`Trace took ${elapsedTime} ms`);
     });
   });
 };
@@ -199,7 +194,13 @@ export const composedMiddleware = (
     // Rate limiting to prevent abuse
     .use(rateLimitMiddleware)
     // Serve favicon
-    .get("/favicon.ico", file("../../public/favicon.svg"))
+    .get("/favicon.ico", file("../../public/favicon.svg"), {
+      detail: {
+        summary: "Get Favicon",
+        description: "Returns the service favicon",
+        tags: ["api", "assets"],
+      },
+    })
     // OpenTelemetry tracing for observability
     .use(
       opentelemetry({

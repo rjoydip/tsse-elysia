@@ -36,7 +36,12 @@ export const Route = createRootRoute({
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "alternate", href: "/api/llms.txt", type: "text/plain", title: "LLM Documentation" },
+      {
+        rel: "alternate",
+        href: "/api/llms.txt",
+        type: "text/plain",
+        title: "LLM Documentation",
+      },
     ],
     scripts: [
       {

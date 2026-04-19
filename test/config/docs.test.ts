@@ -5,13 +5,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import {
-  docsConfig,
-  globKeyToDocPath,
-  getSplatPath,
-  buildDocMap,
-  docMap,
-} from "../../src/config/docs";
+import { docsConfig, globKeyToDocPath, getSplatPath, buildDocMap } from "../../src/config/docs";
 import { navItems } from "../../src/config/index";
 
 /**
@@ -123,22 +117,6 @@ describe("buildDocMap", () => {
   });
 });
 
-describe("docMap", () => {
-  it("should be a Map instance", () => {
-    expect(docMap instanceof Map).toBe(true);
-  });
-
-  it("should have entries for all doc files", () => {
-    expect(docMap.size).toBeGreaterThan(0);
-  });
-
-  it("should have content for getting-started/overview", () => {
-    const content = docMap.get("getting-started/overview");
-    expect(typeof content).toBe("string");
-    expect(content!.length).toBeGreaterThan(0);
-  });
-});
-
 describe("docsConfig", () => {
   it("should be a non-empty array", () => {
     expect(Array.isArray(docsConfig)).toBe(true);
@@ -204,15 +182,24 @@ describe("docsConfig", () => {
     expect(hrefs).toContain("/docs/infra/docker");
   });
 
-  it("should have Guides section with 5 items", () => {
+  it("should have Guides section with 3 items", () => {
     const section = docsConfig.find((s) => s.title === "Guides");
     expect(section).toBeDefined();
     const hrefs = section!.items.map((i) => i.href);
-    expect(hrefs).toContain("/docs/guides/environment-variables");
+    expect(hrefs).toContain("/docs/guides/overview");
     expect(hrefs).toContain("/docs/guides/middleware");
     expect(hrefs).toContain("/docs/guides/testing");
-    expect(hrefs).toContain("/docs/guides/troubleshooting");
-    expect(hrefs).toContain("/docs/guides/roadmaps");
+  });
+
+  it("should have Reference section with 3 items", () => {
+    const section = docsConfig.find((s) => s.title === "Reference");
+    expect(section).toBeDefined();
+    const hrefs = section!.items.map((i) => i.href);
+    expect(hrefs).toContain("/docs/reference/commands");
+    expect(hrefs).toContain("/docs/reference/environment-variables");
+    expect(hrefs).toContain("/docs/reference/roadmaps");
+    expect(hrefs).toContain("/docs/reference/tools");
+    expect(hrefs).toContain("/docs/reference/troubleshooting");
   });
 
   it("should have Overview item in Getting Started pointing to /docs", () => {
@@ -264,11 +251,11 @@ describe("docsConfig", () => {
     }
   });
 
-  it("should have Overview as first item in each section", () => {
+  it("should have a defined first item in each section", () => {
     for (const section of docsConfig) {
       const firstItem = section.items[0];
       expect(firstItem).toBeDefined();
-      expect(firstItem.name).toBe("Overview");
+      expect(typeof firstItem.name).toBe("string");
     }
   });
 

@@ -176,15 +176,18 @@ dev:
 
 ## Environment Variables
 
-| Variable             | Default                          | Description                                |
-| -------------------- | -------------------------------- | ------------------------------------------ |
-| `HOST`               | `0.0.0.0`                        | Server host                                |
-| `PORT`               | `3000`                           | Server port                                |
-| `NODE_ENV`           | `production`                     | Environment mode                           |
-| `BETTER_AUTH_SECRET` | **Required** (min 32 chars)      | Session secret                             |
-| `DATABASE_TYPE`      | `sqlite`                         | Database type (`sqlite` or `postgres`)     |
-| `SQLITE_URL`         | `file:.artifacts/tsse-elysia.db` | SQLite database URL                        |
-| `REDIS_URL`          | `redis://redis:6379`             | Redis connection URL (for cache & pub/sub) |
+| Variable                      | Default                          | Description                                |
+| ----------------------------- | -------------------------------- | ------------------------------------------ |
+| `HOST`                        | `0.0.0.0`                        | Server host                                |
+| `PORT`                        | `3000`                           | Server port                                |
+| `NODE_ENV`                    | `production`                     | Environment mode                           |
+| `BETTER_AUTH_SECRET`          | **Required** (min 32 chars)      | Session secret                             |
+| `DATABASE_TYPE`               | `sqlite`                         | Database type (`sqlite` or `postgres`)     |
+| `SQLITE_URL`                  | `file:.artifacts/tsse-elysia.db` | SQLite database URL                        |
+| `REDIS_URL`                   | `redis://redis:6379`             | Redis connection URL (for cache & pub/sub) |
+| `EVLOG_ADAPTER`               | `fs`                             | Log adapter: `fs` or `otlp`                |
+| `EVLOG_DIR`                   | `.evlog/logs`                    | Directory for local log files              |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | -                                | OTLP endpoint for production logging       |
 
 ## Usage Examples
 

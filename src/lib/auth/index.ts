@@ -9,11 +9,12 @@ import { hash, type Options, verify } from "@node-rs/argon2";
 import { betterAuth } from "better-auth";
 import { openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createError } from "evlog";
 import { db, schema, getDatabaseType } from "~/lib/db";
 import { env } from "~/config/env";
 import type { SubscriptionTier } from "~/types/subscription";
 import { isTest, sessionConfig } from "~/config";
-import { logger } from "~/lib/logger";
+import { authLogger } from "~/lib/logger";
 import { decodePassword } from "~/lib/utils/encryption";
 
 /**
@@ -30,7 +31,12 @@ import { decodePassword } from "~/lib/utils/encryption";
 export function createAuth() {
   // Ensure database is available - auth requires server-side execution
   if (!db) {
-    throw new Error("Database not initialized - this module can only be used on the server");
+    throw createError({
+      message: "Database not initialized - this module can only be used on the server",
+      status: 500,
+      why: "Database connection is not available",
+      fix: "Ensure the database is initialized before using auth",
+    });
   }
 
   // Argon2id hashing options for secure password storage
@@ -72,7 +78,12 @@ export function createAuth() {
         // Use Bun's native password API when available (faster), fallback to argon2
         hash: async (input: string) => {
           if (!input) {
-            throw new Error("Password cannot be empty");
+            throw createError({
+              message: "Password cannot be empty",
+              status: 400,
+              why: "Empty password provided",
+              fix: "Provide a non-empty password",
+            });
           }
           const decoded = await decodePassword(input);
           return await hash(decoded, hashOpts);
@@ -110,7 +121,7 @@ export function createAuth() {
     // Error handler for auth API failures
     onAPIError: {
       onError: (error: unknown) => {
-        logger.error(`Auth API error`, error as Error);
+        authLogger.error(`Auth API error`, error as Error);
       },
     },
 

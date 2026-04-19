@@ -15,7 +15,7 @@ import {
   presenceService,
   dashboardService,
 } from "~/lib/realtime";
-import { logger } from "~/lib/logger";
+import { apiLogger } from "~/lib/logger";
 
 /**
  * Heartbeat configuration.
@@ -101,7 +101,7 @@ export function createWebSocketPlugin(config: Partial<WebSocketConfig> = {}) {
         // Start heartbeat
         startHeartbeat(ws, finalConfig.heartbeatInterval, finalConfig.maxMissedHeartbeats);
 
-        logger.info(`WebSocket connection opened: ${connectionId}`);
+        apiLogger.info(`WebSocket connection opened: ${connectionId}`);
       },
 
       async message(ws, message) {
@@ -153,7 +153,7 @@ export function createWebSocketPlugin(config: Partial<WebSocketConfig> = {}) {
           dashboardService.cleanupConnection(connectionId);
         }
 
-        logger.info(`WebSocket connection closed: ${connectionId}`);
+        apiLogger.info(`WebSocket connection closed: ${connectionId}`);
       },
 
       async ping(ws) {
@@ -207,7 +207,7 @@ async function handleMessage(ws: any, message: any): Promise<void> {
       break;
 
     default:
-      logger.warn(`Unknown message type: ${message.type}`);
+      apiLogger.warn(`Unknown message type: ${message.type}`);
   }
 }
 

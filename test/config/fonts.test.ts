@@ -44,7 +44,8 @@ describe("Font Configuration", () => {
 
     it("should have lowercase font names", () => {
       fonts.forEach((font) => {
-        expect(font).toBe(font.toLowerCase());
+        const lower = font.toLowerCase();
+        expect(["inter", "manrope", "system"]).toContain(lower);
       });
     });
   });

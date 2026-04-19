@@ -1,3 +1,11 @@
+/**
+ * Client-side authentication state management using TanStack Store.
+ * Manages user session, tokens, and authentication state with cookie persistence.
+ * Provides reactive auth state for React components.
+ *
+ * @module stores/auth-store
+ */
+
 import { createStore, useStore } from "@tanstack/react-store";
 import { getCookie, setCookie, removeCookie } from "~/lib/cookies";
 

@@ -292,10 +292,10 @@ describe("Pub/Sub Publish", () => {
   });
 
   test("publish handler receives correct message data", async () => {
-    let receivedMessage: PubSubMessage | null = null;
+    const receivedMessages: PubSubMessage[] = [];
 
     await subscribe(PUBSUB_CHANNELS.USER_EVENTS, (msg) => {
-      receivedMessage = msg;
+      receivedMessages.push(msg);
     });
 
     const message: PubSubMessage<{ userId: string }> = {
@@ -307,10 +307,11 @@ describe("Pub/Sub Publish", () => {
 
     await publish(PUBSUB_CHANNELS.USER_EVENTS, message);
 
-    expect(receivedMessage).not.toBeNull();
-    expect(receivedMessage?.type).toBe("user.login");
-    expect((receivedMessage?.data as { userId: string })?.userId).toBe("test-123");
-    expect(receivedMessage?.source).toBe("auth");
+    expect(receivedMessages.length).toBeGreaterThan(0);
+    const receivedMessage = receivedMessages[0];
+    expect(receivedMessage.type).toBe("user.login");
+    expect((receivedMessage.data as { userId: string })?.userId).toBe("test-123");
+    expect(receivedMessage.source).toBe("auth");
   });
 
   test("publish with no subscribers returns 0", async () => {

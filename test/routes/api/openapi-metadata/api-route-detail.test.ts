@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createApiRoutes } from "../../../../src/routes/api/$";
+import { createApiRoutes } from "../../../../src/routes/api";
 
 const apiRoutes = createApiRoutes();
 
@@ -50,9 +50,7 @@ describe("API route OpenAPI detail (hooks.detail)", () => {
 
     for (const route of documented) {
       const detail = route.hooks.detail as Record<string, unknown>;
-      expect(detail.summary, `${route.method} ${route.path} should have summary`).toEqual(
-        expect.any(String),
-      );
+      expect(detail.summary, `${route.path} should have summary`).toEqual(expect.any(String));
       expect(String(detail.summary).length).toBeGreaterThan(0);
       expect(detail.tags, `${route.method} ${route.path} should have tags`).toEqual(
         expect.any(Array),
