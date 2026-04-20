@@ -13,6 +13,7 @@
 
 import { t, getSchemaValidator, type TSchema } from "elysia";
 import { randomUUID } from "uncrypto";
+import { createError } from "evlog";
 import { isBun, isNode, isProduction, PORT } from ".";
 import { logger } from "../lib/logger";
 
@@ -107,7 +108,12 @@ async function _createEnv(opts: EnvOptions) {
       opts.onValidationError ??
       ((errors: any) => {
         logger.error(`Invalid environment variables: ${JSON.stringify(errors)}`);
-        throw new Error("Invalid environment variables");
+        throw createError({
+          message: "Invalid environment variables",
+          status: 500,
+          why: "Environment validation failed",
+          fix: "Check your environment configuration",
+        });
       });
     onValidationError(schema.Errors);
   }
@@ -116,9 +122,12 @@ async function _createEnv(opts: EnvOptions) {
   const onInvalidAccess =
     opts.onInvalidAccess ??
     ((prop: string) => {
-      throw new Error(
-        `Attempted to access a server-side environment variable "${prop}" on the client`,
-      );
+      throw createError({
+        message: `Attempted to access a server-side environment variable "${prop}" on the client`,
+        status: 403,
+        why: "Client-side code cannot access server-only variables",
+        fix: "Remove server-only env var access from client code",
+      });
     });
 
   // Access control predicates - determine if access is allowed
@@ -185,7 +194,12 @@ function _getAuthSecret(): string {
   if (!secret) {
     if (isProduction) {
       // Production requires a stable secret for session persistence
-      throw new Error("BETTER_AUTH_SECRET is required in production");
+      throw createError({
+        message: "BETTER_AUTH_SECRET is required in production",
+        status: 500,
+        why: "Production requires a stable auth secret",
+        fix: "Set BETTER_AUTH_SECRET environment variable",
+      });
     }
     // Development: warn about session invalidation on restart
     logger.warn(
@@ -223,6 +237,12 @@ export const env = await _createEnv({
     WS_MAX_MESSAGE_SIZE: t.Optional(t.Number()),
     WS_RATE_LIMIT_MESSAGES: t.Optional(t.Number()),
     WS_RATE_LIMIT_WINDOW: t.Optional(t.Number()),
+    EVLOG_ADAPTER: t.Optional(t.Union([t.Literal("fs"), t.Literal("otlp")])),
+    EVLOG_DIR: t.Optional(t.String()),
+    OTEL_EXPORTER_OTLP_ENDPOINT: t.Optional(t.String()),
+    EVLOG_LOG_LEVEL: t.Optional(
+      t.Union([t.Literal("debug"), t.Literal("info"), t.Literal("warn"), t.Literal("error")]),
+    ),
   },
   runtimeEnv: () => ({
     VITE_API_URL: _getEnv("VITE_API_URL", ""),
@@ -268,6 +288,15 @@ export const env = await _createEnv({
     WS_RATE_LIMIT_MESSAGES: parseInt(_getEnv("WS_RATE_LIMIT_MESSAGES", ""), 10) || undefined,
     WS_RATE_LIMIT_WINDOW: parseInt(_getEnv("WS_RATE_LIMIT_WINDOW", ""), 10) || undefined,
     FEATURE_MULTI_TEAM: _getEnv("FEATURE_MULTI_TEAM", "false") === "true",
+    OTEL_EXPORTER_OTLP_ENDPOINT: _getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "") || undefined,
+    EVLOG_DIR: _getEnv("EVLOG_DIR", ".evlog/logs"),
+    EVLOG_ADAPTER: (_getEnv("EVLOG_ADAPTER", "fs") || "fs") as "fs" | "otlp",
+    EVLOG_LOG_LEVEL: (_getEnv("EVLOG_LOG_LEVEL", "") || undefined) as
+      | "debug"
+      | "info"
+      | "warn"
+      | "error"
+      | undefined,
   }),
 });
 

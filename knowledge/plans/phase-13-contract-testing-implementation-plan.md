@@ -45,8 +45,8 @@ This plan outlines the steps to introduce contract testing using Pact to ensure 
 
 ### Automated Tests
 
-- Run consumer tests: `bun test:unit test/contract/auth.pact.test.ts`
-- Run provider verification: `bun test:unit test/contract/provider.verify.ts`
+- Run consumer tests: `bun test test/contract/auth.pact.test.ts`
+- Run provider verification: `bun test test/contract/provider.verify.ts`
 - Ensure pact files are generated and verified successfully.
 
 ### Manual Verification

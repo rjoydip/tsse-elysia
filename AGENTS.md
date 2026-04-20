@@ -7,6 +7,17 @@ description: Guidelines for AI coding agents working in this repository
 
 This file contains guidelines for AI coding agents working in this repository.
 
+## Critical Documentation
+
+Before starting any task, review these critical documents:
+
+- [README.md](./README.md) - Project overview, tech stack, and setup
+- [PLAN.md](./knowledge/PLAN.md) - Current development roadmap and task status
+- [CONTRIBUTING.md](./.github/CONTRIBUTING.md) - Contribution guidelines and workflow
+- [CHANGELOG.md](./CHANGELOG.md) - History of changes and releases
+
+---
+
 ## AI/LLM Coding Standards
 
 All AI-generated code must adhere to these standards.
@@ -65,7 +76,7 @@ bun run lint:fix  # Auto-fix safe unused items
 
 This project uses two testing frameworks:
 
-- **Unit Tests**: Bun (`bun test:unit`) - Located in `test/`
+- **Unit Tests**: Bun (`bun test`) - Located in `test/`
 - **E2E Tests**: Playwright (`bun run test:e2e`) - Located in `.e2e/`
 
 #### Unit Tests Structure
@@ -117,10 +128,13 @@ test/
 
 ```bash
 # Run all unit tests
-bun test:unit
+bun test
+
+# Run all unit tests with preload
+bun test:unit:preload
 
 # Run specific test file
-bun test:unit test/config/docs.test.ts
+bun test test/config/docs.test.ts
 
 # Run all E2E tests
 bun run test:e2e
@@ -166,7 +180,7 @@ All necessary information is in [README.md](./README.md), including:
 4. Run `bun run fmt` to ensure formatting
 5. Run `bun run lint:fix` to auto-fix issues
 6. Run `bun run typecheck` to verify types
-7. Run `bun test:unit` to verify unit test
+7. Run `bun test` to verify unit test
 8. Run `bun run test:e2e` to verify E2E test
 9. Once changes are complete, verify and update `PLAN.md` (mark completed tasks/goals)
 10. Commit changes (hooks will verify)

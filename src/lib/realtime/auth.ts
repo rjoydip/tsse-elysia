@@ -5,7 +5,8 @@
 
 import type { Context } from "elysia";
 import { auth } from "~/lib/auth";
-import { logger } from "~/lib/logger";
+import { authLogger, setIdentity } from "~/lib/logger";
+import type { EvlogAuthSession } from "~/types/evlog";
 
 /**
  * Authentication result containing user information if valid.
@@ -36,7 +37,7 @@ export async function authenticateConnection(request: Context): Promise<AuthResu
     const token = extractToken(request);
 
     if (!token) {
-      logger.warn("WebSocket connection attempt without token");
+      authLogger.warn("WebSocket connection attempt without token");
       return null;
     }
 
@@ -48,9 +49,11 @@ export async function authenticateConnection(request: Context): Promise<AuthResu
     });
 
     if (!session) {
-      logger.warn("WebSocket connection with invalid session token");
+      authLogger.warn("WebSocket connection with invalid session token");
       return null;
     }
+
+    setIdentity(session as EvlogAuthSession);
 
     return {
       userId: session.session.userId,
@@ -58,7 +61,7 @@ export async function authenticateConnection(request: Context): Promise<AuthResu
       sessionToken: token,
     };
   } catch (error) {
-    logger.error(`WebSocket authentication error: ${error}`);
+    authLogger.error(`WebSocket authentication error: ${error}`);
     return null;
   }
 }

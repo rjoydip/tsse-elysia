@@ -23,10 +23,11 @@
   "include": [
     ".e2e",
     "src",
+    "test",
     "scripts",
     "playwright.config.ts",
     "drizzle.config.ts",
     "vite.config.ts"
   ],
-  "exclude": ["*.d.ts"]
+  "exclude": ["node_modules", "dist"]
 }

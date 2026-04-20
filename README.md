@@ -98,6 +98,7 @@ Detailed documentation available in `docs/`:
 | [Middleware](docs/guides/middleware.md)                       | Middleware documentation     |
 | [Overview](docs/guides/overview.md)                           | Project introduction         |
 | [Testing](docs/guides/testing.md)                             | Testing guide                |
+| [Tools Reference](docs/reference/tools.md)                    | Core tools and technologies  |
 | [Troubleshooting](docs/guides/troubleshooting.md)             | Common issues and solutions  |
 
 ## Tech Stack
@@ -111,11 +112,12 @@ Detailed documentation available in `docs/`:
 - **State Management**: TanStack Store
 - **Function Execution Timing**: TanStack Pacer
 - **Styling**: Tailwind CSS v4
+- **Logging**: Evlog with structured logging and multiple adapters (FS, OTLP)
 - **Cache**: Unstorage with multi-backend support
   - Redis (when `REDIS_URL` is set)
   - PostgreSQL (when `DATABASE_TYPE=postgres`)
   - LRU Cache (default for SQLite)
-- **Pub/Sub**: Redis-only (Bun native `RedisClient`) - requires `REDIS_URL`
+- **Pub/Sub**: Unstorage-based with multi-backend support (Redis recommended for cross-instance)
 
 ## Project Structure
 
@@ -123,6 +125,7 @@ Detailed documentation available in `docs/`:
 src/
 ├── config/             # Central configuration (logger, rate-limit, cors, helmet)
 │   ├── index.ts       # Main config exports
+│   ├── evlog.ts       # Evlog configuration
 │   └── docs.ts        # Documentation config (docMap, globKeyToDocPath, getSplatPath, buildDocMap)
 ├── components/         # React components
 │   ├── ui/            # shadcn/ui components
@@ -223,13 +226,10 @@ src/
 │   │   ├── index.ts
 │   │   ├── schema.ts
 │   │   └── heartbeat.ts
-│   ├── redis/         # Storage & Pub/Sub (Unstorage + Bun native)
+│   ├── redis/         # Storage & Pub/Sub (Unstorage-backed)
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
-│   │   └── pubsub.ts  # Redis Pub/Sub (requires REDIS_URL)
-│   └── utils.ts       # Utility functions (cn, etc.)
-├── hooks/             # Custom React hooks
-│   └── use-table-url-state.ts  # URL state for data tables
-├── logger.ts          # Logger configuration
+│   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
+│   └── logger.ts      # Structured logger built on Evlog
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts        # CORS headers
 │   ├── helmet.ts      # Security headers

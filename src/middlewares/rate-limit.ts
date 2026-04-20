@@ -9,6 +9,8 @@ import type { SocketAddress } from "elysia/universal";
 import { type Generator, rateLimit, DefaultContext } from "elysia-rate-limit";
 import { SUBSCRIPTION_TIERS, DEFAULT_TIER } from "~/types/subscription";
 import { getUserSubscriptionTier } from "~/lib/auth";
+import { setIdentity } from "~/lib/logger";
+import type { EvlogAuthSession } from "~/types/evlog";
 
 /**
  * Determines rate limit configuration based on user subscription tier.
@@ -140,6 +142,9 @@ export const dynamicRateLimitMiddleware = new Elysia({ name: "dynamic-rate-limit
           cookie: `better-auth.session_token=${sessionToken}`,
         },
       });
+      if (session) {
+        setIdentity(session as EvlogAuthSession);
+      }
       userId = session?.session?.userId;
     }
 

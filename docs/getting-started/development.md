@@ -36,10 +36,10 @@ Or create a `.env` file (see [Environment Variables](/docs/guides/environment-va
 ### Unit Tests (Bun)
 
 ```bash
-bun test:unit              # Run all tests
-bun test:unit --watch      # Watch mode
-bun test:unit --coverage   # With coverage
-bun test:unit test/config/docs.test.ts  # Run specific test file
+bun test              # Run all tests
+bun test --watch      # Watch mode
+bun test --coverage   # With coverage
+bun test test/config/docs.test.ts  # Run specific test file
 ```
 
 Test files: `test/**/*.test.ts`

@@ -98,7 +98,7 @@ describe("_env", () => {
       expect(
         env.POSTGRES_REPLICAS === undefined ||
           (Array.isArray(env.POSTGRES_REPLICAS) &&
-            env.POSTGRES_REPLICAS.every((v) => typeof v === "string")),
+            env.POSTGRES_REPLICAS.every((v: unknown) => typeof v === "string")),
       ).toBe(true);
     });
 

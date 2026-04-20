@@ -34,7 +34,8 @@ A comprehensive plan to build a production-ready, full-stack TypeScript applicat
 - [x] Automated setup/cleanup scripts (`scripts/setup.ts`, `scripts/cleanup.ts`)
 - [x] Type-safe environment variable management (`src/env.ts`)
 - [x] Better Auth integration with Drizzle adapter
-- [x] Middleware suite: CORS, Helmet, Rate Limiting, Audit Logging
+- [x] Middleware suite: CORS, Helmet, Rate Limiting
+- [x] Structured logging with **Evlog** (FS & OTLP support)
 - [x] Comprehensive testing infrastructure (Unit + E2E)
 
 ### Phase 4-5: UI & Component Library (Completed)
@@ -52,7 +53,7 @@ A comprehensive plan to build a production-ready, full-stack TypeScript applicat
 - [x] CI/CD pipeline with Trivy security scanning
 - [x] **Storage Layer**: [Phase 7.1 Plan](./plans/phase-7.1-redis-implementation-plan.md)
   - [x] Unstorage integration (Redis/PostgreSQL/LRU)
-  - [x] Bun native Redis Pub/Sub support
+  - [x] Unstorage-based Pub/Sub system (multi-backend)
   - [x] Monitoring dashboard integration
 
 ### Phase 8: Real-time Features (Completed)

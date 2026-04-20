@@ -9,21 +9,25 @@ This project uses type-safe environment variables with isomorphic fetching, supp
 
 ## Server Configuration
 
-| Variable                 | Default        | Description                                    |
-| ------------------------ | -------------- | ---------------------------------------------- |
-| `HOST`                   | `localhost`    | Server host                                    |
-| `PORT`                   | `3000`         | Server port                                    |
-| `VITE_API_URL`           | Dynamic        | Client API URL for Eden Treaty                 |
-| `DATABASE_TYPE`          | `sqlite`       | Database type: `sqlite` or `postgres`          |
-| `SQLITE_URL`             | -              | Database SQLite connection URL                 |
-| `POSTGRES_URL`           | -              | PostgreSQL connection URL (when type=postgres) |
-| `BETTER_AUTH_SECRET`     | Auto-generated | Authentication secret for session tokens       |
-| `WS_ENABLED`             | -              | Enables/disables websocket transport           |
-| `WS_HEARTBEAT_INTERVAL`  | -              | Websocket heartbeat interval                   |
-| `WS_MAX_MESSAGE_SIZE`    | -              | Max websocket message size                     |
-| `WS_RATE_LIMIT_MESSAGES` | -              | Websocket messages allowed per window          |
-| `WS_RATE_LIMIT_WINDOW`   | -              | Websocket rate-limit window (ms)               |
-| `REDIS_URL`              | -              | Redis connection URL for cache & pub/sub       |
+| Variable                      | Default        | Description                                    |
+| ----------------------------- | -------------- | ---------------------------------------------- |
+| `HOST`                        | `localhost`    | Server host                                    |
+| `PORT`                        | `3000`         | Server port                                    |
+| `VITE_API_URL`                | Dynamic        | Client API URL for Eden Treaty                 |
+| `DATABASE_TYPE`               | `sqlite`       | Database type: `sqlite` or `postgres`          |
+| `SQLITE_URL`                  | -              | Database SQLite connection URL                 |
+| `POSTGRES_URL`                | -              | PostgreSQL connection URL (when type=postgres) |
+| `BETTER_AUTH_SECRET`          | Auto-generated | Authentication secret for session tokens       |
+| `WS_ENABLED`                  | -              | Enables/disables websocket transport           |
+| `WS_HEARTBEAT_INTERVAL`       | -              | Websocket heartbeat interval                   |
+| `WS_MAX_MESSAGE_SIZE`         | -              | Max websocket message size                     |
+| `WS_RATE_LIMIT_MESSAGES`      | -              | Websocket messages allowed per window          |
+| `WS_RATE_LIMIT_WINDOW`        | -              | Websocket rate-limit window (ms)               |
+| `REDIS_URL`                   | -              | Redis connection URL for cache & pub/sub       |
+| `EVLOG_ADAPTER`               | `fs`           | Log adapter: `fs` or `otlp`                    |
+| `EVLOG_DIR`                   | `.evlog/logs`  | Directory for local log files                  |
+| `EVLOG_LOG_LEVEL`             | -              | Minimum log level to output                    |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | -              | OTLP endpoint for production logging           |
 
 ## Database Configuration
 
@@ -100,10 +104,10 @@ The application uses **Unstorage** for a unified cache layer with multiple backe
 
 ### Pub/Sub Requirements
 
-> **Note**: Pub/Sub is **Redis-only** and requires `REDIS_URL` to be set. Other backends (PostgreSQL, LRU Cache) do not support Pub/Sub functionality.
+> **Note**: While the application supports multiple backends for in-process events, **Redis is required** for cross-instance Pub/Sub (distributed). Other backends (PostgreSQL, LRU Cache) only support in-process events.
 
 ```bash
-# Enable Pub/Sub (requires Redis)
+# Enable distributed Pub/Sub (requires Redis)
 REDIS_URL=redis://localhost:6379 bun run dev
 
 # For Upstash (serverless Redis)
@@ -222,26 +226,6 @@ import { logger } from "./logger";
 
 logger.log(env.VITE_API_URL); // Available in browser
 // env.BETTER_AUTH_SECRET would throw - server-only
-```
-
-#### Eden Treaty Dynamic URL
-
-The client-side API client uses a dynamic URL resolution:
-
-1. First checks `VITE_API_URL` environment variable
-2. Falls back to `window.location.origin` in browser
-3. Defaults to `http://localhost:3000` for SSR
-
-```typescript
-// src/routes/api/$.ts
-export const getAPI = createIsomorphicFn()
-  .server(() => treaty(app).api)
-  .client(() => {
-    const url =
-      import.meta.env.VITE_API_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-    return treaty<typeof app>(url).api;
-  });
 ```
 
 Set `VITE_API_URL` for production or custom preview servers:

@@ -112,7 +112,7 @@ jobs:
       - name: Run tests (${{ matrix.runtime }})
         # Use --jobs to limit concurrency if tests are resource-intensive
         # Run with --run to force a cleaner execution
-        run: bun test:unit --run
+        run: bun test --run
 
       - name: Run database reset
         run: bun run db:reset

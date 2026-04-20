@@ -60,7 +60,7 @@ describe("composedMiddleware", () => {
   });
 
   it("should accept custom openAPP_NAME option", () => {
-    const middleware = composedMiddleware({ openAPP_NAME: "Custom API" });
+    const middleware = composedMiddleware({ OPENAPI_NAME: "Custom API" });
     expect(middleware).toBeInstanceOf(Elysia);
   });
 });

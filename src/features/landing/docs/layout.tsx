@@ -129,7 +129,7 @@ export function DocsLayout() {
           </header>
           <div className={`flex flex-col p-4 pt-0 transition-all duration-200 ${contentMargin}`}>
             <Outlet />
-            <Footer showLogo={true} />
+            <Footer />
           </div>
         </SidebarInset>
       </>

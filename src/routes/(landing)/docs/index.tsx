@@ -7,14 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { DocsLandingPage } from "~/features/landing/docs/index";
-
-const docsList = [
-  { slug: "getting-started", title: "Getting Started", category: "Guide" },
-  { slug: "api/api-references", title: "API References", category: "Reference" },
-  { slug: "getting-started/development", title: "Development Setup", category: "Guide" },
-  { slug: "auth/overview", title: "Authentication", category: "Guide" },
-  { slug: "deployment/production", title: "Production Deployment", category: "Guide" },
-];
+import { docsListLLMO } from "~/config/docs";
 
 export const Route = createFileRoute("/(landing)/docs/")({
   component: DocsLandingPage,
@@ -35,14 +28,14 @@ export const Route = createFileRoute("/(landing)/docs/")({
           name: "TSS Elysia Documentation",
           description:
             "Complete documentation for TSS Elysia - getting started, API references, authentication guides, and deployment",
-          about: docsList.map((doc) => ({
+          about: docsListLLMO.map((doc) => ({
             "@type": "Thing",
             name: doc.title,
             description: doc.category,
           })),
           mainEntity: {
             "@type": "ItemList",
-            itemListElement: docsList.map((doc, index) => ({
+            itemListElement: docsListLLMO.map((doc, index) => ({
               "@type": "ListItem",
               position: index + 1,
               url: `/docs/${doc.slug}`,

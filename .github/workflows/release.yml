@@ -132,7 +132,7 @@ jobs:
         run: bun run typecheck
 
       - name: Run unit tests
-        run: bun test:unit
+        run: bun test
 
   # ---------------------------------------------------------------------------
   # Security Audit

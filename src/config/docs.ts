@@ -22,7 +22,7 @@ export interface DocSection {
 }
 
 /** Defines the display order for sidebar sections */
-const SECTION_ORDER = ["getting-started", "auth", "api", "infra", "guides"] as const;
+const SECTION_ORDER = ["getting-started", "auth", "api", "infra", "guides", "reference"] as const;
 
 /** Maps folder names to sidebar section titles */
 const SECTION_TITLE_MAP: Record<string, string> = {
@@ -31,14 +31,35 @@ const SECTION_TITLE_MAP: Record<string, string> = {
   auth: "Authentication",
   api: "API",
   infra: "Infrastructure",
+  reference: "Reference",
 };
 
 const FILE_NAME_MAP: Record<string, string> = {
   "ci-cd": "CI/CD",
   /** Hub page: app + auth API links (sidebar label). */
   /** Auth section: Better Auth OpenAPI entry (sidebar label). */
-  "openapi-reference": "OpenAPI reference",
+  "openapi-reference": "OpenAPI",
 };
+
+export const docsListLLMO = [
+  { slug: "getting-started", title: "Getting Started", category: "Guide" },
+  {
+    slug: "api/api-references",
+    title: "API References",
+    category: "Reference",
+  },
+  {
+    slug: "getting-started/development",
+    title: "Development Setup",
+    category: "Guide",
+  },
+  { slug: "auth/overview", title: "Authentication", category: "Guide" },
+  {
+    slug: "deployment/production",
+    title: "Production Deployment",
+    category: "Guide",
+  },
+];
 
 /**
  * Converts a file name to its display name.
@@ -95,15 +116,15 @@ function formatName(slug: string): string {
  * Using require avoids Vite attempting to bundle "fs" in test environments.
  */
 function scanDocModules(): Record<string, string> {
-  try {
-    // Vite transforms this call at build time into static imports.
-    // If not transformed (e.g. in tests), import.meta.glob is undefined and throws.
+  // Vite transforms this call at build time into static imports.
+  // If not transformed (e.g. in tests), import.meta.glob is undefined and throws.
+  if (import.meta.env.DEV || import.meta.env.PROD)
     return import.meta.glob("../../docs/**/*.md", {
       query: "?raw",
       import: "default",
       eager: true,
     }) as Record<string, string>;
-  } catch {
+  else {
     // Test environment fallback: use require for fs and path
     // This works in both Node.js and Bun test environments
     const fs = require("fs");
