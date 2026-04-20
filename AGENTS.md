@@ -7,6 +7,17 @@ description: Guidelines for AI coding agents working in this repository
 
 This file contains guidelines for AI coding agents working in this repository.
 
+## Critical Documentation
+
+Before starting any task, review these critical documents:
+
+- [README.md](./README.md) - Project overview, tech stack, and setup
+- [PLAN.md](./knowledge/PLAN.md) - Current development roadmap and task status
+- [CONTRIBUTING.md](./.github/CONTRIBUTING.md) - Contribution guidelines and workflow
+- [CHANGELOG.md](./CHANGELOG.md) - History of changes and releases
+
+---
+
 ## AI/LLM Coding Standards
 
 All AI-generated code must adhere to these standards.

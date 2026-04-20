@@ -12,7 +12,7 @@
  */
 
 import { Elysia, file } from "elysia";
-import type { TraceHandler, ErrorHandler } from "elysia";
+import type { TraceHandler } from "elysia";
 import { openapi } from "@elysiajs/openapi";
 import { opentelemetry } from "@elysiajs/opentelemetry";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-node";
@@ -94,7 +94,7 @@ export const traceFn: TraceHandler = async ({
  * // Or use as onError handler:
  * .onError(errorFn)
  */
-export const errorFn: ErrorHandler = ({ code, error }) => {
+export const errorFn = ({ code, error }: any) => {
   // Determine if running in production to control error detail exposure
   const isProduction = typeof process !== "undefined" && process.env.NODE_ENV === "production";
 

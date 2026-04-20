@@ -262,10 +262,6 @@ let currentUserContext: EvlogUserContext | null = null;
 /**
  * Sets the current user identity for log enrichment.
  * Called after session resolution in middleware/hooks.
-
-/**
- * Sets the current user identity for log enrichment.
- * Called after session resolution in middleware/hooks.
  *
  * @param session - Better Auth session with user and session data
  * @param options - Configuration options (e.g., maskEmail)
