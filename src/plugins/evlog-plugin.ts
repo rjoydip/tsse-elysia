@@ -1,5 +1,5 @@
 import type { Elysia } from "elysia";
-import type { DrainContext } from "evlog";
+import type { DrainContext, WideEvent } from "evlog";
 import { rateLimit } from "elysia-rate-limit";
 import { apiLogger } from "~/lib/logger";
 import { drain } from "~/config/evlog";
@@ -12,6 +12,26 @@ const environment = isProduction
     : isDev
       ? "development"
       : "unknown";
+
+/**
+ * Extended WideEvent for application-specific fields.
+ */
+export interface AppWideEvent extends WideEvent {
+  event: string;
+  method?: string;
+  path?: string;
+  status?: number;
+  duration?: number;
+  error?: string;
+  stack?: string;
+}
+
+/**
+ * Application-specific DrainContext.
+ */
+export interface AppDrainContext extends DrainContext {
+  event: AppWideEvent;
+}
 
 /**
  * Plugin options for custom evlog integration.
@@ -39,7 +59,7 @@ function buildDrainContext(
   requestPath: string,
   status?: number,
   duration?: number,
-): DrainContext {
+): AppDrainContext {
   return {
     event: {
       timestamp: new Date().toISOString(),
@@ -51,7 +71,7 @@ function buildDrainContext(
       path: requestPath,
       ...(status && { status }),
       ...(duration && { duration }),
-    } as any,
+    },
     request: {
       method,
       path: requestPath,
@@ -194,10 +214,10 @@ export function evlogIngestEndpoint(options: EvlogPluginOptions = {}) {
               );
             }
 
-            const batch = body as any[];
+            const batch = body as DrainContext[];
 
             for (const ctx of batch) {
-              apiLogger.debug("Browser event", { event: ctx.event });
+              apiLogger.debug("Browser event", { event: (ctx as any).event });
             }
 
             await drainFn(batch);
