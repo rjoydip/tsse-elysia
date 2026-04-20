@@ -678,3 +678,24 @@ export function closeCache(): void {
  * @deprecated Use StorageStatus instead
  */
 export type CacheStatus = StorageStatus;
+
+/**
+ * @deprecated Use getStorage() instead.
+ */
+export function getRedisClient(): Storage | null {
+  return getStorage();
+}
+
+/**
+ * @deprecated Use getStorageStatus() instead.
+ */
+export async function getRedisStatus(): Promise<StorageStatus> {
+  return getStorageStatus();
+}
+
+/**
+ * @deprecated Use closeStorage() instead.
+ */
+export function closeRedis(): void {
+  closeStorage();
+}

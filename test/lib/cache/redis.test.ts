@@ -174,7 +174,7 @@ describe("Deprecated Aliases (Backward Compatibility)", () => {
   });
 
   test("getRedisStatus returns valid status", async () => {
-    const { getRedisStatus } = require("../../../src/lib/redis");
+    const { getRedisStatus } = require("../../../src/lib/cache");
     const status = await getRedisStatus();
     expect(status).toHaveProperty("connected");
     expect(status).toHaveProperty("url");

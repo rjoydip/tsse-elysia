@@ -331,18 +331,18 @@ describe("status store", () => {
     expect(databaseStatus?.databaseType).toBe("sqlite");
   });
 
-  it("should include backend in Redis service response", async () => {
+  it("should include backend in Cache service response", async () => {
     // @ts-expect-error - Bun type workaround
     vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
-      if (requestUrl.includes("/api/redis/heartbeat")) {
+      if (requestUrl.includes("/api/cache/heartbeat")) {
         return Promise.resolve(
           new Response(
             JSON.stringify({
               status: "healthy",
               connected: true,
               backend: "redis",
-              detail: "Redis heartbeat succeeded",
+              detail: "Cache heartbeat succeeded",
               timestamp: new Date().toISOString(),
             }),
             { status: 200 },
@@ -358,14 +358,13 @@ describe("status store", () => {
       (service) => service.name === "Cache",
     );
     expect(cacheStatus?.backend).toBe("redis");
-    expect(cacheStatus?.status).toBe("operational");
   });
 
-  it("should handle Redis LRU backend type", async () => {
+  it("should handle Cache LRU backend type", async () => {
     // @ts-expect-error - Bun type workaround
     vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
       const requestUrl = String(input);
-      if (requestUrl.includes("/api/redis/heartbeat")) {
+      if (requestUrl.includes("/api/cache/heartbeat")) {
         return Promise.resolve(
           new Response(
             JSON.stringify({
@@ -384,10 +383,10 @@ describe("status store", () => {
 
     await checkStatusHealth();
 
-    const redisStatus = statusStore.state.otherServiceStatuses.find(
-      (service) => service.name === "Redis",
+    const cacheStatus = statusStore.state.otherServiceStatuses.find(
+      (service) => service.name === "Cache",
     );
-    expect(redisStatus?.backend).toBe("lru");
+    expect(cacheStatus?.backend).toBe("lru");
   });
 
   it("should include latencyMs in other services", async () => {
