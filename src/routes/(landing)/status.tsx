@@ -36,7 +36,7 @@ export const Route = createFileRoute("/(landing)/status")({
             itemListElement: [
               { name: "API Health", url: "/api/health" },
               { name: "Database Health", url: "/api/database" },
-              { name: "Redis Health", url: "/api/redis" },
+              { name: "Redis Health", url: "/api/cache" },
               { name: "Realtime Health", url: "/api/realtime/health" },
               { name: "MCP Health", url: "/api/mcp/health" },
               { name: "Auth Health", url: "/api/auth/health" },

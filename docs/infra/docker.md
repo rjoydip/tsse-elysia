@@ -272,7 +272,7 @@ docker exec tsse-elysia-prod wget -q --spider http://localhost:3000/api/health
 
 ```bash
 # Check Redis heartbeat via API
-curl http://localhost:3000/api/redis/heartbeat
+curl http://localhost:3000/api/cache/heartbeat
 
 # Direct Redis health check in Docker
 docker exec tsse-elysia-redis redis-cli ping

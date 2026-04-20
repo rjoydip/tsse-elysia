@@ -28,7 +28,7 @@ graph TD
 | `src/routes/api/modules/-redis.ts` | **Create** | Health check and status monitoring for storage               |
 | `test/lib/redis/redis.test.ts`     | **Create** | Unit tests for storage backends                              |
 | `test/lib/redis/pubsub.test.ts`    | **Create** | Unit tests for Pub/Sub functionality                         |
-| `.e2e/api/redis-health.spec.ts`    | **Create** | E2E test for storage health monitoring                       |
+| `.e2e/api/cache.spec.ts`           | **Create** | E2E test for storage health monitoring                       |
 
 ## Implementation Details
 

@@ -45,7 +45,8 @@ test.describe("Cache API Endpoints", () => {
   test("should return JSON content-type", async ({ request }) => {
     const response = await request.get("/api/cache/heartbeat");
 
-    expect(response.headers().content_type).toBe("application/json");
+    const headers = response.headers();
+    expect(headers["content-type"]).toBe("application/json");
   });
 
   test("should mask URL credentials", async ({ request }) => {
