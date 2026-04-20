@@ -7,8 +7,9 @@ import { Elysia } from "elysia";
 import { APP_NAME } from "~/config";
 import { realtimeRoutes } from "./-realtime";
 import { databaseRoutes } from "./-database";
-import { redisRoutes } from "./-redis";
+import { cacheRoutes } from "./-cache";
 import { llmoRoutes } from "./-llmo";
+import { statusRoutes } from "./-status";
 
 /**
  * OpenAPI response schema for the API health endpoint.
@@ -30,8 +31,9 @@ const apiHealthResponseExample = {
 export const coreRoutes = new Elysia({ name: "api.routes.core" })
   .use(realtimeRoutes)
   .use(databaseRoutes)
-  .use(redisRoutes)
+  .use(cacheRoutes)
   .use(llmoRoutes)
+  .use(statusRoutes)
   .get(
     "/",
     ({ set }) => {

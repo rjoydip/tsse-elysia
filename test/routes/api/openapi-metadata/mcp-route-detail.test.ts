@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createApiRoutes } from "../../../../src/routes/api";
+import { createApiRoutes } from "../../../../src/routes/api/$";
 
 const apiRoutes = createApiRoutes();
 

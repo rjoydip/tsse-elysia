@@ -11,6 +11,7 @@ import { API_PREFIX, APP_NAME, HOST, PORT, isBrowser } from "~/config";
 import { composedMiddleware, errorFn, traceFn } from "~/middlewares";
 import { websocketPlugin } from "~/plugins/websocket";
 import { evlogPlugin, evlogIngestEndpoint } from "~/plugins/evlog-plugin";
+import { monitoringPlugin } from "~/plugins/monitoring";
 import { coreRoutes } from "./modules/-core";
 import { mcpCoreRoutes } from "./mcp/modules/-core";
 import { authCoreRoutes } from "./auth/modules/-core";
@@ -56,6 +57,7 @@ export const createApiRoutes = () =>
      */
     // Mount realtime websocket plugin so /api/ws and /api/ws/health are reachable.
     .use(websocketPlugin)
+    .use(monitoringPlugin)
     .use(coreRoutes)
     .use(authCoreRoutes)
     .use(mcpCoreRoutes)

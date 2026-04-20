@@ -15,8 +15,8 @@
  */
 
 import type { Storage } from "unstorage";
-import { getStorage, getStorageBackend, isPubSubSupported } from "./index";
-import { redisLogger } from "../logger";
+import { getStorage, getStorageBackend, isPubSubSupported } from "../cache";
+import { cacheLogger } from "../logger";
 
 /**
  * Predefined channel names for the application.
@@ -89,7 +89,7 @@ function getStorageInstance(): Storage | null {
 function canUsePubSub(): boolean {
   const storage = getStorageInstance();
   if (!storage) {
-    redisLogger.debug("Storage not available, Pub/Sub disabled");
+    cacheLogger.debug("Storage not available, Pub/Sub disabled");
     return false;
   }
   return true;
@@ -112,7 +112,7 @@ export async function publish<T>(
   message: PubSubMessage<T>,
 ): Promise<number> {
   if (!canUsePubSub()) {
-    redisLogger.debug("Pub/Sub not available, skipping publish", {
+    cacheLogger.debug("Pub/Sub not available, skipping publish", {
       channel,
       backend: getStorageBackend(),
     });
@@ -153,7 +153,7 @@ export async function publish<T>(
       }
     }
 
-    redisLogger.debug("Published Pub/Sub message", {
+    cacheLogger.debug("Published Pub/Sub message", {
       channel,
       type: message.type,
       backend: getStorageBackend(),
@@ -161,7 +161,7 @@ export async function publish<T>(
 
     return subscribers?.size ?? 0;
   } catch (error) {
-    redisLogger.error("Failed to publish Pub/Sub message", error as Error);
+    cacheLogger.error("Failed to publish Pub/Sub message", error as Error);
     return 0;
   }
 }
@@ -181,7 +181,7 @@ export async function subscribe<T>(
   handler: (message: PubSubMessage<T>, channel: string) => void,
 ): Promise<void> {
   if (!canUsePubSub()) {
-    redisLogger.debug("Pub/Sub not available, skipping subscribe", {
+    cacheLogger.debug("Pub/Sub not available, skipping subscribe", {
       channel,
       backend: getStorageBackend(),
     });
@@ -242,17 +242,19 @@ export async function subscribe<T>(
           }
         });
 
-        redisLogger.debug("Set up Redis keyspace watch for Pub/Sub channel", { channel });
+        cacheLogger.debug("Set up Redis keyspace watch for Pub/Sub channel", {
+          channel,
+        });
       }
     }
 
-    redisLogger.info("Subscribed to Pub/Sub channel", {
+    cacheLogger.info("Subscribed to Pub/Sub channel", {
       channel,
       backend,
       crossInstance: backend === "redis",
     });
   } catch (error) {
-    redisLogger.error("Failed to subscribe to Pub/Sub channel", error as Error);
+    cacheLogger.error("Failed to subscribe to Pub/Sub channel", error as Error);
   }
 }
 
@@ -281,7 +283,7 @@ export function unsubscribe<T>(
     activeSubscriptions.delete(channel);
   }
 
-  redisLogger.debug("Unsubscribed from Pub/Sub channel", { channel });
+  cacheLogger.debug("Unsubscribed from Pub/Sub channel", { channel });
 }
 
 /**
@@ -314,5 +316,5 @@ export function getPubSubStatus(): PubSubStatus {
  */
 export function closePubSub(): void {
   activeSubscriptions.clear();
-  redisLogger.info("Pub/Sub connections closed");
+  cacheLogger.info("Pub/Sub connections closed");
 }

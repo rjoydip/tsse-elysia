@@ -11,7 +11,7 @@ import {
   authLogger,
   apiLogger,
   dbLogger,
-  redisLogger,
+  cacheLogger,
   scriptLogger,
   setIdentity,
   getIdentity,
@@ -105,8 +105,8 @@ describe("logger instances", () => {
   });
 
   it("should have redis logger", () => {
-    expect(redisLogger).toBeDefined();
-    expect(redisLogger.info).toBeDefined();
+    expect(cacheLogger).toBeDefined();
+    expect(cacheLogger.info).toBeDefined();
   });
 
   it("should log with app prefix", () => {
@@ -126,7 +126,7 @@ describe("logger instances", () => {
   });
 
   it("should log with redis prefix", () => {
-    redisLogger.info("test");
+    cacheLogger.info("test");
   });
 });
 

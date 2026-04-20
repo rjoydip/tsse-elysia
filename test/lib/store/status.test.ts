@@ -15,10 +15,10 @@ import {
 
 /**
  * Total expected fetch calls per health check cycle.
- * Includes all API health endpoints plus other services with heartbeat URLs.
+ * Includes all API health endpoints plus other services with heartbeat URLs plus history fetch.
  */
 const expectedFetchCount =
-  statusServices.length + otherStatusServices.filter((s) => s.heartbeatUrl).length;
+  statusServices.length + otherStatusServices.filter((s) => s.heartbeatUrl).length + 1;
 
 /**
  * Restores status store to its deterministic baseline for isolated test execution.
@@ -42,6 +42,7 @@ function resetStatusStore(): void {
     isRefreshing: false,
     lastRefreshSuccessful: null,
     lastManualRefreshAt: null,
+    history: [],
   }));
 }
 
@@ -81,14 +82,32 @@ describe("status store", () => {
                 detail: "Database heartbeat query succeeded",
                 timestamp: new Date().toISOString(),
                 pools: [
-                  { name: "primary", role: "primary", healthy: true, latencyMs: 5 },
-                  { name: "replica-1", role: "replica", healthy: true, latencyMs: 3 },
-                  { name: "replica-2", role: "replica", healthy: true, latencyMs: 4 },
+                  {
+                    name: "primary",
+                    role: "primary",
+                    healthy: true,
+                    latencyMs: 5,
+                  },
+                  {
+                    name: "replica-1",
+                    role: "replica",
+                    healthy: true,
+                    latencyMs: 3,
+                  },
+                  {
+                    name: "replica-2",
+                    role: "replica",
+                    healthy: true,
+                    latencyMs: 4,
+                  },
                 ],
               }),
               { status: 200 },
             ),
           );
+        }
+        if (requestUrl.includes("/api/status/history")) {
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
         }
         return Promise.resolve(
           new Response(JSON.stringify({ status: "healthy" }), { status: 200 }),
@@ -167,6 +186,9 @@ describe("status store", () => {
             ),
           );
         }
+        if (requestUrl.includes("/api/status/history")) {
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
+        }
         return Promise.resolve(
           new Response(JSON.stringify({ status: "healthy" }), { status: 200 }),
         );
@@ -234,9 +256,24 @@ describe("status store", () => {
               timestamp: new Date().toISOString(),
               latencyMs: 10,
               pools: [
-                { name: "primary", role: "primary", healthy: true, latencyMs: 5 },
-                { name: "replica-1", role: "replica", healthy: true, latencyMs: 3 },
-                { name: "replica-2", role: "replica", healthy: false, error: "Connection timeout" },
+                {
+                  name: "primary",
+                  role: "primary",
+                  healthy: true,
+                  latencyMs: 5,
+                },
+                {
+                  name: "replica-1",
+                  role: "replica",
+                  healthy: true,
+                  latencyMs: 3,
+                },
+                {
+                  name: "replica-2",
+                  role: "replica",
+                  healthy: false,
+                  error: "Connection timeout",
+                },
               ],
             }),
             { status: 200 },
@@ -270,7 +307,14 @@ describe("status store", () => {
               timestamp: new Date().toISOString(),
               databaseType: "sqlite",
               latencyMs: 5,
-              pools: [{ name: "sqlite", role: "primary", healthy: true, latencyMs: 5 }],
+              pools: [
+                {
+                  name: "sqlite",
+                  role: "primary",
+                  healthy: true,
+                  latencyMs: 5,
+                },
+              ],
             }),
             { status: 200 },
           ),
@@ -310,11 +354,11 @@ describe("status store", () => {
 
     await checkStatusHealth();
 
-    const redisStatus = statusStore.state.otherServiceStatuses.find(
-      (service) => service.name === "Redis",
+    const cacheStatus = statusStore.state.otherServiceStatuses.find(
+      (service) => service.name === "Cache",
     );
-    expect(redisStatus?.backend).toBe("redis");
-    expect(redisStatus?.status).toBe("operational");
+    expect(cacheStatus?.backend).toBe("redis");
+    expect(cacheStatus?.status).toBe("operational");
   });
 
   it("should handle Redis LRU backend type", async () => {

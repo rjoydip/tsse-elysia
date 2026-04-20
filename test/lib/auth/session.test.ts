@@ -4,13 +4,13 @@
 
 import { describe, it, expect, afterEach } from "bun:test";
 import { RedisSessionStorage, sessionStorage } from "../../../src/lib/auth/session";
-import { closeRedis } from "../../../src/lib/redis";
+import { closeCache } from "../../../src/lib/cache";
 
 describe("RedisSessionStorage", () => {
   const storage = new RedisSessionStorage();
 
   afterEach(() => {
-    closeRedis();
+    closeCache();
   });
 
   describe("methods exist", () => {
@@ -105,7 +105,7 @@ describe("RedisSessionStorage", () => {
 
 describe("sessionStorage export", () => {
   afterEach(() => {
-    closeRedis();
+    closeCache();
   });
 
   it("should export singleton with all methods", () => {

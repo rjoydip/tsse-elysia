@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { treaty } from "@elysiajs/eden";
-import { apiRoutes } from "../../../src/routes/api";
+import { apiRoutes } from "../../../src/routes/api/$";
 
 const getHealthData = () => ({
   name: "TSS ELYSIA",

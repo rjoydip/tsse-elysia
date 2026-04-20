@@ -5,7 +5,7 @@
  */
 
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * User table - stores authenticated user information.
@@ -171,6 +171,7 @@ export type Verification = typeof verifications.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type McpApiKey = typeof mcpApiKeys.$inferSelect;
+export type ServiceHealth = typeof serviceHealth.$inferSelect;
 
 // Union type for all table types
 export type DBType =
@@ -180,7 +181,8 @@ export type DBType =
   | typeof verifications
   | typeof subscriptionPlans
   | typeof subscriptions
-  | typeof mcpApiKeys;
+  | typeof mcpApiKeys
+  | typeof serviceHealth;
 
 /**
  * MCP API Keys table - stores API keys for MCP client authentication.
@@ -214,3 +216,18 @@ export const mcpApiKeysRelations = relations(mcpApiKeys, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+/**
+ * Service Health table - stores periodic snapshots of service health.
+ * Used for status monitoring and historical health graphs.
+ */
+export const serviceHealth = sqliteTable("service_health", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  serviceName: text("service_name").notNull(),
+  status: text("status", { enum: ["up", "down", "degraded"] }).notNull(),
+  latencyMs: integer("latency_ms"),
+  error: text("error"),
+  timestamp: integer("timestamp", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});

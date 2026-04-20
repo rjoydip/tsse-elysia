@@ -12,8 +12,8 @@
  */
 
 import type { Session } from "better-auth/types";
-import { getStorage } from "~/lib/redis";
-import { redisLogger } from "~/lib/logger";
+import { getStorage } from "~/lib/cache";
+import { cacheLogger } from "~/lib/logger";
 import { sessionConfig } from "~/config";
 
 /**
@@ -51,7 +51,7 @@ export class StorageSessionAdapter {
   async create(session: Session): Promise<void> {
     const storage = this.getStorageInstance();
     if (!storage) {
-      redisLogger.debug("Storage unavailable, skipping session cache");
+      cacheLogger.debug("Storage unavailable, skipping session cache");
       return;
     }
 
@@ -64,9 +64,9 @@ export class StorageSessionAdapter {
 
       await storage.setItem(key, JSON.stringify(session), { ttl: expiresIn });
 
-      redisLogger.debug("Session cached", { sessionId: session.id, userId });
+      cacheLogger.debug("Session cached", { sessionId: session.id, userId });
     } catch (error) {
-      redisLogger.error("Failed to cache session", error as Error);
+      cacheLogger.error("Failed to cache session", error as Error);
     }
   }
 
@@ -93,11 +93,11 @@ export class StorageSessionAdapter {
       try {
         return JSON.parse(value as string) as Session;
       } catch {
-        redisLogger.warn("Failed to parse session JSON", { sessionId });
+        cacheLogger.warn("Failed to parse session JSON", { sessionId });
         return null;
       }
     } catch (error) {
-      redisLogger.error("Failed to get cached session", error as Error);
+      cacheLogger.error("Failed to get cached session", error as Error);
       return null;
     }
   }
@@ -127,7 +127,7 @@ export class StorageSessionAdapter {
       const key = this.getKey(userId, sessionId);
       await storage.removeItem(key);
     } catch (error) {
-      redisLogger.error("Failed to delete cached session", error as Error);
+      cacheLogger.error("Failed to delete cached session", error as Error);
     }
   }
 
@@ -146,7 +146,7 @@ export class StorageSessionAdapter {
       const keys = await storage.getKeys(`session:${userId}:`);
       await Promise.all(keys.map((k: string) => storage.removeItem(k)));
     } catch (error) {
-      redisLogger.error("Failed to delete user session cache", error as Error);
+      cacheLogger.error("Failed to delete user session cache", error as Error);
     }
   }
 }
