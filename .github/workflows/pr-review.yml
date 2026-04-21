@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ secrets.GH_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 2
           persist-credentials: true
 
       - name: Setup Bun
@@ -50,12 +50,10 @@ jobs:
       - name: Load Review Prompt
         id: prompt
         run: |
-          PROMPT_DIR="./knowledge/prompts"
+          PROMPT_FILE="./knowledge/prompts/review-pr.md"
 
-          PROMPT_FILE=$(find "$PROMPT_DIR" -maxdepth 1 -type f \( -name "review-pr.md" -o -name "review-pr.txt" \) | sort | head -n 1)
-
-          if [ -z "$PROMPT_FILE" ]; then
-            echo "❌ No prompt file found in $PROMPT_DIR"
+          if [ ! -f "$PROMPT_FILE" ]; then
+            echo "❌ Prompt file not found: $PROMPT_FILE"
             exit 1
           fi
 
@@ -93,9 +91,10 @@ jobs:
           ## Diff to Review
 
           EOF
+
           cat /tmp/branch.diff >> /tmp/review-prompt.txt
 
-          # Run OpenCode and capture raw output          # BUG FIX 1: was writing to review-output.txt but sed was reading review-raw.txt
+          # Run OpenCode and capture raw output
           opencode run "$(cat /tmp/review-prompt.txt)" \
             --model "$OPENCODE_MODEL" \
             --dir . \
@@ -104,17 +103,16 @@ jobs:
             --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}" \
             > /tmp/review-raw.txt 2>&1 || true
 
-          # Strip ANSI escape codes and OpenCode status lines, keep only the markdown review
-          # BUG FIX 2: inline comments after \ break the pipe chain — moved to separate lines
-          sed 's/\x1B\[[0-9;]*[mGKHF]//g' /tmp/review-raw.txt \
-            | sed 's/\x1B\[[0-9;]*[A-Z]//g' \
-            | sed '/^Performing one time database migration/d' \
-            | sed '/^sqlite-migration:done/d' \
-            | sed '/^Database migration complete/d' \
-            | sed '/^build · /d' \
-            | sed '/^~ https:\/\/opncd\.ai\//d' \
-            | sed '/^\s*$/N;/^\n\s*$/d' \
-            > /tmp/review-output.txt
+          # Strip ANSI escape codes and OpenCode status lines
+          sed -e 's/\x1B\[[0-9;]*[mGKHF]//g' \
+              -e 's/\x1B\[[0-9;]*[A-Z]//g' \
+              -e '/^Performing one time database migration/d' \
+              -e '/^sqlite-migration:done/d' \
+              -e '/^Database migration complete/d' \
+              -e '/^build · /d' \
+              -e '/^~ https:\/\/opncd\.ai\//d' \
+              -e '/^\s*$/N;/^\n\s*$/d' \
+              /tmp/review-raw.txt > /tmp/review-output.txt
 
           echo "Review output:"
           cat /tmp/review-output.txt
@@ -127,13 +125,12 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           REPO="${{ github.repository }}"
 
-          # BUG FIX 3: heredoc content was indented with spaces — GitHub renders
-          # leading spaces as code blocks, so all heredoc content must be at column 0
+          # Build comment body - heredoc content must be at column 0 (GitHub renders leading spaces as code blocks)
           cat > /tmp/comment-body.md << 'HEADER'
           ## 🤖 Automated Code Review
           HEADER
 
-                    cat >> /tmp/comment-body.md << EOF
+          cat >> /tmp/comment-body.md << EOF
 
           > 📝 Reviewed commit: \`${{ github.event.pull_request.head.sha }}\`
           > 🤖 Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
