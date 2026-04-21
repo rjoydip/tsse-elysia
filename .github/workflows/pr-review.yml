@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Setup Bun
@@ -45,7 +46,36 @@ jobs:
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
-          rm -rf .gitmodules
+
+      - name: Load Review Prompt
+        id: prompt
+        run: |
+          PROMPT_DIR="./knowledge/prompts"
+
+          # Find the first .md or .txt file in the prompts folder
+          PROMPT_FILE=$(find "$PROMPT_DIR" -maxdepth 1 -type f \( -name "review-pr.md" -o -name "review-pr.txt" \) | sort | head -n 1)
+
+          if [ -z "$PROMPT_FILE" ]; then
+            echo "❌ No prompt file found in $PROMPT_DIR"
+            exit 1
+          fi
+
+          echo "✅ Using prompt file: $PROMPT_FILE"
+          cp "$PROMPT_FILE" /tmp/review-prompt.txt
+
+      - name: Generate Branch Diff
+        id: diff
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # Fetch base branch so we can diff against it
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+
+          # Write only the changed files diff to a temp file
+          git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
+
+          echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
 
       - name: Install OpenCode
         if: ${{ !github.event.pull_request.merged }}
@@ -58,81 +88,65 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
         run: |
-          cat <<'EOF' > /tmp/review-prompt.txt
-          You are performing a professional code review for a pull request.
+          # Append diff section header + actual diff to the prompt
+          echo "" >> /tmp/review-prompt.txt
+          echo "---" >> /tmp/review-prompt.txt
+          echo "" >> /tmp/review-prompt.txt
+          echo "## Diff to Review" >> /tmp/review-prompt.txt
+          echo "" >> /tmp/review-prompt.txt
+          cat /tmp/branch.diff >> /tmp/review-prompt.txt
 
-          Your goal is to provide clear, actionable, and structured feedback.
-
-          ## Review Guidelines
-
-          ### 1. Code Quality
-          - Identify readability issues, naming inconsistencies, or unclear logic
-          - Check adherence to best practices and coding standards
-          - Highlight overly complex or redundant code
-
-          ### 2. Potential Bugs & Edge Cases
-          - Look for logical errors, race conditions, or incorrect assumptions
-          - Identify missing error handling or null/undefined checks
-          - Consider edge cases that are not handled
-
-          ### 3. Performance & Scalability
-          - Point out inefficient algorithms or unnecessary computations
-          - Highlight potential bottlenecks or memory issues
-
-          ### 4. Security Concerns
-          - Identify vulnerabilities (e.g., injection risks, improper validation)
-          - Check for sensitive data exposure or unsafe operations
-
-          ### 5. Testing & Reliability
-          - Verify if adequate test coverage exists
-          - Suggest missing test cases (unit/integration/edge cases)
-
-          ### 6. Maintainability & Design
-          - Evaluate modularity, separation of concerns, and reusability
-          - Suggest improvements for long-term maintainability
-
-          ---
-
-          ## Output Format
-
-          Use a table format for each category with columns: Status | Category | Description | Location | Suggestion
-
-          ### Review Table Template
-          - Each row represents one finding
-          - Status: Emoji from the legend below
-          - Category: One of: Code Quality, Edge Cases, Performance, Security, Testing, Maintainability
-          - Description: Brief description of the issue (1-2 sentences)
-          - Location: File path and line number (e.g., src/utils.ts:42)
-          - Suggestion: Concrete improvement or fix
-
-          ### Emoji Status Legend
-          - ✅ = Good - Code is well-written, follows best practices
-          - 💡 = Observation - Not an issue, but worth noting or considering
-          - ⚠️ = Concern - Potential issue that needs attention
-          - 🔧 = Minor - Small improvement or nitpick
-          - 🔴 = Major - Important issue that should be addressed
-          - 🛡️ = Security Concerns - Security vulnerability or risk
-          - 🎯 = LGTM - Looks Good To Me - no issues found
-          - 📝 = Gaps - Missing tests or incomplete coverage
-          - ⚡ = Edge Cases - Missing handling for edge cases
-          - 📈 = Reliability - Potential reliability or stability concerns
-          - 🏗️ = Maintainability - Code maintainability or design improvements
-
-          ---
-
-          ## Final Verdict
-
-          - Use the appropriate emoji status from the legend above
-          - If no issues are found, respond with: ✅🎯 LGTM
-          - For minor issues only, respond with: 🔧🎯 LGTM (minor)
-          - For concerns that should be addressed, respond with: ⚠️ Review needed
-          - For major issues, respond with: 🔴 Changes requested
-          - Summarize the overall assessment in 1-2 lines
-          EOF
-
+          # Run OpenCode and capture output
           opencode run "$(cat /tmp/review-prompt.txt)" \
             --model "$OPENCODE_MODEL" \
             --dir . \
             --share \
             --pure \
-            --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}"
+            --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}" \
+            > /tmp/review-output.txt 2>&1 || true
+
+          echo "Review output:"
+          cat /tmp/review-output.txt
+
+      - name: Post Review as PR Comment
+        if: ${{ !github.event.pull_request.merged }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
+          REPO="${{ github.repository }}"
+
+          # Build comment body with header + review output
+          REVIEW_BODY=$(cat <<COMMENT
+          ## 🤖 Automated Code Review
+
+          > Reviewed commit: \`${{ github.event.pull_request.head.sha }}\`
+          > Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
+
+          $(cat /tmp/review-output.txt)
+          COMMENT
+          )
+
+          # Delete any previous bot review comment (so only one comment exists per PR)
+          EXISTING_COMMENT_ID=$(curl -s \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            | jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("## 🤖 Automated Code Review")))] | last | .id // empty')
+
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            curl -s -X DELETE \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}"
+            echo "Deleted previous review comment: $EXISTING_COMMENT_ID"
+          fi
+
+          # Post fresh review comment
+          curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            -d "$(jq -n --arg body "$REVIEW_BODY" '{"body": $body}')"
+
+          echo "Review posted to PR #${PR_NUMBER}"
