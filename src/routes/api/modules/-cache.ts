@@ -4,13 +4,13 @@
  */
 
 import { Elysia } from "elysia";
-import { getCacheStatus } from "~/lib/cache";
+import { getStorageStatus } from "~/lib/cache";
 
 /**
  * Cache heartbeat response example used for OpenAPI documentation.
  *
  * @remarks
- * The actual payload is produced by `getCacheStatus()`; this example
+ * The actual payload is produced by `getStorageStatus()`; this example
  * is kept generic to avoid coupling docs to internal implementation details.
  */
 const cacheHeartbeatExample = {
@@ -31,18 +31,18 @@ export const cacheRoutes = new Elysia({
   "/heartbeat",
   async () => {
     const startTime = performance.now();
-    const cacheStatus = await getCacheStatus();
+    const storageStatus = await getStorageStatus();
     const latencyMs = Math.round(performance.now() - startTime);
-    const statusCode = cacheStatus.connected ? 200 : 503;
+    const statusCode = storageStatus.connected ? 200 : 503;
 
     return new Response(
       JSON.stringify({
-        status: cacheStatus.connected ? "healthy" : "unhealthy",
-        connected: cacheStatus.connected,
-        url: cacheStatus.url,
-        detail: cacheStatus.error ?? "Cache heartbeat succeeded",
+        status: storageStatus.connected ? "healthy" : "unhealthy",
+        connected: storageStatus.connected,
+        url: storageStatus.url,
+        detail: storageStatus.error ?? "Cache heartbeat succeeded",
         timestamp: new Date().toISOString(),
-        backend: cacheStatus.backend,
+        backend: storageStatus.backend,
         latencyMs,
       }),
       {

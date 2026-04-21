@@ -8,9 +8,10 @@ import { Elysia } from "elysia";
 import { cron } from "@elysiajs/cron";
 import { db, schema } from "~/lib/db";
 import { getDatabaseHeartbeat } from "~/lib/db/heartbeat";
-import { getCacheStatus } from "~/lib/cache";
+import { getStorageStatus } from "~/lib/cache";
 import { PORT, HOST } from "~/config";
 import { logger } from "~/lib/logger";
+import { monitoringConfig } from "~/config";
 
 /**
  * Health check results for a single service.
@@ -94,7 +95,7 @@ async function runHealthChecks(): Promise<HealthCheckResult[]> {
 
   // 6. Cache
   try {
-    const cacheStatus = await getCacheStatus();
+    const cacheStatus = await getStorageStatus();
     results.push({
       name: "Cache",
       status: cacheStatus.connected ? "up" : "down",
@@ -122,7 +123,7 @@ async function runHealthChecks(): Promise<HealthCheckResult[]> {
 export const monitoringPlugin = new Elysia({ name: "monitoring" }).use(
   cron({
     name: "heartbeat",
-    pattern: "*/5 * * * *", // Every 5 minutes
+    pattern: monitoringConfig.heartbeatPattern,
     async run() {
       logger.info("[Monitoring] Running scheduled health checks...");
 
