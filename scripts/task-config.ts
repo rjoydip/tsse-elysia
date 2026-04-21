@@ -1,9 +1,9 @@
-export const taskConfig = {
-  tasksFile: "knowledge/TASKS.md" as string,
-  issueLabels: ["auto-created"] as string[],
-  issueProject: null as string | null,
-  logMissingOnly: true as boolean,
-};
+export const taskConfig = Object.freeze({
+  tasksFile: "knowledge/TASKS.md",
+  issueLabels: Object.freeze(["auto-created"]),
+  issueProject: null,
+  logMissingOnly: true,
+});
 
 export interface TaskConfig {
   tasksFile: string;

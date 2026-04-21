@@ -3,8 +3,6 @@ name: Enforce Decisions Log
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "package.json"
 
 jobs:
   check-decisions:
@@ -30,7 +28,7 @@ jobs:
         run: |
           CHANGED_FILES=$(git diff --name-only origin/${{ steps.branch.outputs.BASE_BRANCH }}...HEAD || true)
           echo "Changed files: $CHANGED_FILES"
-          if echo "$CHANGED_FILES" | grep -qE "(package\.json|src/lib/db|src/lib/redis|mcp)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/)"; then
             echo "CRITICAL=true" >> $GITHUB_OUTPUT
           else
             echo "CRITICAL=false" >> $GITHUB_OUTPUT
