@@ -133,8 +133,7 @@ jobs:
           opencode run "$(cat /tmp/review-prompt.txt)" \
             --model "$OPENCODE_MODEL" \
             --github-token "$GITHUB_TOKEN" \
-            --skip .opencode \
             --dir . \
             --share \
             --pure \
-            --title "pr-review"
+            --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}"
