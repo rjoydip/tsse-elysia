@@ -116,16 +116,17 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           REPO="${{ github.repository }}"
 
-          # Build comment body with header + review output
-          REVIEW_BODY=$(cat <<COMMENT
+          # Build comment body as a file to preserve markdown formatting
+          cat > /tmp/comment-body.md << 'HEADER'
           ## 🤖 Automated Code Review
+          HEADER
 
-          > Reviewed commit: \`${{ github.event.pull_request.head.sha }}\`
-          > Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
+          # Append metadata lines (no indentation — GitHub renders leading spaces as code blocks)
+          printf '\n> Reviewed commit: `%s`\n' "${{ github.event.pull_request.head.sha }}" >> /tmp/comment-body.md
+          printf '> Model: `%s`\n\n' "${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}" >> /tmp/comment-body.md
 
-          $(cat /tmp/review-output.txt)
-          COMMENT
-          )
+          # Append the review output directly (preserves all markdown as-is)
+          cat /tmp/review-output.txt >> /tmp/comment-body.md
 
           # Delete any previous bot review comment (so only one comment exists per PR)
           EXISTING_COMMENT_ID=$(curl -s \
@@ -142,11 +143,11 @@ jobs:
             echo "Deleted previous review comment: $EXISTING_COMMENT_ID"
           fi
 
-          # Post fresh review comment
+          # Post fresh review comment — read body from file to avoid shell escaping issues
           curl -s -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            -d "$(jq -n --arg body "$REVIEW_BODY" '{"body": $body}')"
+            -d "$(jq -n --rawfile body /tmp/comment-body.md '{"body": $body}')"
 
           echo "Review posted to PR #${PR_NUMBER}"
