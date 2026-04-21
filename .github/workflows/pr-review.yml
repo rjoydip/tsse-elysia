@@ -26,26 +26,12 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           persist-credentials: true
-      - name: Remove existing review comments
-        if: ${{ !github.event.pull_request.merged }}
-        run: |
-          # Find and delete existing comments from this workflow (opencode-review workflow)
-          COMMENTS=$(gh api \
-            --paginate \
-            repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("## Review Guidelines"))) | .id')
-
-          for ID in $COMMENTS; do
-            echo "Deleting existing review comment: $ID"
-            gh api --method DELETE repos/${{ github.repository }}/pulls/comments/$ID
-          done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       - name: Configure Git
         run: |
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
+          rm -rf .gitmodules
       - uses: anomalyco/opencode/github@27db54c859be74aa4caed3e58ae14ecc8bc34b30 # v1.14.19
         if: ${{ !github.event.pull_request.merged }}
         timeout-minutes: 10
