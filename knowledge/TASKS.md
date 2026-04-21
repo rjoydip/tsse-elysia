@@ -125,11 +125,12 @@ description: Execution-focused task tracker (source of truth for active work)
 
 ### Workflow
 
-1. Create GitHub Issue
-2. Add task here with `<!-- issue: #ID -->`
-3. Implement
-4. Open PR (link issue)
-5. Merge → remove from Current Sprint
+1. Add task here with `<!-- issue: # -->` placeholder.
+2. Push to `main` or open a PR.
+3. Automated workflow (`sync-tasks.yml`) creates GitHub Issue and updates placeholder with `#ID`.
+4. Implement task.
+5. Open PR (link issue).
+6. Merge → move to Completed.
 
 ### WIP Limits
 

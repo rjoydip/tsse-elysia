@@ -26,18 +26,18 @@ jobs:
       - name: Check if critical files changed
         id: critical
         run: |
-          BASE_BRANCH=${{ steps.branch.outputs.BASE_BRANCH }}
+          # Use SHA directly from event for reliability
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
 
-          # Check if origin remote exists and has the branch
-          if git remote get-url origin >/dev/null 2>&1; then
-            # Ensure branch is fetched for diff
-            git fetch origin "${BASE_BRANCH}" --depth=1 2>/dev/null || true
-            CHANGED_FILES=$(git diff --name-only "origin/${BASE_BRANCH}"...HEAD 2>/dev/null || true)
-          else
-            # Fallback: use first branch found in repo or main
-            FALLBACK_BRANCH=$(git branch -r --format='%(refname:short)' | head -1 | sed 's|^origin/||' || echo "main")
-            CHANGED_FILES=$(git diff --name-only "${FALLBACK_BRANCH}"...HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || true)
+          echo "Checking diff against base SHA: $BASE_SHA"
+
+          # Ensure base SHA is available
+          if ! git rev-parse "$BASE_SHA" >/dev/null 2>&1; then
+            echo "Base SHA not found locally, fetching..."
+            git fetch origin "$BASE_SHA" --depth=1
           fi
+
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA"...HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || true)
 
           echo "Changed files: $CHANGED_FILES"
 
@@ -49,7 +49,8 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           # Pattern for critical files that require DECISIONS.md update
-          CRITICAL_PATTERN="\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/"
+          # Escaping dots to match literal filenames
+          CRITICAL_PATTERN="\.github/workflows/|src/lib/db/|src/lib/redis/|mcp/|scripts/"
 
           if echo "$CHANGED_FILES" | grep -qE "$CRITICAL_PATTERN"; then
             echo "CRITICAL=true" >> $GITHUB_OUTPUT

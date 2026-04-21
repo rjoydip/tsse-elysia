@@ -65,29 +65,46 @@ jobs:
       - name: Generate Branch Diff
         id: diff
         run: |
-          # Guard against undefined pull_request in issue_comment events
-          BASE_REF="${{ github.event.pull_request.base.ref || github.event.issue.pull_request.base.ref }}"
-          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.issue.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}"
+          # Safe access to PR info even for non-PR issue comments
+          # GitHub Actions expressions handle this, but explicit check in shell is safer
+          BASE_REF="${{ github.event.pull_request.base.ref || github.event.issue.pull_request.base.ref || '' }}"
+          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.issue.pull_request.base.sha || '' }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || '' }}"
 
-          # Fetch base ref with sufficient history
-          git fetch origin "${BASE_REF}" --depth=100
-
-          # Try merge-base diff first, fall back to direct diff
-          if git merge-base --is-ancestor "$BASE_SHA" HEAD 2>/dev/null; then
-            git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
-          elif git merge-base --is-ancestor "$HEAD_SHA" "$BASE_SHA" 2>/dev/null; then
-            # Base is newer - show what changed from head to base
-            git diff "${HEAD_SHA}...${BASE_SHA}" > /tmp/branch.diff
+          # If any required information is missing, fall back to HEAD~1
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            echo "⚠️ Missing SHA information (maybe not a PR?), falling back to HEAD~1"
+            git diff HEAD~1..HEAD > /tmp/branch.diff
           else
-            # No ancestor relationship - use direct diff
-            git diff "${BASE_SHA}" "${HEAD_SHA}" > /tmp/branch.diff
+            # Fetch base ref with sufficient history if base ref exists
+            if [ -n "$BASE_REF" ]; then
+              echo "Fetching origin ${BASE_REF}..."
+              git fetch origin "${BASE_REF}" --depth=100 || echo "Fetch failed, continuing with local history"
+            fi
+
+            # Try merge-base diff first, fall back to direct diff
+            if git merge-base --is-ancestor "$BASE_SHA" HEAD 2>/dev/null; then
+              git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
+            elif git merge-base --is-ancestor "$HEAD_SHA" "$BASE_SHA" 2>/dev/null; then
+              # Base is newer - show what changed from head to base
+              git diff "${HEAD_SHA}...${BASE_SHA}" > /tmp/branch.diff
+            else
+              # No ancestor relationship or missing branch - use direct diff if both SHAs valid
+              git diff "${BASE_SHA}" "${HEAD_SHA}" > /tmp/branch.diff || git diff HEAD~1..HEAD > /tmp/branch.diff
+            fi
           fi
 
           echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
 
+      - name: Cache OpenCode
+        id: cache-opencode
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.bun/install/global/node_modules/opencode-ai
+          key: ${{ runner.os }}-opencode-ai
+
       - name: Install OpenCode
-        if: ${{ !github.event.pull_request.merged }}
+        if: steps.cache-opencode.outputs.cache-hit != 'true' && !github.event.pull_request.merged
         run: bun install -g opencode-ai
 
       - name: Run Code Review
@@ -97,6 +114,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
         run: |
+          # Ensure opencode is in PATH if it was cached
+          export PATH="$HOME/.bun/bin:$PATH"
+
           # Guard against undefined pull_request - use fallback SHA
           REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha || 'HEAD' }}"
 
