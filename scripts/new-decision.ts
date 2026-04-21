@@ -1,6 +1,11 @@
-import { readFileSync, appendFileSync } from "fs";
+import { readFileSync, appendFileSync, existsSync } from "fs";
 
 const FILE = "knowledge/DECISIONS.md";
+
+if (!existsSync(FILE)) {
+  console.error(`❌ ${FILE} not found`);
+  process.exit(1);
+}
 
 const content = readFileSync(FILE, "utf-8");
 

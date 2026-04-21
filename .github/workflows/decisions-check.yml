@@ -2,30 +2,35 @@ name: Enforce Decisions Log
 
 on:
   pull_request:
-    paths:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
       - "package.json"
-      - "src/**"
-      - "mcp/**"
 
 jobs:
   check-decisions:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-branch-tags: true
 
       - name: Get base branch
+        id: branch
         run: |
-          BASE_BRANCH=${{ github.base_ref }}
+          BASE_BRANCH=${GITHUB_BASE_REF#refs/heads/}
+          if [ -z "$BASE_BRANCH" ]; then
+            BASE_BRANCH=main
+          fi
           echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_OUTPUT
 
       - name: Check if critical files changed
         id: critical
         run: |
-          if git diff --name-only origin/${{ steps.changes.outputs.BASE_BRANCH }}...HEAD | grep -qE "(package\.json|src/lib/db|src/lib/redis|mcp)"; then
+          CHANGED_FILES=$(git diff --name-only origin/${{ steps.branch.outputs.BASE_BRANCH }}...HEAD || true)
+          echo "Changed files: $CHANGED_FILES"
+          if echo "$CHANGED_FILES" | grep -qE "(package\.json|src/lib/db|src/lib/redis|mcp)"; then
             echo "CRITICAL=true" >> $GITHUB_OUTPUT
           else
             echo "CRITICAL=false" >> $GITHUB_OUTPUT
@@ -34,8 +39,11 @@ jobs:
       - name: Verify DECISIONS.md updated
         if: steps.critical.outputs.CRITICAL == 'true'
         run: |
-          if ! git diff --name-only origin/${{ steps.changes.outputs.BASE_BRANCH }}...HEAD | grep -q "knowledge/DECISIONS.md"; then
+          CHANGED_FILES=$(git diff --name-only origin/${{ steps.branch.outputs.BASE_BRANCH }}...HEAD || true)
+          if echo "$CHANGED_FILES" | grep -q "knowledge/DECISIONS.md"; then
+            echo "✅ Architecture change properly documented"
+          else
             echo "❌ You changed architecture but didn't update knowledge/DECISIONS.md"
+            echo "Changed files: $CHANGED_FILES"
             exit 1
           fi
-        shell: bash

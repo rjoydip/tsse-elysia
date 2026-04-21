@@ -30,6 +30,14 @@ jobs:
       - name: Extract tasks
         run: bun scripts/sync-tasks.ts
 
+      - name: Validate GitHub token
+        run: |
+          if [ -z "${{ secrets.GH_TOKEN_CHANGESET }}" ]; then
+            echo "❌ GH_TOKEN_CHANGESET secret is not set"
+            exit 1
+          fi
+          echo "✅ GitHub token is configured"
+
       - name: Create issues for tasks without issue numbers
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
@@ -42,7 +50,15 @@ jobs:
             exit 1
           fi
 
-          grep -E "issue:\s*#" "$TASKS_FILE" | grep -vE "issue:\s*[0-9]+" | while read line; do
+          # Find tasks with <!-- issue: # --> format (space before -->)
+          TASKS=$(grep "<!-- issue: # -->" "$TASKS_FILE" || true)
+
+          if [ -z "$TASKS" ]; then
+            echo "✅ No new tasks requiring issues"
+            exit 0
+          fi
+
+          echo "$TASKS" | while read line; do
             TITLE=$(echo "$line" | sed 's/- \[ \] //g' | sed 's/<!--.*-->//g' | xargs)
             if [ -n "$TITLE" ]; then
               gh issue create \
@@ -51,4 +67,6 @@ jobs:
                 --label "auto-created"
               echo "✅ Created issue: $TITLE"
             fi
-          done || echo "No new issues to create"
+          done
+
+          echo "✅ Task issue creation complete"
