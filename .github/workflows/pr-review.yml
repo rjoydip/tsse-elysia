@@ -52,7 +52,6 @@ jobs:
         run: |
           PROMPT_DIR="./knowledge/prompts"
 
-          # Find the first .md or .txt file in the prompts folder
           PROMPT_FILE=$(find "$PROMPT_DIR" -maxdepth 1 -type f \( -name "review-pr.md" -o -name "review-pr.txt" \) | sort | head -n 1)
 
           if [ -z "$PROMPT_FILE" ]; then
@@ -69,10 +68,8 @@ jobs:
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
-          # Fetch base branch so we can diff against it
           git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
 
-          # Write only the changed files diff to a temp file
           git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
 
           echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
@@ -89,21 +86,35 @@ jobs:
           OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
         run: |
           # Append diff section header + actual diff to the prompt
-          echo "" >> /tmp/review-prompt.txt
-          echo "---" >> /tmp/review-prompt.txt
-          echo "" >> /tmp/review-prompt.txt
-          echo "## Diff to Review" >> /tmp/review-prompt.txt
-          echo "" >> /tmp/review-prompt.txt
+          cat >> /tmp/review-prompt.txt << 'EOF'
+
+          ---
+
+          ## Diff to Review
+
+          EOF
           cat /tmp/branch.diff >> /tmp/review-prompt.txt
 
-          # Run OpenCode and capture output
+          # Run OpenCode and capture raw output          # BUG FIX 1: was writing to review-output.txt but sed was reading review-raw.txt
           opencode run "$(cat /tmp/review-prompt.txt)" \
             --model "$OPENCODE_MODEL" \
             --dir . \
             --share \
             --pure \
             --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}" \
-            > /tmp/review-output.txt 2>&1 || true
+            > /tmp/review-raw.txt 2>&1 || true
+
+          # Strip ANSI escape codes and OpenCode status lines, keep only the markdown review
+          # BUG FIX 2: inline comments after \ break the pipe chain — moved to separate lines
+          sed 's/\x1B\[[0-9;]*[mGKHF]//g' /tmp/review-raw.txt \
+            | sed 's/\x1B\[[0-9;]*[A-Z]//g' \
+            | sed '/^Performing one time database migration/d' \
+            | sed '/^sqlite-migration:done/d' \
+            | sed '/^Database migration complete/d' \
+            | sed '/^build · /d' \
+            | sed '/^~ https:\/\/opncd\.ai\//d' \
+            | sed '/^\s*$/N;/^\n\s*$/d' \
+            > /tmp/review-output.txt
 
           echo "Review output:"
           cat /tmp/review-output.txt
@@ -116,14 +127,20 @@ jobs:
           PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           REPO="${{ github.repository }}"
 
-          # Build comment body as a file to preserve markdown formatting
+          # BUG FIX 3: heredoc content was indented with spaces — GitHub renders
+          # leading spaces as code blocks, so all heredoc content must be at column 0
           cat > /tmp/comment-body.md << 'HEADER'
           ## 🤖 Automated Code Review
           HEADER
 
-          # Append metadata lines (no indentation — GitHub renders leading spaces as code blocks)
-          printf '\n> Reviewed commit: `%s`\n' "${{ github.event.pull_request.head.sha }}" >> /tmp/comment-body.md
-          printf '> Model: `%s`\n\n' "${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}" >> /tmp/comment-body.md
+                    cat >> /tmp/comment-body.md << EOF
+
+          > 📝 Reviewed commit: \`${{ github.event.pull_request.head.sha }}\`
+          > 🤖 Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
+
+          ---
+
+          EOF
 
           # Append the review output directly (preserves all markdown as-is)
           cat /tmp/review-output.txt >> /tmp/comment-body.md
