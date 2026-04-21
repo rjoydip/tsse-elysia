@@ -89,7 +89,7 @@ jobs:
         run: bun install -g opencode-ai
 
       - name: Run Code Review
-        if: ${{ !github.event.pull_request.merged && !github.event.issue.pull_request.merged }}
+        if: ${{ !github.event.pull_request.merged }}
         timeout-minutes: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

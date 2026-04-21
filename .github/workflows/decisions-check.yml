@@ -41,8 +41,8 @@ jobs:
 
           echo "Changed files: $CHANGED_FILES"
 
-          # Externalized pattern for maintainability
-          CRITICAL_PATTERN="{{ workflow.inputs.critical_pattern || '\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/' }}"
+          # Pattern for critical files that require DECISIONS.md update
+          CRITICAL_PATTERN="\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/"
 
           if echo "$CHANGED_FILES" | grep -qE "$CRITICAL_PATTERN"; then
             echo "CRITICAL=true" >> $GITHUB_OUTPUT

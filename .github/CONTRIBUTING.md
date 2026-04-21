@@ -338,6 +338,37 @@ describe("UserService", () => {
 
 ---
 
+## GitHub Actions Secrets
+
+Certain workflows require GitHub secrets to be configured in the repository settings.
+
+### Required Secrets
+
+| Secret               | Workflow(s)                     | Description                                            |
+| -------------------- | ------------------------------- | ------------------------------------------------------ |
+| `GH_TOKEN_CHANGESET` | `release.yml`, `sync-tasks.yml` | GitHub token with repo scope for changesets publishing |
+| `GH_TOKEN`           | `pr-review.yml`                 | GitHub token for PR review automation                  |
+
+### Setting Up Secrets
+
+1. Go to **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Add each secret with its value
+
+### Token Permissions
+
+The `GH_TOKEN_CHANGESET` token requires:
+
+- `repo` scope (for repository access)
+- `workflow` scope (for triggering releases)
+
+For personal tokens, ensure:
+
+- `repo` checkbox is enabled
+- `workflow` checkbox is enabled
+
+---
+
 ## Code Quality
 
 ### Pre-commit Hooks
