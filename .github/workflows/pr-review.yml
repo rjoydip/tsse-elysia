@@ -49,7 +49,7 @@ jobs:
 
       - name: Install OpenCode
         if: ${{ !github.event.pull_request.merged }}
-        run: bun install -g opencode
+        run: bun install -g opencode-ai
 
       - name: Run Code Review
         if: ${{ !github.event.pull_request.merged }}
