@@ -22,8 +22,8 @@ jobs:
     if: >
       github.actor != 'dependabot[bot]' && (
         github.event_name == 'pull_request' ||
-        (github.event_name == 'issue_comment' && 
-         startsWith(github.event.comment.body, '/oc') || 
+        (github.event_name == 'issue_comment' &&
+         startsWith(github.event.comment.body, '/oc') ||
          startsWith(github.event.comment.body, '/opencode'))
       )
     permissions:
@@ -34,15 +34,23 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           persist-credentials: true
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
       - name: Configure Git
         run: |
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
           rm -rf .gitmodules
+
       - name: Install OpenCode
         if: ${{ !github.event.pull_request.merged }}
         run: bun install -g opencode
+
       - name: Run Code Review
         if: ${{ !github.event.pull_request.merged }}
         timeout-minutes: 10
