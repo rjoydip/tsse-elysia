@@ -26,6 +26,10 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           persist-credentials: true
+          fetch-depth: 1
+          sparse-checkout: |
+            !
+            .opencode
       - name: Remove existing review comments
         if: ${{ !github.event.pull_request.merged }}
         run: |
