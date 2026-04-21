@@ -42,8 +42,7 @@ jobs:
           rm -rf .gitmodules
       - name: Install OpenCode
         if: ${{ !github.event.pull_request.merged }}
-        run: |
-          curl -fsSL https://opencode.ai/install.sh | sh
+        run: bun install -g opencode
       - name: Run Code Review
         if: ${{ !github.event.pull_request.merged }}
         timeout-minutes: 10
