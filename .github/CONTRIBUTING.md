@@ -357,15 +357,24 @@ Certain workflows require GitHub secrets to be configured in the repository sett
 
 ### Token Permissions
 
-The `GH_TOKEN_CHANGESET` token requires:
+The `GH_TOKEN_CHANGESET` token is used for tagging, releasing, and synchronizing tasks. It requires:
 
-- `repo` scope (for repository access)
-- `workflow` scope (for triggering releases)
+- `repo` scope (for repository access and pushing tags)
+- `workflow` scope (for managing GitHub Actions workflows and creating releases)
 
-For personal tokens, ensure:
+If you see errors during the release process related to authentication, please verify that this token has not expired and has the correct permissions.
 
-- `repo` checkbox is enabled
+For personal access tokens (classic), ensure:
+
+- `repo` checkbox is fully enabled
 - `workflow` checkbox is enabled
+
+For fine-grained tokens, ensure it has "Read and write" access to:
+
+- Contents
+- Pull requests
+- Workflows
+- Metadata (Read-only)
 
 ---
 

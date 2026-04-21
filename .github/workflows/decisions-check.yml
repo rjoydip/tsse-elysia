@@ -41,6 +41,13 @@ jobs:
 
           echo "Changed files: $CHANGED_FILES"
 
+          # Export changed files for next steps
+          {
+            echo "CHANGED_FILES<<EOF"
+            echo "$CHANGED_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
           # Pattern for critical files that require DECISIONS.md update
           CRITICAL_PATTERN="\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/"
 
@@ -53,14 +60,7 @@ jobs:
       - name: Verify DECISIONS.md updated
         if: steps.critical.outputs.CRITICAL == 'true'
         run: |
-          BASE_BRANCH=${{ steps.branch.outputs.BASE_BRANCH }}
-
-          # Reuse diff result if available, otherwise recalculate
-          if git remote get-url origin >/dev/null 2>&1; then
-            CHANGED_FILES=$(git diff --name-only "origin/${BASE_BRANCH}"...HEAD 2>/dev/null || true)
-          else
-            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || git diff --name-only || true)
-          fi
+          CHANGED_FILES="${{ steps.critical.outputs.CHANGED_FILES }}"
 
           if echo "$CHANGED_FILES" | grep -q "knowledge/DECISIONS.md"; then
             echo "✅ Architecture change properly documented"
