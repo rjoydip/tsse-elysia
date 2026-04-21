@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ secrets.GH_TOKEN }}
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Setup Bun
@@ -63,12 +63,23 @@ jobs:
       - name: Generate Branch Diff
         id: diff
         run: |
+          BASE_REF="${{ github.event.pull_request.base.ref }}"
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
-          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          # Fetch base ref with sufficient history
+          git fetch origin "${BASE_REF}" --depth=100
 
-          git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
+          # Try merge-base diff first, fall back to direct diff
+          if git merge-base --is-ancestor "$BASE_SHA" HEAD 2>/dev/null; then
+            git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
+          elif git merge-base --is-ancestor "$HEAD_SHA" "$BASE_SHA" 2>/dev/null; then
+            # Base is newer - show what changed from head to base
+            git diff "${HEAD_SHA}...${BASE_SHA}" > /tmp/branch.diff
+          else
+            # No ancestor relationship - use direct diff
+            git diff "${BASE_SHA}" "${HEAD_SHA}" > /tmp/branch.diff
+          fi
 
           echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
 
