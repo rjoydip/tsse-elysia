@@ -127,6 +127,30 @@ Each decision must answer:
 
 ---
 
+### 007: GitHub Actions Workflows for Decision Enforcement
+
+**Status:** Accepted
+
+**Why:**
+
+- Enforce DECISIONS.md updates when architecture changes
+- Automate GitHub Issues from TASKS.md task tracking
+- Improve developer experience with workflow automation
+
+**Components:**
+
+- `decisions-check.yml`: Fails PR if architecture files change but DECISIONS.md not updated
+- `sync-tasks.yml`: Creates GitHub Issues from tasks without issue numbers
+- `new-decision.ts`: CLI to create new decision entries
+- `sync-tasks.ts`: Script to extract tasks needing issues
+
+**Tradeoffs:**
+
+- Additional workflow maintenance
+- Complexity in workflow configuration
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
