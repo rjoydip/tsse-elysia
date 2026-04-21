@@ -1,43 +1,110 @@
-# TASKS.md
+---
+title: TASKS.md
+description: Execution-focused task tracker (source of truth for active work)
+---
 
-## Current Sprint Focus
+## 🔥 Current Sprint
+
+> Only tasks that are actively being worked on.  
+> Each task MUST map to a GitHub Issue.
 
 ### MCP (Phase 9)
 
-- [ ] Implement rate limiting per API key
-- [ ] Add tool execution sandbox (timeout wrapper)
-- [ ] Build MCP client SDK
-- [ ] Add WebSocket transport support (optional)
-
----
+- [ ] Rate limiting per API key <!-- issue: # -->
+- [ ] Tool execution sandbox (timeout wrapper) <!-- issue: # -->
+- [ ] MCP client SDK <!-- issue: # -->
+- [ ] WebSocket transport support (optional) <!-- issue: # -->
 
 ### Data Strategy (Phase 10)
 
-- [ ] Integrate pgvector
-- [ ] Add Graph DB support (Neo4j / Redis Graph)
-- [ ] Setup pgBouncer (connection pooling)
-- [ ] Implement backup & restore
-
----
+- [ ] Integrate pgvector <!-- issue: # -->
+- [ ] Add Graph DB (Neo4j / Redis Graph) <!-- issue: # -->
+- [ ] Setup pgBouncer <!-- issue: # -->
+- [ ] Backup & restore <!-- issue: # -->
 
 ### Contract Testing (Phase 13)
 
-- [ ] Setup Pact (consumer)
-- [ ] Setup Pact (provider verification)
-- [ ] Add CI integration
-- [ ] Cover Auth + User APIs
-
----
+- [ ] Setup Pact (consumer) <!-- issue: # -->
+- [ ] Setup Pact (provider verification) <!-- issue: # -->
+- [ ] CI integration <!-- issue: # -->
+- [ ] Cover Auth + User APIs <!-- issue: # -->
 
 ### UI Expansion
 
-- [ ] Admin dashboard
-- [ ] RBAC UI
-- [ ] Organization management UI
+- [ ] Admin dashboard <!-- issue: # -->
+- [ ] RBAC UI <!-- issue: # -->
+- [ ] Organization management UI <!-- issue: # -->
 
 ---
 
-## Backlog (Not Immediate)
+## 📦 Completed (Compressed by Phase)
+
+> Historical record (do not modify except append)
+
+### Phase 0–2: Setup & Quality Gates
+
+- [x] Project setup/cleanup scripts
+- [x] CI/CD pipeline + release automation
+- [x] Lint, format, typecheck, test pipelines
+- [x] Security scanning (Trivy)
+- [x] Decisions log enforcement workflow
+- [x] Task synchronization workflow
+
+### Phase 3: Auth & Security (Core)
+
+- [x] Better Auth integration (server + client)
+- [x] Email/password auth flows
+- [x] Session management (view/revoke)
+- [x] Profile & settings routes
+- [x] Rate limiting + CORS + Helmet
+- [x] Email verification (config-ready)
+
+### Phase 4: UI System (shadcn)
+
+- [x] Full component library (Button, Card, Form, Table, etc.)
+- [x] TanStack Form integration
+- [x] Markdown renderer (Shiki)
+- [x] UI unit + E2E test coverage
+
+### Phase 7: Infra & DevOps
+
+- [x] Docker + Docker Compose
+- [x] Redis (cache, pub/sub, health checks)
+- [x] CI security scanning
+
+### Phase 8: Real-time
+
+- [x] WebSocket/SSE infra
+- [x] Authenticated connections
+- [x] Rate limiting + heartbeat + reconnection
+- [x] Real-time notifications & presence
+
+### Phase 9: MCP Server (Core)
+
+- [x] MCP server implementation
+- [x] Tool schema + discovery
+- [x] API key management
+- [x] Rate limiting (basic)
+- [x] MCP E2E + unit tests
+
+### Phase 10: Database
+
+- [x] PostgreSQL + SQLite strategy
+- [x] Read replicas (round-robin)
+- [x] Health checks
+- [x] Migrations
+
+### Testing & DX
+
+- [x] Extensive unit tests (middlewares, config, UI)
+- [x] E2E coverage (auth, UI, API, OpenAPI)
+- [x] OpenAPI spec + Scalar UI tests
+
+---
+
+## 🧊 Backlog
+
+> Not prioritized. Must be promoted to Current Sprint before work starts.
 
 - [ ] Email system (Resend)
 - [ ] Telemetry (APM + analytics)
@@ -47,30 +114,53 @@
 
 ---
 
-## Rules
+## 📏 Execution Rules
 
-- Tasks must be:
-  - Small
-  - Verifiable
+### Task Requirements
+
+- Must be:
+  - Small (≤ 1 PR)
+  - Verifiable (clear output)
   - Independently completable
 
-- When done:
-  - Move to PR
-  - Update phase plan if needed
-  - Remove from TASKS.md
+### Workflow
+
+1. Create GitHub Issue
+2. Add task here with `<!-- issue: #ID -->`
+3. Implement
+4. Open PR (link issue)
+5. Merge → remove from Current Sprint
+
+### WIP Limits
+
+- Max 3 tasks in-progress at a time
+- Do not start new tasks until one is completed
+
+### Definition of Done (DoD)
+
+A task is complete ONLY if:
+
+- [ ] Code merged to main
+- [ ] Tests added/updated
+- [ ] CI passing
+- [ ] Docs updated (if applicable)
 
 ---
 
-## Anti-Patterns
+## 🚫 Anti-Patterns
 
-Do NOT add:
+❌ Do NOT add:
 
-- Long descriptions
-- Implementation details
-- Multi-day vague tasks
+- Vague tasks  
+  → "Improve performance"
 
-Bad:
-❌ "Improve system performance"
+- Multi-scope tasks  
+  → "Build full dashboard system"
 
-Good:
-✅ "Add pgBouncer connection pooling"
+- Hidden work  
+  → Tasks without GitHub issue
+
+✅ Good examples:
+
+- "Add pgBouncer connection pooling"
+- "Implement Redis-based rate limiter for API keys"

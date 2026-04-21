@@ -306,3 +306,18 @@ When releasing, always update documentation:
 - Update CHANGELOG.md with release notes
 - Update version references in docs if needed
 - Ensure CONTRIBUTING.md reflects current process
+
+## Review Checklist (For AI)
+
+Flag if:
+
+- Code is overengineered
+- Function > 50 lines without reason
+- Abstractions used only once
+- Missing tests for logic changes
+- Missing JSDoc
+- Violates "surgical changes"
+- Adds unused flexibility/config
+- Doesn't match existing patterns
+
+Always suggest simpler alternative if possible.

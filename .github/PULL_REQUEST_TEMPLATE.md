@@ -22,6 +22,28 @@
 - [ ] Tests pass locally
 - [ ] I have added tests that prove my fix/feature works
 
+## What changed?
+
+## Does this affect architecture?
+
+- [ ] Yes
+- [ ] No
+
+If yes:
+
+- [ ] I updated DECISIONS.md
+
+## Linked Issue
+
+Closes #
+
+## Checklist
+
+- [ ] Tests added
+- [ ] Lint passes
+- [ ] Typecheck passes
+- [ ] Updated TASKS.md (if needed)
+
 ## Related Issue
 
 <!-- Link to issue: Fixes # -->
