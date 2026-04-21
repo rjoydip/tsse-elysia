@@ -53,6 +53,6 @@ test.describe("Cache API Endpoints", () => {
     const response = await request.get("/api/cache/heartbeat");
     const body = await response.json();
 
-    expect(body.url).not.toContain(":***@");
+    expect(body.url).toContain(":***@");
   });
 });
