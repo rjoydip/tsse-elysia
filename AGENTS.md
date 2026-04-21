@@ -243,8 +243,6 @@ This command uses Bun's built-in markdown rendering capabilities to display the 
 
 ## Release Process Guidelines
 
-## Release Process Guidelines
-
 For AI agents, follow these guidelines when working with releases:
 
 ### Always Use Changesets
@@ -289,6 +287,8 @@ bun run release --skip-tests
   - `minor` for new features (backward compatible)
   - `major` for breaking changes
 
+---
+
 ### For Contributors
 
 When making changes that should be released:
@@ -307,6 +307,8 @@ When releasing, always update documentation:
 - Update version references in docs if needed
 - Ensure CONTRIBUTING.md reflects current process
 
+---
+
 ## Review Checklist (For AI)
 
 Flag if:
@@ -319,5 +321,6 @@ Flag if:
 - Violates "surgical changes"
 - Adds unused flexibility/config
 - Doesn't match existing patterns
+- Changes to `.github/workflows/` or `scripts/` without updating `knowledge/DECISIONS.md`
 
 Always suggest simpler alternative if possible.
