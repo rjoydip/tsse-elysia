@@ -26,9 +26,6 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           persist-credentials: true
-          fetch-depth: 1
-          sparse-checkout: .
-          sparse-checkout-cone-mode: false
       - name: Remove existing review comments
         if: ${{ !github.event.pull_request.merged }}
         run: |
@@ -57,6 +54,7 @@ jobs:
         with:
           model: ${{ vars.OPENCODE_MODEL || 'anthropic/claude-sonnet-4-20250514' }}
           use_github_token: true
+          skip: .opencode
           prompt: |
             You are performing a professional code review for a pull request.
 
