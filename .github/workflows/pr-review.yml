@@ -132,7 +132,6 @@ jobs:
 
           opencode run "$(cat /tmp/review-prompt.txt)" \
             --model "$OPENCODE_MODEL" \
-            --github-token "$GITHUB_TOKEN" \
             --dir . \
             --share \
             --pure \
