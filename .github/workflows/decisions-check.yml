@@ -26,9 +26,25 @@ jobs:
       - name: Check if critical files changed
         id: critical
         run: |
-          CHANGED_FILES=$(git diff --name-only origin/${{ steps.branch.outputs.BASE_BRANCH }}...HEAD || true)
+          BASE_BRANCH=${{ steps.branch.outputs.BASE_BRANCH }}
+
+          # Check if origin remote exists and has the branch
+          if git remote get-url origin >/dev/null 2>&1; then
+            # Ensure branch is fetched for diff
+            git fetch origin "${BASE_BRANCH}" --depth=1 2>/dev/null || true
+            CHANGED_FILES=$(git diff --name-only "origin/${BASE_BRANCH}"...HEAD 2>/dev/null || true)
+          else
+            # Fallback: use first branch found in repo or main
+            FALLBACK_BRANCH=$(git branch -r --format='%(refname:short)' | head -1 | sed 's|^origin/||' || echo "main")
+            CHANGED_FILES=$(git diff --name-only "${FALLBACK_BRANCH}"...HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || true)
+          fi
+
           echo "Changed files: $CHANGED_FILES"
-          if echo "$CHANGED_FILES" | grep -qE "(\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/)"; then
+
+          # Externalized pattern for maintainability
+          CRITICAL_PATTERN="{{ workflow.inputs.critical_pattern || '\.github/workflows|src/lib/db|src/lib/redis|mcp|scripts/' }}"
+
+          if echo "$CHANGED_FILES" | grep -qE "$CRITICAL_PATTERN"; then
             echo "CRITICAL=true" >> $GITHUB_OUTPUT
           else
             echo "CRITICAL=false" >> $GITHUB_OUTPUT
@@ -37,7 +53,15 @@ jobs:
       - name: Verify DECISIONS.md updated
         if: steps.critical.outputs.CRITICAL == 'true'
         run: |
-          CHANGED_FILES=$(git diff --name-only origin/${{ steps.branch.outputs.BASE_BRANCH }}...HEAD || true)
+          BASE_BRANCH=${{ steps.branch.outputs.BASE_BRANCH }}
+
+          # Reuse diff result if available, otherwise recalculate
+          if git remote get-url origin >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only "origin/${BASE_BRANCH}"...HEAD 2>/dev/null || true)
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || git diff --name-only || true)
+          fi
+
           if echo "$CHANGED_FILES" | grep -q "knowledge/DECISIONS.md"; then
             echo "✅ Architecture change properly documented"
           else

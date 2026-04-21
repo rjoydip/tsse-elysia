@@ -1,8 +1,18 @@
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 
 const FILE = "knowledge/TASKS.md";
 
+if (!existsSync(FILE)) {
+  console.error(`❌ ${FILE} not found`);
+  process.exit(1);
+}
+
 const content = readFileSync(FILE, "utf-8");
+
+if (!content.trim()) {
+  console.warn("⚠️ TASKS.md is empty");
+  process.exit(0);
+}
 
 const lines = content.split("\n");
 

@@ -151,6 +151,28 @@ Each decision must answer:
 
 ---
 
+### 008: OpenCode DevKit Submodule
+
+**Status:** Accepted
+
+**Why:**
+
+- Provides local OpenCode tooling for development
+- Ensures consistent AI tooling version across contributors
+- Allows customization of OpenCode behavior via `.opencode` directory
+
+**Components:**
+
+- `.gitmodules`: Defines submodule path and remote repository
+- `.opencode/`: Local devkit configuration and customizations
+
+**Tradeoffs:**
+
+- Submodule adds clone overhead
+- Requires `git submodule update --init` for new contributors
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

@@ -17,6 +17,14 @@ const nextId = String(lastId + 1).padStart(3, "0");
 
 const title = process.argv[2] || "New Decision";
 
+// Check for duplicate title
+const titleLower = title.toLowerCase();
+if (content.toLowerCase().includes(titleLower)) {
+  console.warn(`⚠️ Decision with similar title already exists: "${title}"`);
+  console.warn("Use a unique title or check DECISIONS.md");
+  process.exit(1);
+}
+
 const entry = `
 
 ### ${nextId}: ${title}

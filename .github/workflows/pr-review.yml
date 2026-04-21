@@ -63,9 +63,10 @@ jobs:
       - name: Generate Branch Diff
         id: diff
         run: |
-          BASE_REF="${{ github.event.pull_request.base.ref }}"
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          # Guard against undefined pull_request in issue_comment events
+          BASE_REF="${{ github.event.pull_request.base.ref || github.event.issue.pull_request.base.ref }}"
+          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.issue.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}"
 
           # Fetch base ref with sufficient history
           git fetch origin "${BASE_REF}" --depth=100
@@ -88,12 +89,15 @@ jobs:
         run: bun install -g opencode-ai
 
       - name: Run Code Review
-        if: ${{ !github.event.pull_request.merged }}
+        if: ${{ !github.event.pull_request.merged && !github.event.issue.pull_request.merged }}
         timeout-minutes: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
         run: |
+          # Guard against undefined pull_request - use fallback SHA
+          REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha }}"
+
           # Append diff section header + actual diff to the prompt
           cat >> /tmp/review-prompt.txt << 'EOF'
 
@@ -111,7 +115,7 @@ jobs:
             --dir . \
             --share \
             --pure \
-            --title "review-${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}" \
+            --title "review-${REVIEW_SHA}" \
             > /tmp/review-raw.txt 2>&1 || true
 
           # Strip ANSI escape codes and OpenCode status lines
@@ -129,12 +133,15 @@ jobs:
           cat /tmp/review-output.txt
 
       - name: Post Review as PR Comment
-        if: ${{ !github.event.pull_request.merged }}
+        if: ${{ !github.event.pull_request.merged && !github.event.issue.pull_request.merged }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           REPO="${{ github.repository }}"
+
+          # Guard against undefined SHA
+          REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha }}"
 
           # Build comment body - heredoc content must be at column 0 (GitHub renders leading spaces as code blocks)
           cat > /tmp/comment-body.md << 'HEADER'
@@ -143,7 +150,7 @@ jobs:
 
           cat >> /tmp/comment-body.md << EOF
 
-          > 📝 Reviewed commit: \`${{ github.event.pull_request.head.sha }}\`
+          > 📝 Reviewed commit: \`${REVIEW_SHA}\`
           > 🤖 Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
 
           ---
