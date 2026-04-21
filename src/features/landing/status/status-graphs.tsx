@@ -10,7 +10,7 @@ import {
   Cell,
 } from "recharts";
 
-const PRIMARY_COLOR = "#6366f1";
+const PRIMARY_COLOR = "hsl(var(--primary))";
 
 interface ServiceHistoryRecord {
   serviceName: string;

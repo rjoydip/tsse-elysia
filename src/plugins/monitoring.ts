@@ -8,7 +8,6 @@ import { Elysia } from "elysia";
 import { cron } from "@elysiajs/cron";
 import { db, schema } from "~/lib/db";
 import { getDatabaseHeartbeat } from "~/lib/db/heartbeat";
-import { getStorageStatus } from "~/lib/cache";
 import { PORT, HOST } from "~/config";
 import { logger } from "~/lib/logger";
 import { monitoringConfig } from "~/config";
@@ -56,7 +55,7 @@ async function probeApi(name: string, path: string): Promise<HealthCheckResult> 
 
 /**
  * Runs a complete health check suite for all monitored services.
- * Probes API, database, and Redis layers.
+ * Probes API, database, and Cache layers.
  *
  * @returns Array of health check results for all services
  */
@@ -93,23 +92,8 @@ async function runHealthChecks(): Promise<HealthCheckResult[]> {
     });
   }
 
-  // 6. Cache
-  try {
-    const cacheStatus = await getStorageStatus();
-    results.push({
-      name: "Cache",
-      status: cacheStatus.connected ? "up" : "down",
-      latencyMs: null, // Cache status doesn't provide latency yet
-      error: cacheStatus.connected ? undefined : (cacheStatus.error ?? "Cache disconnected"),
-    });
-  } catch (err) {
-    results.push({
-      name: "Cache",
-      status: "down",
-      latencyMs: null,
-      error: err instanceof Error ? err.message : "Cache probe failed",
-    });
-  }
+  // 6. Cache (probe via heartbeat endpoint for consistent latency measurement)
+  results.push(await probeApi("Cache", "/api/cache/heartbeat"));
 
   return results;
 }
