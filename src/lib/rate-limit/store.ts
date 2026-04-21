@@ -5,8 +5,8 @@
  * @module rate-limit/store
  */
 
-import { getStorage } from "~/lib/redis";
-import { redisLogger } from "~/lib/logger";
+import { getStorage } from "~/lib/cache";
+import { cacheLogger } from "~/lib/logger";
 import { rateLimitConfig } from "~/config";
 
 /**
@@ -146,7 +146,11 @@ class InMemoryRateLimitStore implements RateLimitStoreInterface {
 
       // Increment counter and return remaining
       record.count++;
-      return { allowed: true, remaining: limit - record.count, resetAt: record.resetAt };
+      return {
+        allowed: true,
+        remaining: limit - record.count,
+        resetAt: record.resetAt,
+      };
     });
   }
 
@@ -208,7 +212,7 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
   private getStorageInstance() {
     const storage = getStorage();
     if (!storage) {
-      redisLogger.warn("Storage not available, falling back to memory store");
+      cacheLogger.warn("Storage not available, falling back to memory store");
       return null;
     }
     return storage;
@@ -234,7 +238,11 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
     }
 
     if (limit <= 0 || duration <= 0) {
-      return { allowed: true, remaining: limit, resetAt: Date.now() + Math.max(duration, 0) };
+      return {
+        allowed: true,
+        remaining: limit,
+        resetAt: Date.now() + Math.max(duration, 0),
+      };
     }
 
     const storeKey = `${this.prefix}${keyId}`;
@@ -258,7 +266,9 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
 
       count++;
 
-      await storage.setItem(storeKey, JSON.stringify({ count, resetAt }), { ttl: ttlSeconds });
+      await storage.setItem(storeKey, JSON.stringify({ count, resetAt }), {
+        ttl: ttlSeconds,
+      });
 
       if (count > limit) {
         const ttl = ttlSeconds;
@@ -272,7 +282,7 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
         resetAt,
       };
     } catch (error) {
-      redisLogger.error("Storage rate limit check failed", error as Error);
+      cacheLogger.error("Storage rate limit check failed", error as Error);
       return memoryStore.check(keyId, limit, duration);
     }
   }
@@ -293,7 +303,7 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
     try {
       await storage.removeItem(storeKey);
     } catch (error) {
-      redisLogger.error("Storage rate limit reset failed", error as Error);
+      cacheLogger.error("Storage rate limit reset failed", error as Error);
     }
   }
 
@@ -304,7 +314,7 @@ class StorageRateLimitStore implements RateLimitStoreInterface {
    * @returns Always returns 0 (no manual cleanup needed)
    */
   async cleanup(): Promise<number> {
-    redisLogger.debug("Storage cleanup is automatic via TTL");
+    cacheLogger.debug("Storage cleanup is automatic via TTL");
     return 0;
   }
 }

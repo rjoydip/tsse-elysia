@@ -14,7 +14,7 @@ test.describe("LLMO Health Endpoints", () => {
       { path: "/api/auth/health", expectedStatus: 200 },
       { path: "/api/mcp/health", expectedStatus: 200 },
       { path: "/api/database/heartbeat", expectedStatus: [200, 503] },
-      { path: "/api/redis/heartbeat", expectedStatus: [200, 503] },
+      { path: "/api/cache/heartbeat", expectedStatus: [200, 503] },
       { path: "/api/realtime/health", expectedStatus: 200 },
     ];
 
@@ -162,7 +162,9 @@ test.describe("LLMO Pages Render", () => {
   test("should render sign-in page", async ({ page }) => {
     await page.goto("/sign-in");
     await page.waitForLoadState("load");
-    await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should render 404 page", async ({ page }) => {

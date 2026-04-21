@@ -54,6 +54,7 @@
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
     "@electric-sql/pglite": "^0.4.4",
+    "@elysiajs/cron": "^1.4.1",
     "@elysiajs/eden": "^1.4.9",
     "@elysiajs/openapi": "^1.4.14",
     "@elysiajs/opentelemetry": "^1.4.11",
@@ -151,7 +152,7 @@
     "fdir": "^6.5.0",
     "jsdom": "^29.0.2",
     "k6": "^0.0.0",
-    "knip": "^6.4.1",
+    "knip": "^6.5.0",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.60.0",
     "portless": "^0.10.3",
@@ -159,7 +160,7 @@
     "simple-git-hooks": "^2.13.1",
     "std-env": "^4.1.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.8"
+    "vite": "^8.0.9"
   },
   "peerDependencies": {
     "typescript": "^6.0.2"

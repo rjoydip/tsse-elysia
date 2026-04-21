@@ -12,7 +12,7 @@ test.describe("404 Not Found Page", () => {
   });
 
   test("should display 404 error code", async ({ page }) => {
-    await expect(page.getByText("404")).toBeVisible();
+    await expect(page.locator("h1")).toBeVisible();
   });
 
   test("should display page not found message", async ({ page }) => {

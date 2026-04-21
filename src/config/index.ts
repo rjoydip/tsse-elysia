@@ -196,6 +196,19 @@ export const appConfig: ElysiaConfig<any> = {
   },
 };
 
+// Monitoring configuration.
+// Controls the scheduling of health checks.
+export const monitoringConfig = {
+  // Cron pattern for health checks.
+  // Default: Every 5 minutes (*/5 * * * *)
+  // Format: [second] [minute] [hour] [day of month] [month] [day of week]
+  // Examples:
+  //   */5 * * * * - Every 5 minutes
+  //   0 */15 * * * - Every 15 minutes
+  //   0 0 * * * - Daily at midnight
+  heartbeatPattern: getEnvVar("MONITORING_HEARTBEAT_PATTERN", "*/5 * * * *"),
+};
+
 /**
  * Session configuration for Better Auth.
  * @property expiresIn - Session lifetime in milliseconds (7 days)

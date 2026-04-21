@@ -81,9 +81,9 @@ export const otherStatusServices = [
     defaultTooltip: "Database heartbeat is pending",
   },
   {
-    name: "Redis",
-    heartbeatUrl: "/api/redis/heartbeat",
-    defaultTooltip: "Redis heartbeat is pending",
+    name: "Cache",
+    heartbeatUrl: "/api/cache/heartbeat",
+    defaultTooltip: "Cache heartbeat is pending",
   },
   {
     name: "Storage",
@@ -93,11 +93,22 @@ export const otherStatusServices = [
 ] as const;
 
 /**
+ * Historical health check record for graphing.
+ */
+export interface ServiceHistoryRecord {
+  serviceName: string;
+  status: "up" | "down" | "degraded";
+  latencyMs: number | null;
+  timestamp: string;
+}
+
+/**
  * Full status store shape for dashboard UI and controls.
  */
 interface StatusStoreState {
   serviceStatuses: HealthStatus[];
   otherServiceStatuses: OtherServiceStatus[];
+  history: ServiceHistoryRecord[];
   isRefreshing: boolean;
   lastRefreshSuccessful: boolean | null;
   lastManualRefreshAt: number | null;
@@ -134,10 +145,34 @@ function buildInitialOtherStatuses(): OtherServiceStatus[] {
 export const statusStore = createStore<StatusStoreState>({
   serviceStatuses: buildInitialStatuses(),
   otherServiceStatuses: buildInitialOtherStatuses(),
+  history: [],
   isRefreshing: false,
   lastRefreshSuccessful: null,
   lastManualRefreshAt: null,
 });
+
+/**
+ * Fetches historical status records from the API for graphing.
+ *
+ * @param hours - Time window to fetch (default 24h)
+ */
+export async function fetchStatusHistory(hours = 24): Promise<void> {
+  try {
+    const response = await fetch(`/api/status/history?hours=${hours}`);
+    if (!response.ok) throw new Error("Failed to fetch history");
+
+    const data = await response.json();
+    statusStore.setState((prev) => ({
+      ...prev,
+      history: data,
+    }));
+  } catch (err) {
+    logger.error(
+      "Failed to fetch status history",
+      err instanceof Error ? err : new Error(String(err)),
+    );
+  }
+}
 
 /**
  * Hook to read status page state reactively from TanStack Store.
@@ -210,7 +245,7 @@ async function checkOtherStatusHealth(): Promise<OtherServiceStatus[]> {
 
         // Extract database type for Database service or backend for Redis
         const databaseType = service.name === "Database" ? payload.databaseType : undefined;
-        const backend = service.name === "Redis" ? payload.backend : undefined;
+        const backend = service.name === "Cache" ? payload.backend : undefined;
 
         return {
           name: service.name,
@@ -275,6 +310,7 @@ export async function checkStatusHealth(): Promise<void> {
     }),
   );
   const otherResults = await checkOtherStatusHealth();
+  await fetchStatusHistory();
 
   const hasDownService = results.some((service) => service.status === "down");
   statusStore.setState((prev) => ({

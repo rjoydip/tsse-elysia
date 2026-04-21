@@ -17,7 +17,7 @@ import {
   validateStorageConnection,
   getStorageBackend,
   isPubSubSupported,
-} from "../../../src/lib/redis";
+} from "../../../src/lib/cache";
 
 describe("Storage Client (getStorage)", () => {
   afterEach(() => {
@@ -133,7 +133,7 @@ describe("Storage Backend Detection", () => {
   });
 
   test("isPubSubSupported is consistent with getPubSubStatus crossInstance", async () => {
-    const { getPubSubStatus } = await import("../../../src/lib/redis/pubsub");
+    const { getPubSubStatus } = await import("../../../src/lib/cache/pubsub");
     const pubSubStatus = getPubSubStatus();
     expect(pubSubStatus.crossInstance).toBe(isPubSubSupported());
   });
@@ -168,13 +168,13 @@ describe("Deprecated Aliases (Backward Compatibility)", () => {
   });
 
   test("getRedisClient returns storage or null", () => {
-    const { getRedisClient } = require("../../../src/lib/redis");
+    const { getRedisClient } = require("../../../src/lib/cache");
     const client = getRedisClient();
     expect(client === null || typeof client === "object").toBe(true);
   });
 
   test("getRedisStatus returns valid status", async () => {
-    const { getRedisStatus } = require("../../../src/lib/redis");
+    const { getRedisStatus } = require("../../../src/lib/cache");
     const status = await getRedisStatus();
     expect(status).toHaveProperty("connected");
     expect(status).toHaveProperty("url");
@@ -182,13 +182,13 @@ describe("Deprecated Aliases (Backward Compatibility)", () => {
   });
 
   test("ensureRedisConnection returns boolean", async () => {
-    const { ensureRedisConnection } = require("../../../src/lib/redis");
+    const { ensureRedisConnection } = require("../../../src/lib/cache");
     const result = await ensureRedisConnection();
     expect(typeof result).toBe("boolean");
   });
 
   test("closeRedis is safe to call", () => {
-    const { closeRedis } = require("../../../src/lib/redis");
+    const { closeRedis } = require("../../../src/lib/cache");
     expect(() => closeRedis()).not.toThrow();
   });
 

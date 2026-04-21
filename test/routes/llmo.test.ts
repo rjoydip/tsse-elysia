@@ -414,7 +414,7 @@ describe("LLMO API Capabilities", () => {
         description: "Realtime/WebSocket API",
         url: "/api/realtime",
       },
-      { name: "redis", description: "Redis health API", url: "/api/redis" },
+      { name: "redis", description: "Redis health API", url: "/api/cache" },
       { name: "status", description: "Service status", url: "/status" },
     ];
 

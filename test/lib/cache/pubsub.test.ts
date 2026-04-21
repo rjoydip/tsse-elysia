@@ -17,7 +17,7 @@ import {
   getPubSubStatus,
   type PubSubMessage,
   type PubSubChannel,
-} from "../../../src/lib/redis/pubsub";
+} from "../../../src/lib/cache/pubsub";
 
 describe("Pub/Sub Channels", () => {
   afterEach(() => {

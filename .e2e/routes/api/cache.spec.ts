@@ -5,9 +5,9 @@
 
 import { test, expect } from "@playwright/test";
 
-test.describe("Redis Heartbeat API", () => {
-  test("GET /api/redis/heartbeat returns valid response", async ({ request }) => {
-    const response = await request.get("/api/redis/heartbeat");
+test.describe("Cacge Heartbeat API", () => {
+  test("GET /api/cache/heartbeat returns valid response", async ({ request }) => {
+    const response = await request.get("/api/cache/heartbeat");
 
     // Should return either 200 (healthy) or 503 (unhealthy)
     expect([200, 503]).toContain(response.status());
@@ -31,8 +31,8 @@ test.describe("Redis Heartbeat API", () => {
     expect(new Date(body.timestamp).toISOString()).toBe(body.timestamp);
   });
 
-  test("GET /api/redis/heartbeat returns correct Content-Type", async ({ request }) => {
-    const response = await request.get("/api/redis/heartbeat");
+  test("GET /api/cache/heartbeat returns correct Content-Type", async ({ request }) => {
+    const response = await request.get("/api/cache/heartbeat");
     const contentType = response.headers()["content-type"];
     expect(contentType).toContain("application/json");
   });

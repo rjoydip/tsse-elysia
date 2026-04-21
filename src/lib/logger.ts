@@ -153,12 +153,12 @@ export const dbLogger = createEvlogLogger({
 });
 
 /**
- * Logger for Redis-related logs.
- * Useful for monitoring Redis connection, Pub/Sub, and caching events.
+ * Logger for Cache-related logs.
+ * Useful for monitoring Cache connection, Pub/Sub, and caching events.
  */
-export const redisLogger = createEvlogLogger({
+export const cacheLogger = createEvlogLogger({
   minLevel: isProduction ? "warn" : "debug",
-  prefix: "redis",
+  prefix: "cache",
 });
 
 /**

@@ -166,7 +166,7 @@ describe("Status Page JSON-LD", () => {
         itemListElement: [
           { name: "API Health", url: "/api/health" },
           { name: "Database Health", url: "/api/database" },
-          { name: "Redis Health", url: "/api/redis" },
+          { name: "Redis Health", url: "/api/cache" },
         ],
       },
     };
