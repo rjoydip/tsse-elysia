@@ -1,3 +1,11 @@
+/**
+ * Creates a new decision entry in DECISIONS.md with auto-incremented ID.
+ * Checks for duplicate titles to prevent idempotency issues.
+ *
+ * @example
+ * bun scripts/new-decision.ts "Use SQLite for caching"
+ */
+
 import { readFileSync, appendFileSync, existsSync } from "fs";
 
 const FILE = "knowledge/DECISIONS.md";

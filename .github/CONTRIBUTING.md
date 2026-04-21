@@ -27,6 +27,9 @@ Thank you for your interest in contributing! This project uses [Changesets](http
 git clone https://github.com/rjoydip/tsse-elysia.git
 cd tsse-elysia
 
+# Initialize git submodules (includes OpenCode devkit)
+git submodule update --init
+
 # Install dependencies
 bun install
 
@@ -70,6 +73,55 @@ bun run dev
    ```bash
    git push origin feat/your-feature-name
    ```
+
+---
+
+## Git Submodules
+
+This project includes the [OpenCode DevKit](https://github.com/rjoydip/opencode-devkit) as a git submodule for local AI tooling.
+
+### Why Submodules?
+
+- Provides consistent OpenCode version across contributors
+- Allows local customization of OpenCode behavior
+- Separates tooling concerns from main repository
+
+### Setup
+
+```bash
+# Initialize submodules after clone
+git submodule update --init
+
+# Update submodules to latest
+git submodule update --remote
+
+# Or clone with submodules
+git clone --recurse-submodules https://github.com/rjoydip/tsse-elysia.git
+```
+
+### Working with Submodules
+
+```bash
+# Check submodule status
+git submodule status
+
+# Pull latest in submodule
+cd .opencode
+git pull origin main
+cd ..
+git add .opencode
+git commit -m "chore: update opencode devkit"
+```
+
+### Troubleshooting
+
+If submodule initialization fails:
+
+```bash
+# Reinitialize submodules
+git submodule deinit --all
+git submodule update --init --recursive
+```
 
 ---
 

@@ -1,3 +1,11 @@
+/**
+ * Extracts tasks from TASKS.md that need GitHub issues created.
+ * Guards against empty or missing files for robust execution.
+ *
+ * @example
+ * bun scripts/sync-tasks.ts
+ */
+
 import { readFileSync, existsSync } from "fs";
 
 const FILE = "knowledge/TASKS.md";
