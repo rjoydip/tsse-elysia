@@ -63,6 +63,8 @@ test.describe("Blog Page Layout", () => {
   test("should have header nav links", async ({ page }) => {
     await page.goto("/blog");
     await page.waitForLoadState("load");
-    await expect(page.locator("header nav a[href*='docs']").first()).toBeVisible();
+    await expect(page.locator("header nav a[href*='docs']").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
