@@ -1,10 +1,13 @@
 # GitHub Token Permissions Guide
 
-This document provides guidance on selecting the appropriate GitHub token (GH_TOKEN) permissions for each workflow in this repository.
+This document provides guidance on selecting the appropriate GitHub token permissions for each workflow in this repository.
 
 ## Overview
 
-All GitHub Actions workflows require specific permissions to function properly. The `GH_TOKEN` secret must be configured in the repository settings with the appropriate scopes.
+All GitHub Actions workflows require specific permissions to function properly. Two primary secrets are used:
+
+- `GH_TOKEN_CHANGESET`: Used for tagging, releasing, and synchronizing tasks.
+- `GH_TOKEN`: Used for PR review automation and other API interactions.
 
 ## Required Scopes by Workflow
 
@@ -55,6 +58,7 @@ permissions:
 - `contents: write` - Checkout code and configure git
 - `pull-requests: write` - Create review comments and manage PR state
 - Additional recommended: `admin:repo_hook` for full repository hook management
+- Uses secret: `GH_TOKEN`
 
 ### 4. Issue Triage Workflow (`.github/workflows/issue-triage.yml`)
 
@@ -86,6 +90,7 @@ permissions:
 
 - `contents: write` - Create commits, tags, and releases
 - Additional recommended: `packages: write` if publishing to npm
+- Uses secret: `GH_TOKEN_CHANGESET`
 
 ### 6. Stale Workflow (`.github/workflows/stale.yml`)
 
@@ -113,17 +118,9 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  issues: write
   repo:status
   admin:repo_hook
   workflow
-```
-
-### Minimal Required Scopes
-
-```yaml
-permissions:
-  contents: read
 ```
 
 ## Configuration Steps
@@ -132,7 +129,8 @@ permissions:
 
 1. Go to your repository on GitHub
 2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Add a new repository secret named `GH_TOKEN`
+3. Add a new repository secret named `GH_TOKEN_CHANGESET` (for releases)
+4. Add a new repository secret named `GH_TOKEN` (for reviews)
 
 ### 2. Fine-grained Personal Access Token (Recommended)
 
@@ -146,7 +144,7 @@ For better security, use a fine-grained personal access token:
    - **Pull requests**: Read & write
    - **Issues**: Read & write
    - **Commit statuses**: Read & write
-   - **Workflows**: Read & write (optional)
+   - **Workflows**: Read & write (Required for `GH_TOKEN_CHANGESET`)
    - **Repository hooks**: Full control (optional)
 
 ### 3. Legacy Personal Access Token (Alternative)

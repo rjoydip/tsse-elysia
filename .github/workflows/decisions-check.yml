@@ -1,0 +1,72 @@
+name: Enforce Decisions Log
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-decisions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-branch-tags: true
+
+      - name: Get base branch
+        id: branch
+        run: |
+          BASE_BRANCH=${GITHUB_BASE_REF#refs/heads/}
+          if [ -z "$BASE_BRANCH" ]; then
+            BASE_BRANCH=main
+          fi
+          echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Check if critical files changed
+        id: critical
+        run: |
+          # Use SHA directly from event for reliability
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+
+          echo "Checking diff against base SHA: $BASE_SHA"
+
+          # Ensure base SHA is available
+          if ! git rev-parse "$BASE_SHA" >/dev/null 2>&1; then
+            echo "Base SHA not found locally, fetching..."
+            git fetch origin "$BASE_SHA" --depth=1
+          fi
+
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA"...HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || true)
+
+          echo "Changed files: $CHANGED_FILES"
+
+          # Export changed files for next steps
+          {
+            echo "CHANGED_FILES<<EOF"
+            echo "$CHANGED_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          # Pattern for critical files that require DECISIONS.md update
+          # Escaping dots to match literal filenames
+          CRITICAL_PATTERN="\.github/workflows/|src/lib/db/|src/lib/redis/|mcp/|scripts/"
+
+          if echo "$CHANGED_FILES" | grep -qE "$CRITICAL_PATTERN"; then
+            echo "CRITICAL=true" >> $GITHUB_OUTPUT
+          else
+            echo "CRITICAL=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify DECISIONS.md updated
+        if: steps.critical.outputs.CRITICAL == 'true'
+        run: |
+          CHANGED_FILES="${{ steps.critical.outputs.CHANGED_FILES }}"
+
+          if echo "$CHANGED_FILES" | grep -q "knowledge/DECISIONS.md"; then
+            echo "✅ Architecture change properly documented"
+          else
+            echo "❌ You changed architecture but didn't update knowledge/DECISIONS.md"
+            echo "Changed files: $CHANGED_FILES"
+            exit 1
+          fi
