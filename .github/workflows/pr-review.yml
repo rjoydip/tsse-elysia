@@ -23,8 +23,9 @@ jobs:
       github.actor != 'dependabot[bot]' && (
         github.event_name == 'pull_request' ||
         (github.event_name == 'issue_comment' &&
-         startsWith(github.event.comment.body, '/oc') ||
-         startsWith(github.event.comment.body, '/opencode'))
+         github.event.issue.pull_request != null &&
+         (startsWith(github.event.comment.body, '/oc') ||
+          startsWith(github.event.comment.body, '/opencode')))
       )
     permissions:
       contents: write
@@ -52,12 +53,13 @@ jobs:
         run: |
           PROMPT_FILE="./knowledge/prompts/review-pr.md"
 
+          echo "Debug: Checking for prompt file..."
           if [ ! -f "$PROMPT_FILE" ]; then
             echo "❌ Prompt file not found: $PROMPT_FILE"
             exit 1
           fi
 
-          echo "✅ Using prompt file: $PROMPT_FILE"
+          echo "✅ Prompt file validated: $PROMPT_FILE"
           cp "$PROMPT_FILE" /tmp/review-prompt.txt
 
       - name: Generate Branch Diff

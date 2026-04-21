@@ -62,6 +62,7 @@ jobs:
             TITLE=$(echo "$line" | sed 's/- \[ \] //g' | sed 's/<!--.*-->//g' | xargs)
             if [ -n "$TITLE" ]; then
               gh issue create \
+                --repo "${{ github.repository }}" \
                 --title "$TITLE" \
                 --body "Auto-created from TASKS.md" \
                 --label "auto-created"
