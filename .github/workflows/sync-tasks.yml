@@ -50,8 +50,8 @@ jobs:
             exit 1
           fi
 
-          # Find tasks without issue numbers (placeholder format <!-- issue: # --> means no issue yet)
-          TASKS=$(grep -E "^- \[ \].*<!-- issue: # -->(?!.*[0-9])" "$TASKS_FILE" || true)
+          # Find tasks without issue numbers (placeholder <!-- issue: # --> without digits)
+          TASKS=$(grep "<!-- issue: # -->" "$TASKS_FILE" | grep -v "<!-- issue: #[0-9]" || true)
 
           if [ -z "$TASKS" ]; then
             echo "✅ No new tasks requiring issues"
