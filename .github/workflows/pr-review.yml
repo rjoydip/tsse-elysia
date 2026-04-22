@@ -46,15 +46,15 @@ jobs:
         id: cache-opencode
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ~/.bun/install/global/bin
+          path: ~/.bun/bin
           key: ${{ runner.os }}-opencode-${{ hashFiles('package.json') }}
 
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
-        run: |
-          bun install -g opencode-ai
-          # Verify installation
-          ls -la ~/.bun/install/global/bin/
+        run: bun install -g opencode-ai
+
+      - name: Verify installation
+        run: bunx opencode --version
 
       - name: Configure Git
         run: |
@@ -131,7 +131,7 @@ jobs:
           fi
 
           # Verify opencode is available
-          which opencode || ls -la ~/.bun/install/global/bin/ || echo "OpenCode not found in expected locations"
+          bunx opencode --version || echo "OpenCode not found"
 
           # Guard against undefined pull_request - use fallback SHA
           REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha || 'HEAD' }}"
