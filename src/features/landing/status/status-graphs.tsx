@@ -122,7 +122,7 @@ export function StatusBars({
 
   return (
     <div className="h-12 w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer>
         <BarChart data={data}>
           <Bar dataKey="value" radius={[2, 2, 2, 2]}>
             {data.map((entry, index) => (

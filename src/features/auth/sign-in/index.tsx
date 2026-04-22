@@ -29,8 +29,8 @@ export function SignIn() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8">
             <div className="mb-4 flex items-center justify-center">
               <Logo className="me-2" />
-              <Link className="text-xl font-medium" to="/">
-                {APP_NAME}
+              <Link to="/">
+                <h1 className="text-xl font-medium">{APP_NAME}</h1>
               </Link>
             </div>
           </div>

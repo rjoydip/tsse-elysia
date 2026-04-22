@@ -6,7 +6,8 @@
  * @module stores/auth-store
  */
 
-import { createStore, useStore, createEffect } from "@tanstack/react-store";
+import { createStore, useStore } from "@tanstack/react-store";
+import { useEffect } from "react";
 import { getCookie, setCookie, removeCookie } from "~/lib/cookies";
 
 const ACCESS_TOKEN = "thisisjustarandomstring";
@@ -62,7 +63,7 @@ function safeBtoa(input: string): string {
   }
 }
 
-const authStore = createStore<AuthState>({
+export const authStore = createStore<AuthState>({
   user: null,
   session: null,
   accessToken: "",
@@ -89,18 +90,18 @@ function initAuth() {
     }
   }
 
-  authStore.setState({
+  authStore.setState(() => ({
     user: initUser,
     session: null,
     accessToken: initToken,
-  });
+  }));
   initComplete = true;
 }
 
 export function useAuthInit() {
-  createEffect(() => {
+  useEffect(() => {
     initAuth();
-  });
+  }, []);
 }
 
 export function useAuthInitialized(): boolean {
