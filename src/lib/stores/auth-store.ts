@@ -7,6 +7,7 @@
  */
 
 import { createStore, useStore } from "@tanstack/react-store";
+import { createEffect } from "react";
 import { getCookie, setCookie, removeCookie } from "~/lib/cookies";
 
 const ACCESS_TOKEN = "thisisjustarandomstring";
@@ -62,26 +63,46 @@ function safeBtoa(input: string): string {
   }
 }
 
-const cookieState = getCookie(ACCESS_TOKEN);
-const initToken = cookieState ? JSON.parse(safeAtob(cookieState)) : "";
+const authStore = createStore<AuthState>({
+  user: null,
+  session: null,
+  accessToken: "",
+});
 
-let initUser: AuthUser | null = null;
-if (cookieState) {
-  try {
-    const parsed = JSON.parse(cookieState);
-    if (parsed && typeof parsed === "object" && "user" in parsed) {
-      initUser = parsed.user || null;
+let initialized = false;
+
+function initAuth() {
+  if (initialized) return;
+  if (typeof document === "undefined") return;
+
+  initialized = true;
+  const cookieState = getCookie(ACCESS_TOKEN);
+  const initToken = cookieState ? safeAtob(cookieState) : "";
+
+  let initUser: AuthUser | null = null;
+  if (cookieState) {
+    try {
+      const parsed = JSON.parse(cookieState);
+      if (parsed && typeof parsed === "object" && "user" in parsed) {
+        initUser = parsed.user || null;
+      }
+    } catch {
+      initUser = null;
     }
-  } catch {
-    initUser = null;
   }
+
+  authStore.setState({
+    user: initUser,
+    session: null,
+    accessToken: initToken,
+  });
 }
 
-export const authStore = createStore<AuthState>({
-  user: initUser,
-  session: null,
-  accessToken: initToken,
-});
+export function useAuthInit() {
+  createEffect(() => {
+    initAuth();
+  });
+}
 
 export const authActions = {
   setUser: (user: AuthUser | null) => {

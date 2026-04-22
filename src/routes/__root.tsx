@@ -13,6 +13,7 @@ import { DirectionProvider } from "~/context/direction-provider";
 import { FontProvider } from "~/context/font-provider";
 import { ThemeProvider } from "~/context/theme-provider";
 import { useAuthSync } from "~/lib/auth/store-sync";
+import { useAuthInit } from "~/lib/stores/auth-store";
 import { queryClient } from "~/router";
 import appCss from "~/styles/app.css?url";
 import { SearchProvider } from "~/context/search-provider";
@@ -75,6 +76,7 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useAuthInit();
   useAuthSync();
 
   return (
