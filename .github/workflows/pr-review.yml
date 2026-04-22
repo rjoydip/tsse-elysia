@@ -46,12 +46,15 @@ jobs:
         id: cache-opencode
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ~/.bun/install/global/node_modules/opencode-ai
-          key: ${{ runner.os }}-opencode-ai
+          path: ~/.bun/install/global/bin
+          key: ${{ runner.os }}-opencode-${{ hashFiles('package.json') }}
 
       - name: Install OpenCode
-        if: steps.cache-opencode.outputs.cache-hit != 'true' && !github.event.pull_request.merged
-        run: bun install -g opencode-ai
+        if: steps.cache-opencode.outputs.cache-hit != 'true'
+        run: |
+          bun install -g opencode-ai
+          # Verify installation
+          ls -la ~/.bun/install/global/bin/
 
       - name: Configure Git
         run: |
@@ -114,8 +117,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
         run: |
-          # Ensure opencode is in PATH if it was cached
-          export PATH="$HOME/.bun/bin:$PATH"
+          # Find opencode - check multiple possible locations
+          for OPENCODE_PATH in "$HOME/.bun/install/global/bin/opencode" "$HOME/.bun/bin/opencode" "$(bun bin -g opencode-ai 2>/dev/null)"; do
+            if [ -f "$OPENCODE_PATH" ]; then
+              break
+            fi
+          done
+
+          # Make it executable and add to PATH
+          if [ -f "$HOME/.bun/install/global/bin/opencode" ]; then
+            chmod +x "$HOME/.bun/install/global/bin/opencode"
+            export PATH="$HOME/.bun/install/global/bin:$HOME/.bun/bin:$PATH"
+          fi
+
+          # Verify opencode is available
+          which opencode || ls -la ~/.bun/install/global/bin/ || echo "OpenCode not found in expected locations"
 
           # Guard against undefined pull_request - use fallback SHA
           REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha || 'HEAD' }}"
