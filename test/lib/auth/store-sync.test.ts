@@ -55,7 +55,10 @@ describe("Auth Store Sync", () => {
 
       const mappedSession = {
         user: sessionData.user
-          ? { ...sessionData.user, image: (sessionData.user as { image?: string })?.image ?? undefined }
+          ? {
+              ...sessionData.user,
+              image: (sessionData.user as { image?: string })?.image ?? undefined,
+            }
           : null,
         expiresAt: sessionData.session?.expiresAt ?? null,
         id: sessionData.session?.id ?? "",
@@ -74,7 +77,10 @@ describe("Auth Store Sync", () => {
 
       const mappedSession = {
         user: sessionData.user
-          ? { ...sessionData.user, image: (sessionData.user as { image?: string })?.image ?? undefined }
+          ? {
+              ...sessionData.user,
+              image: (sessionData.user as { image?: string })?.image ?? undefined,
+            }
           : null,
         expiresAt: sessionData.session?.expiresAt ?? null,
         id: sessionData.session?.id ?? "",
