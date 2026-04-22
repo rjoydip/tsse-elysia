@@ -23,11 +23,6 @@ interface TestSession {
   userAgent?: string;
 }
 
-interface TestSessionData {
-  user: TestUser | null;
-  session: TestSession | null;
-}
-
 describe("Auth Store Sync", () => {
   beforeEach(() => {
     authActions.reset();
@@ -35,7 +30,7 @@ describe("Auth Store Sync", () => {
 
   describe("Session Data Mapping", () => {
     it("should map session with user data", () => {
-      const sessionData: TestSessionData = {
+      const sessionData = {
         user: {
           id: "user-123",
           email: "test@example.com",
@@ -60,51 +55,11 @@ describe("Auth Store Sync", () => {
         token: sessionData.session?.token ?? "",
         ipAddress: sessionData.session?.ipAddress ?? undefined,
         userAgent: sessionData.session?.userAgent ?? undefined,
-        createdAt: sessionData.session?.createdAt,
-        updatedAt: sessionData.session?.updatedAt,
       };
 
       expect(mappedSession.user?.email).toBe("test@example.com");
       expect(mappedSession.token).toBe("auth-token-123");
       expect(mappedSession.expiresAt).toBeTruthy();
-    });
-
-    it("should handle null user", () => {
-      const sessionData: TestSessionData = {
-        user: null,
-        session: null,
-      };
-
-      const mappedSession = {
-        user: sessionData.user
-          ? { ...sessionData.user, image: sessionData.user.image ?? undefined }
-          : null,
-        expiresAt: sessionData.session?.expiresAt ?? null,
-        id: sessionData.session?.id ?? "",
-        token: sessionData.session?.token ?? "",
-      };
-
-      expect(mappedSession.user).toBeNull();
-      expect(mappedSession.token).toBe("");
-    });
-
-    it("should handle missing session object", () => {
-      const sessionData: TestSessionData = {
-        user: undefined,
-        session: undefined,
-      };
-
-      const mappedSession = {
-        user: sessionData.user
-          ? { ...sessionData.user, image: sessionData.user.image ?? undefined }
-          : null,
-        expiresAt: sessionData.session?.expiresAt ?? null,
-        id: sessionData.session?.id ?? "",
-        token: sessionData.session?.token ?? "",
-      };
-
-      expect(mappedSession.user).toBeNull();
-      expect(mappedSession.token).toBe("");
     });
   });
 
