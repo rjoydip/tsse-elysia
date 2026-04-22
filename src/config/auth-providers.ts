@@ -57,5 +57,22 @@ export function getSocialProviders(env: any): AuthProviderConfig[] {
  * @returns List of enabled providers
  */
 export function getEnabledSocialProviders(env: any): AuthProviderConfig[] {
-  return getSocialProviders(env).filter((p) => p.enabled);
+  return getSocialProviders(env)
+    .filter((p) => p.enabled)
+    .filter((p) => {
+      // Additional safety: ensure credentials exist (not just enabled flag)
+      if (p.id === "github") {
+        const hasCreds = isServer
+          ? !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET)
+          : !!env.VITE_AUTH_GITHUB_ENABLED;
+        return hasCreds;
+      }
+      if (p.id === "google") {
+        const hasCreds = isServer
+          ? !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
+          : !!env.VITE_AUTH_GOOGLE_ENABLED;
+        return hasCreds;
+      }
+      return true;
+    });
 }

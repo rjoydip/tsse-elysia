@@ -6,6 +6,28 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { authStore, authActions } from "../../../src/lib/stores/auth-store";
 
+interface TestUser {
+  id: string;
+  email: string;
+  name?: string;
+  image?: string;
+}
+
+interface TestSession {
+  id: string;
+  token: string;
+  expiresAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+interface TestSessionData {
+  user: TestUser | null;
+  session: TestSession | null;
+}
+
 describe("Auth Store Sync", () => {
   beforeEach(() => {
     authActions.reset();
@@ -13,7 +35,7 @@ describe("Auth Store Sync", () => {
 
   describe("Session Data Mapping", () => {
     it("should map session with user data", () => {
-      const sessionData = {
+      const sessionData: TestSessionData = {
         user: {
           id: "user-123",
           email: "test@example.com",
@@ -36,8 +58,8 @@ describe("Auth Store Sync", () => {
         expiresAt: sessionData.session?.expiresAt ?? null,
         id: sessionData.session?.id ?? "",
         token: sessionData.session?.token ?? "",
-        ipAddress: sessionData.session?.ipAddress as string | undefined,
-        userAgent: sessionData.session?.userAgent as string | undefined,
+        ipAddress: sessionData.session?.ipAddress ?? undefined,
+        userAgent: sessionData.session?.userAgent ?? undefined,
         createdAt: sessionData.session?.createdAt,
         updatedAt: sessionData.session?.updatedAt,
       };
@@ -48,17 +70,14 @@ describe("Auth Store Sync", () => {
     });
 
     it("should handle null user", () => {
-      const sessionData = {
+      const sessionData: TestSessionData = {
         user: null,
         session: null,
       };
 
       const mappedSession = {
         user: sessionData.user
-          ? {
-              ...sessionData.user,
-              image: (sessionData.user as { image?: string })?.image ?? undefined,
-            }
+          ? { ...sessionData.user, image: sessionData.user.image ?? undefined }
           : null,
         expiresAt: sessionData.session?.expiresAt ?? null,
         id: sessionData.session?.id ?? "",
@@ -70,17 +89,14 @@ describe("Auth Store Sync", () => {
     });
 
     it("should handle missing session object", () => {
-      const sessionData = {
+      const sessionData: TestSessionData = {
         user: undefined,
         session: undefined,
       };
 
       const mappedSession = {
         user: sessionData.user
-          ? {
-              ...sessionData.user,
-              image: (sessionData.user as { image?: string })?.image ?? undefined,
-            }
+          ? { ...sessionData.user, image: sessionData.user.image ?? undefined }
           : null,
         expiresAt: sessionData.session?.expiresAt ?? null,
         id: sessionData.session?.id ?? "",
