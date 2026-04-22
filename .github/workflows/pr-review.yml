@@ -53,9 +53,6 @@ jobs:
         if: steps.cache-opencode.outputs.cache-hit != 'true'
         run: bun install -g opencode-ai
 
-      - name: Verify installation
-        run: bunx opencode --version
-
       - name: Configure Git
         run: |
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
