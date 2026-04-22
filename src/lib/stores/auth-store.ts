@@ -6,8 +6,7 @@
  * @module stores/auth-store
  */
 
-import { createStore, useStore } from "@tanstack/react-store";
-import { createEffect } from "react";
+import { createStore, useStore, createEffect } from "@tanstack/react-store";
 import { getCookie, setCookie, removeCookie } from "~/lib/cookies";
 
 const ACCESS_TOKEN = "thisisjustarandomstring";
