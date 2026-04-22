@@ -45,9 +45,9 @@ test.describe("Sign-In Page", () => {
       await expect(page.getByText(/or continue with/i)).toBeVisible();
     });
 
-    test("should have GitHub and Facebook OAuth buttons", async ({ page }) => {
+    test("should have GitHub and Google OAuth buttons", async ({ page }) => {
       await expect(page.getByRole("button", { name: /github/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /facebook/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /google/i })).toBeVisible();
     });
   });
 
@@ -85,8 +85,8 @@ test.describe("Sign-In Page", () => {
       await expect(page.getByRole("button", { name: /github/i })).toBeEnabled();
     });
 
-    test("should have clickable Facebook button", async ({ page }) => {
-      await expect(page.getByRole("button", { name: /facebook/i })).toBeEnabled();
+    test("should have clickable Google button", async ({ page }) => {
+      await expect(page.getByRole("button", { name: /google/i })).toBeEnabled();
     });
   });
 

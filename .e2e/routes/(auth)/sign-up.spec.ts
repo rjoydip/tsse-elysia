@@ -81,8 +81,8 @@ test.describe("Sign-Up Page", () => {
       await expect(page.getByRole("button", { name: /github/i })).toBeEnabled();
     });
 
-    test("should have clickable Facebook button", async ({ page }) => {
-      await expect(page.getByRole("button", { name: /facebook/i })).toBeEnabled();
+    test("should have clickable Google button", async ({ page }) => {
+      await expect(page.getByRole("button", { name: /google/i })).toBeEnabled();
     });
   });
 

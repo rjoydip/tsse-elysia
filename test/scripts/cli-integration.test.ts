@@ -23,7 +23,7 @@ describe("CLI Integration", () => {
     try {
       if (existsSync(DECISIONS_FILE)) unlinkSync(DECISIONS_FILE);
       // rmdirSync(TEST_DIR); // Might fail if not empty, let's keep it simple
-    } catch (e) {}
+    } catch {}
   });
 
   it("should successfully run new-decision logic via bun", () => {

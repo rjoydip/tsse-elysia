@@ -208,13 +208,13 @@ export function HealthDashboard() {
                     value="bars"
                     className="data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]"
                   >
-                    Status Bars
+                    Status
                   </TabsTrigger>
                   <TabsTrigger
                     value="graph"
                     className="data-[state=active]:text-primary data-[state=active]:shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]"
                   >
-                    Latency Graph
+                    Latency
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="bars">

@@ -173,6 +173,37 @@ Each decision must answer:
 
 ---
 
+### 009: Client-Side Auth State with TanStack Store
+
+**Status:** Accepted
+
+**Why:**
+
+- Client-side auth state management using TanStack Store (not React context)
+- Cookie-based persistence for SSR hydration safety
+- Synchronized with Better Auth session
+
+**Implementation:**
+
+- `authStore`: TanStack Store for reactive auth state
+- `useAuthStore()`: Hook to access auth state
+- `useAuthInit()`: Initialize auth from cookies on client
+- `useAuthInitialized()`: Guard to prevent hydration mismatches
+
+**Changes (this PR):**
+
+- Fixed: Use React.useEffect instead of non-existent `@tanstack/react-store/createEffect`
+- Fixed: `setState(() => {...})` callback pattern for TanStack Store API
+- Added: `useAuthInitialized()` guard to prevent redirect before ready
+- Export: `authStore` for direct test access
+
+**Tradeoffs:**
+
+- Cookie reading deferred to client-side createEffect (avoids SSR mismatch)
+- Tests use `authStore.get()` instead of hook (hooks need React context)
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

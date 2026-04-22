@@ -1,6 +1,8 @@
-import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { authActions } from "~/lib/stores/auth-store";
 import { ConfirmDialog } from "~/components/confirm-dialog";
+import { signOut } from "~/lib/auth/client";
+import { toast } from "sonner";
 
 interface SignOutDialogProps {
   open: boolean;
@@ -9,17 +11,20 @@ interface SignOutDialogProps {
 
 export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const handleSignOut = () => {
-    authActions.reset();
-    // Preserve current location for redirect after sign-in
-    const currentPath = location.href;
-    navigate({
-      to: "/sign-in",
-      search: { redirect: currentPath },
-      replace: true,
-    });
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      authActions.reset();
+      toast.success("Signed out successfully");
+      navigate({
+        to: "/",
+        replace: true,
+      });
+    } catch (error) {
+      toast.error("Failed to sign out");
+      console.error("Sign out error:", error);
+    }
   };
 
   return (

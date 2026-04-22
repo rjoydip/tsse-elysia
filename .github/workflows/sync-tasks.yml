@@ -32,15 +32,15 @@ jobs:
 
       - name: Validate GitHub token
         run: |
-          if [ -z "${{ secrets.GH_TOKEN_CHANGESET }}" ]; then
-            echo "❌ GH_TOKEN_CHANGESET secret is not set"
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+            echo "❌ GH_TOKEN secret is not set"
             exit 1
           fi
           echo "✅ GitHub token is configured"
 
       - name: Create issues for tasks without issue numbers
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -e
           TASKS_FILE="knowledge/TASKS.md"

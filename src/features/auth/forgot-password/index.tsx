@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { Logo } from "~/assets/logo";
 import { cn } from "~/lib/utils";
-import { useAuthStore } from "~/lib/stores/auth-store";
+import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
 import { AnimatedPageBackground } from "~/components/animated-page-background";
 import { ForgotPasswordForm } from "./components/forgot-password-form";
 import { APP_NAME } from "~/config";
@@ -12,12 +12,14 @@ import dashboardLight from "../sign-in/assets/dashboard-light.png";
 export function ForgotPassword() {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const isReady = useAuthInitialized();
 
   useEffect(() => {
+    if (!isReady) return;
     if (authStore.accessToken && authStore.user) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [authStore.accessToken, authStore.user, navigate]);
+  }, [authStore.accessToken, authStore.user, navigate, isReady]);
 
   if (authStore.accessToken && authStore.user) {
     return (
@@ -35,7 +37,9 @@ export function ForgotPassword() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8">
             <div className="mb-4 flex items-center justify-center">
               <Logo className="me-2" />
-              <h1 className="text-xl font-medium">{APP_NAME} Admin</h1>
+              <Link to="/">
+                <h1 className="text-xl font-medium">{APP_NAME}</h1>
+              </Link>
             </div>
           </div>
           <div className="mx-auto flex w-full max-w-sm flex-col justify-center space-y-2">

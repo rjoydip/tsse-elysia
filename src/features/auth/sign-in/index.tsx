@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "~/assets/logo";
 import { cn } from "~/lib/utils";
-import { useAuthStore } from "~/lib/stores/auth-store";
+import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
 import { AnimatedPageBackground } from "~/components/animated-page-background";
 import dashboardDark from "./assets/dashboard-dark.png";
 import dashboardLight from "./assets/dashboard-light.png";
@@ -12,20 +12,14 @@ import { APP_NAME } from "~/config";
 export function SignIn() {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const isReady = useAuthInitialized();
 
   useEffect(() => {
+    if (!isReady) return;
     if (authStore.accessToken && authStore.user) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [authStore.accessToken, authStore.user, navigate]);
-
-  if (authStore.accessToken && authStore.user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  }, [authStore.accessToken, authStore.user, navigate, isReady]);
 
   return (
     <>
@@ -35,8 +29,8 @@ export function SignIn() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8">
             <div className="mb-4 flex items-center justify-center">
               <Logo className="me-2" />
-              <Link className="text-xl font-medium" to="/">
-                {APP_NAME}
+              <Link to="/">
+                <h1 className="text-xl font-medium">{APP_NAME}</h1>
               </Link>
             </div>
           </div>
@@ -73,14 +67,14 @@ export function SignIn() {
             className="dark:hidden"
             width={1024}
             height={1151}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
           <img
             src={dashboardDark}
             className="hidden dark:block"
             width={1024}
             height={1138}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
         </div>
       </div>

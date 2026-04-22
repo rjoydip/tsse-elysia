@@ -1,11 +1,11 @@
-import { IconFacebook, IconGmail, IconGithub } from "~/assets/brand-icons";
+import { IconGmail, IconGithub } from "~/assets/brand-icons";
 
 export const apps = [
   {
-    name: "Facebook",
-    logo: <IconFacebook />,
+    name: "Google",
+    logo: <IconGmail />,
     connected: false,
-    desc: "Connect with Facebook for real-time communication.",
+    desc: "Connect with Google for real-time communication.",
   },
   {
     name: "Gmail",
