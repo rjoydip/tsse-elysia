@@ -50,7 +50,6 @@ jobs:
           key: ${{ runner.os }}-opencode-${{ hashFiles('package.json') }}
 
       - name: Install OpenCode
-        if: steps.cache-opencode.outputs.cache-hit != 'true'
         run: bun install -g opencode-ai
 
       - name: Configure Git
