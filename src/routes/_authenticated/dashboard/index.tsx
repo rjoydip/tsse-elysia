@@ -1,22 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { APP_NAME } from "~/config";
-import { AuthGuard } from "~/components/auth/auth-guard";
 import { Dashboard } from "~/features/dashboard";
 
-function DashboardWithGuard() {
-  return (
-    <AuthGuard>
-      <Dashboard />
-    </AuthGuard>
-  );
-}
-
 export const Route = createFileRoute("/_authenticated/dashboard/")({
-  component: DashboardWithGuard,
+  component: Dashboard,
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, nofollow" },
-      { name: "description", content: `${APP_NAME} Dashboard - Your personal dashboard` },
+      {
+        name: "description",
+        content: `${APP_NAME} Dashboard - Your personal dashboard`,
+      },
     ],
     scripts: [
       {

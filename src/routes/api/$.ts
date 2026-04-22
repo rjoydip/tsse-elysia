@@ -12,9 +12,10 @@ import { composedMiddleware, errorFn, traceFn } from "~/middlewares";
 import { websocketPlugin } from "~/plugins/websocket";
 import { evlogPlugin, evlogIngestEndpoint } from "~/plugins/evlog-plugin";
 import { monitoringPlugin } from "~/plugins/monitoring";
-import { coreRoutes } from "./modules/-core";
-import { mcpCoreRoutes } from "./mcp/modules/-core";
-import { authCoreRoutes } from "./auth/modules/-core";
+import { coreRoutes } from "./root/-core";
+import { mcpCoreRoutes } from "./mcp/-core";
+import { authCoreRoutes } from "./auth/-core";
+import { settingsRoutes } from "./settings/-core";
 import { treaty } from "@elysiajs/eden";
 
 /**
@@ -61,6 +62,7 @@ export const createApiRoutes = () =>
     .use(coreRoutes)
     .use(authCoreRoutes)
     .use(mcpCoreRoutes)
+    .use(settingsRoutes)
     // Evlog client ingestion endpoint for browser logs
     .use(evlogIngestEndpoint());
 

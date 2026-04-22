@@ -1,11 +1,22 @@
 import { Separator } from "~/components/ui/separator";
 
+/**
+ * Props for ContentSection component.
+ */
 type ContentSectionProps = {
+  /** Section title */
   title: string;
+  /** Section description */
   desc: string;
+  /** Child components to render */
   children: React.JSX.Element;
 };
 
+/**
+ * Content section wrapper component for settings pages.
+ * Provides consistent styling with title, description, and content area.
+ * @param {ContentSectionProps} props - Component props
+ */
 export function ContentSection({ title, desc, children }: ContentSectionProps) {
   return (
     <div className="flex flex-1 flex-col">

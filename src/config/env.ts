@@ -14,7 +14,7 @@
 import { t, getSchemaValidator, type TSchema } from "elysia";
 import { randomUUID } from "uncrypto";
 import { createError } from "evlog";
-import { isBun, isNode, isProduction, PORT } from ".";
+import { isBun, isNode, isProduction, PORT, HOST, PROTOCAL } from ".";
 import { logger } from "../lib/logger";
 
 /**
@@ -30,6 +30,13 @@ import { logger } from "../lib/logger";
  * @property onValidationError - Custom handler for validation failures
  * @property onInvalidAccess - Custom handler for accessing server-only vars on client
  * @property runtimeEnv - Custom function to provide runtime environment
+ * @example
+ * // Define custom env schema
+ * const customEnv = await _createEnv({
+ *   client: { MY_VAR: t.String() },
+ *   server: { SECRET: t.String() },
+ *   runtimeEnv: () => ({ MY_VAR: "value", SECRET: "secret" })
+ * });
  */
 interface EnvOptions {
   server?: Record<string, TSchema>;
@@ -179,8 +186,12 @@ const _getEnv = (key: string, defaultValue: string = ""): string => {
 /**
  * Default configuration values for local development.
  * These are used when environment variables are not explicitly set.
+ * Uses VALUES from config/index.ts for consistency.
+ * @example
+ * // Default: http://localhost:3000
+ * // Custom: Set HOST, PORT, PROTOCAL env vars
  */
-const _BASE_URL = `http://localhost:${PORT}`;
+const _BASE_URL = `${PROTOCAL}://${HOST}:${PORT}`;
 
 /**
  * Retrieves and validates the Better Auth secret key.
@@ -213,11 +224,15 @@ function _getAuthSecret(): string {
 export const env = await _createEnv({
   client: {
     VITE_API_URL: t.String(),
+    VITE_BASE_URL: t.String(),
     VITE_PASS_ENCRYPTION_KEY: t.String(),
     FEATURE_MULTI_TEAM: t.Boolean(),
+    VITE_AUTH_GITHUB_ENABLED: t.Optional(t.Boolean()),
+    VITE_AUTH_GOOGLE_ENABLED: t.Optional(t.Boolean()),
   },
   server: {
     API_URL: t.String(),
+    BASE_URL: t.String(),
     BETTER_AUTH_URL: t.String(),
     BETTER_AUTH_SECRET: t.String(),
     DATABASE_TYPE: t.Union([t.Literal("sqlite"), t.Literal("postgres")]),
@@ -230,7 +245,13 @@ export const env = await _createEnv({
     POSTGRES_PORT: t.Optional(t.Number()),
     POSTGRES_URL: t.Optional(t.String()),
     POSTGRES_REPLICAS: t.Optional(t.String()),
+    GITHUB_CLIENT_ID: t.Optional(t.String()),
+    GITHUB_CLIENT_SECRET: t.Optional(t.String()),
+    GOOGLE_CLIENT_ID: t.Optional(t.String()),
+    GOOGLE_CLIENT_SECRET: t.Optional(t.String()),
     PORT: t.Number(),
+    HOST: t.String(),
+    PROTOCAL: t.String(),
     REDIS_URL: t.Optional(t.String()),
     WS_ENABLED: t.Optional(t.Boolean()),
     WS_HEARTBEAT_INTERVAL: t.Optional(t.Number()),
@@ -246,11 +267,13 @@ export const env = await _createEnv({
   },
   runtimeEnv: () => ({
     VITE_API_URL: _getEnv("VITE_API_URL", ""),
+    VITE_BASE_URL: _getEnv("VITE_BASE_URL", _BASE_URL),
     VITE_PASS_ENCRYPTION_KEY: _getEnv(
       "VITE_PASS_ENCRYPTION_KEY",
       "default-pass-key-replace-me-in-prod",
     ),
     API_URL: _getEnv("API_URL", `${_BASE_URL}/api`),
+    BASE_URL: _getEnv("BASE_URL", _BASE_URL),
     BETTER_AUTH_URL: _getEnv("BETTER_AUTH_URL", `${_BASE_URL}/api/auth`),
     BETTER_AUTH_SECRET: _getAuthSecret(),
     DATABASE_TYPE: _getEnv("DATABASE_TYPE", "sqlite") as "sqlite" | "postgres",
@@ -275,6 +298,12 @@ export const env = await _createEnv({
         return undefined;
       }
     })() as string | undefined,
+    GITHUB_CLIENT_ID: _getEnv("GITHUB_CLIENT_ID", "") || undefined,
+    GITHUB_CLIENT_SECRET: _getEnv("GITHUB_CLIENT_SECRET", "") || undefined,
+    GOOGLE_CLIENT_ID: _getEnv("GOOGLE_CLIENT_ID", "") || undefined,
+    GOOGLE_CLIENT_SECRET: _getEnv("GOOGLE_CLIENT_SECRET", "") || undefined,
+    HOST: _getEnv("HOST", String(HOST)),
+    PROTOCAL: _getEnv("PROTOCAL", String(PROTOCAL)),
     PORT: parseInt(_getEnv("PORT", String(PORT)), 10),
     REDIS_URL: _getEnv("REDIS_URL", "") || undefined,
     WS_ENABLED:
@@ -288,6 +317,8 @@ export const env = await _createEnv({
     WS_RATE_LIMIT_MESSAGES: parseInt(_getEnv("WS_RATE_LIMIT_MESSAGES", ""), 10) || undefined,
     WS_RATE_LIMIT_WINDOW: parseInt(_getEnv("WS_RATE_LIMIT_WINDOW", ""), 10) || undefined,
     FEATURE_MULTI_TEAM: _getEnv("FEATURE_MULTI_TEAM", "false") === "true",
+    VITE_AUTH_GITHUB_ENABLED: _getEnv("VITE_AUTH_GITHUB_ENABLED", "true") === "true",
+    VITE_AUTH_GOOGLE_ENABLED: _getEnv("VITE_AUTH_GOOGLE_ENABLED", "true") === "true",
     OTEL_EXPORTER_OTLP_ENDPOINT: _getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "") || undefined,
     EVLOG_DIR: _getEnv("EVLOG_DIR", ".evlog/logs"),
     EVLOG_ADAPTER: (_getEnv("EVLOG_ADAPTER", "fs") || "fs") as "fs" | "otlp",

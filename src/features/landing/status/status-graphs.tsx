@@ -10,7 +10,13 @@ import {
   Cell,
 } from "recharts";
 
-const PRIMARY_COLOR = "hsl(var(--primary))";
+/**
+ * Primary color for latency graph.
+ * Uses a consistent indigo color that works in both light and dark modes.
+ * Light: oklch(0.541 0.281 293.009) ~ #6366f1
+ * Dark: oklch(0.606 0.25 292.717) ~ #818cf8
+ */
+const PRIMARY_COLOR = "#6366f1";
 
 interface ServiceHistoryRecord {
   serviceName: string;
@@ -63,6 +69,7 @@ export function LatencyGraph({
               backgroundColor: "hsl(var(--card))",
               borderRadius: "0.5rem",
               border: "1px solid hsl(var(--border))",
+              color: "hsl(var(--foreground))",
             }}
           />
           <Area
@@ -79,6 +86,16 @@ export function LatencyGraph({
   );
 }
 
+/**
+ * Status bar colors for different states.
+ */
+const STATUS_COLORS = {
+  up: "#22c55e",
+  down: "#ef4444",
+  degraded: "#eab308",
+  missing: "#94a3b8",
+} as const;
+
 export function StatusBars({
   history,
   serviceName,
@@ -91,7 +108,8 @@ export function StatusBars({
     .slice(-20)
     .map((h) => ({
       ...h,
-      value: h.status === "up" ? 1 : 0,
+      value: h.status === "up" ? 1 : h.status === "degraded" ? 0.5 : 0,
+      hasData: h.status !== null && h.status !== undefined,
     }));
 
   if (data.length === 0) {
@@ -104,11 +122,22 @@ export function StatusBars({
 
   return (
     <div className="h-12 w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer>
         <BarChart data={data}>
           <Bar dataKey="value" radius={[2, 2, 2, 2]}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.value === 1 ? "#22c55e" : "#ef4444"} />
+              <Cell
+                key={`cell-${index}`}
+                fill={
+                  entry.hasData
+                    ? entry.status === "up"
+                      ? STATUS_COLORS.up
+                      : entry.status === "degraded"
+                        ? STATUS_COLORS.degraded
+                        : STATUS_COLORS.down
+                    : STATUS_COLORS.missing
+                }
+              />
             ))}
           </Bar>
         </BarChart>

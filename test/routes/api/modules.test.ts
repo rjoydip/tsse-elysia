@@ -6,10 +6,10 @@
 import { describe, expect, it, afterEach } from "bun:test";
 import { Elysia } from "elysia";
 import { APP_NAME } from "../../../src/config";
-import { coreRoutes } from "../../../src/routes/api/modules/-core";
-import { realtimeRoutes } from "../../../src/routes/api/modules/-realtime";
-import { databaseRoutes } from "../../../src/routes/api/modules/-database";
-import { cacheRoutes } from "../../../src/routes/api/modules/-cache";
+import { coreRoutes } from "../../../src/routes/api/root/-core";
+import { realtimeRoutes } from "../../../src/routes/api/root/-realtime";
+import { databaseRoutes } from "../../../src/routes/api/root/-database";
+import { cacheRoutes } from "../../../src/routes/api/root/-cache";
 import { closeStorage } from "../../../src/lib/cache";
 
 describe("Core API module", () => {
@@ -40,7 +40,10 @@ describe("Realtime API module", () => {
     const response = await app.handle(new Request("http://localhost/api/realtime"));
 
     expect(response.status).toBe(200);
-    const data = (await response.json()) as { websocketEndpoint: string; requiresAuth: boolean };
+    const data = (await response.json()) as {
+      websocketEndpoint: string;
+      requiresAuth: boolean;
+    };
     expect(data.websocketEndpoint).toBe("/api/ws");
     expect(data.requiresAuth).toBe(true);
   });
@@ -49,7 +52,10 @@ describe("Realtime API module", () => {
     const response = await app.handle(new Request("http://localhost/api/realtime/health"));
 
     expect(response.status).toBe(200);
-    const data = (await response.json()) as { status: string; websocketPath: string };
+    const data = (await response.json()) as {
+      status: string;
+      websocketPath: string;
+    };
     expect(data.status).toBe("healthy");
     expect(data.websocketPath).toBe("/api/ws");
   });
@@ -62,7 +68,11 @@ describe("Database API module", () => {
     const response = await app.handle(new Request("http://localhost/api/database/heartbeat"));
 
     expect([200, 503]).toContain(response.status);
-    const data = (await response.json()) as { status: string; timestamp: string; detail: string };
+    const data = (await response.json()) as {
+      status: string;
+      timestamp: string;
+      detail: string;
+    };
     expect(["healthy", "unhealthy"]).toContain(data.status);
     expect(typeof data.timestamp).toBe("string");
     expect(typeof data.detail).toBe("string");

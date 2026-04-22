@@ -40,7 +40,6 @@ import { Route as AuthenticatedDashboardSettingsIndexRouteImport } from './route
 import { Route as AuthenticatedDashboardChatsIndexRouteImport } from './routes/_authenticated/dashboard/chats/index'
 import { Route as AuthenticatedDashboardAppsIndexRouteImport } from './routes/_authenticated/dashboard/apps/index'
 import { Route as AuthenticatedDashboardSettingsNotificationsRouteImport } from './routes/_authenticated/dashboard/settings/notifications'
-import { Route as AuthenticatedDashboardSettingsDisplayRouteImport } from './routes/_authenticated/dashboard/settings/display'
 import { Route as AuthenticatedDashboardSettingsAppearanceRouteImport } from './routes/_authenticated/dashboard/settings/appearance'
 import { Route as AuthenticatedDashboardSettingsAccountRouteImport } from './routes/_authenticated/dashboard/settings/account'
 
@@ -208,12 +207,6 @@ const AuthenticatedDashboardSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedDashboardSettingsRouteRoute,
   } as any)
-const AuthenticatedDashboardSettingsDisplayRoute =
-  AuthenticatedDashboardSettingsDisplayRouteImport.update({
-    id: '/display',
-    path: '/display',
-    getParentRoute: () => AuthenticatedDashboardSettingsRouteRoute,
-  } as any)
 const AuthenticatedDashboardSettingsAppearanceRoute =
   AuthenticatedDashboardSettingsAppearanceRouteImport.update({
     id: '/appearance',
@@ -254,7 +247,6 @@ export interface FileRoutesByFullPath {
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/dashboard/settings/account': typeof AuthenticatedDashboardSettingsAccountRoute
   '/dashboard/settings/appearance': typeof AuthenticatedDashboardSettingsAppearanceRoute
-  '/dashboard/settings/display': typeof AuthenticatedDashboardSettingsDisplayRoute
   '/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/dashboard/apps/': typeof AuthenticatedDashboardAppsIndexRoute
   '/dashboard/chats/': typeof AuthenticatedDashboardChatsIndexRoute
@@ -287,7 +279,6 @@ export interface FileRoutesByTo {
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/dashboard/settings/account': typeof AuthenticatedDashboardSettingsAccountRoute
   '/dashboard/settings/appearance': typeof AuthenticatedDashboardSettingsAppearanceRoute
-  '/dashboard/settings/display': typeof AuthenticatedDashboardSettingsDisplayRoute
   '/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/dashboard/apps': typeof AuthenticatedDashboardAppsIndexRoute
   '/dashboard/chats': typeof AuthenticatedDashboardChatsIndexRoute
@@ -324,7 +315,6 @@ export interface FileRoutesById {
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/dashboard/settings/account': typeof AuthenticatedDashboardSettingsAccountRoute
   '/_authenticated/dashboard/settings/appearance': typeof AuthenticatedDashboardSettingsAppearanceRoute
-  '/_authenticated/dashboard/settings/display': typeof AuthenticatedDashboardSettingsDisplayRoute
   '/_authenticated/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/_authenticated/dashboard/apps/': typeof AuthenticatedDashboardAppsIndexRoute
   '/_authenticated/dashboard/chats/': typeof AuthenticatedDashboardChatsIndexRoute
@@ -361,7 +351,6 @@ export interface FileRouteTypes {
     | '/help-center/'
     | '/dashboard/settings/account'
     | '/dashboard/settings/appearance'
-    | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
     | '/dashboard/apps/'
     | '/dashboard/chats/'
@@ -394,7 +383,6 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/dashboard/settings/account'
     | '/dashboard/settings/appearance'
-    | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
     | '/dashboard/apps'
     | '/dashboard/chats'
@@ -430,7 +418,6 @@ export interface FileRouteTypes {
     | '/_authenticated/help-center/'
     | '/_authenticated/dashboard/settings/account'
     | '/_authenticated/dashboard/settings/appearance'
-    | '/_authenticated/dashboard/settings/display'
     | '/_authenticated/dashboard/settings/notifications'
     | '/_authenticated/dashboard/apps/'
     | '/_authenticated/dashboard/chats/'
@@ -680,13 +667,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardSettingsNotificationsRouteImport
       parentRoute: typeof AuthenticatedDashboardSettingsRouteRoute
     }
-    '/_authenticated/dashboard/settings/display': {
-      id: '/_authenticated/dashboard/settings/display'
-      path: '/display'
-      fullPath: '/dashboard/settings/display'
-      preLoaderRoute: typeof AuthenticatedDashboardSettingsDisplayRouteImport
-      parentRoute: typeof AuthenticatedDashboardSettingsRouteRoute
-    }
     '/_authenticated/dashboard/settings/appearance': {
       id: '/_authenticated/dashboard/settings/appearance'
       path: '/appearance'
@@ -707,7 +687,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedDashboardSettingsRouteRouteChildren {
   AuthenticatedDashboardSettingsAccountRoute: typeof AuthenticatedDashboardSettingsAccountRoute
   AuthenticatedDashboardSettingsAppearanceRoute: typeof AuthenticatedDashboardSettingsAppearanceRoute
-  AuthenticatedDashboardSettingsDisplayRoute: typeof AuthenticatedDashboardSettingsDisplayRoute
   AuthenticatedDashboardSettingsNotificationsRoute: typeof AuthenticatedDashboardSettingsNotificationsRoute
   AuthenticatedDashboardSettingsIndexRoute: typeof AuthenticatedDashboardSettingsIndexRoute
 }
@@ -718,8 +697,6 @@ const AuthenticatedDashboardSettingsRouteRouteChildren: AuthenticatedDashboardSe
       AuthenticatedDashboardSettingsAccountRoute,
     AuthenticatedDashboardSettingsAppearanceRoute:
       AuthenticatedDashboardSettingsAppearanceRoute,
-    AuthenticatedDashboardSettingsDisplayRoute:
-      AuthenticatedDashboardSettingsDisplayRoute,
     AuthenticatedDashboardSettingsNotificationsRoute:
       AuthenticatedDashboardSettingsNotificationsRoute,
     AuthenticatedDashboardSettingsIndexRoute:

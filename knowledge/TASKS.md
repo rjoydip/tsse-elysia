@@ -31,7 +31,7 @@ description: Execution-focused task tracker (source of truth for active work)
 
 ### UI Expansion
 
-- [ ] Admin dashboard <!-- issue: # -->
+- [x] Admin dashboard <!-- issue: #38 -->
 - [ ] RBAC UI <!-- issue: # -->
 - [ ] Organization management UI <!-- issue: # -->
 
@@ -56,8 +56,12 @@ description: Execution-focused task tracker (source of truth for active work)
 - [x] Email/password auth flows
 - [x] Session management (view/revoke)
 - [x] Profile & settings routes
+- [x] Enhanced profile settings form with validation and state management
+- [x] Unified settings store (TanStack Store) for all settings CRUD
+- [x] User settings backend API with separate tables (Profile, Account, Display, Notifications)
 - [x] Rate limiting + CORS + Helmet
 - [x] Email verification (config-ready)
+- [x] Social login (GitHub, Gmail) <!-- issue: #50 -->
 
 ### Phase 4: UI System (shadcn)
 

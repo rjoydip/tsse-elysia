@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { describe, it, expect } from "bun:test";
-import { authCoreRoutes } from "../../../../src/routes/api/auth/modules/-core";
+import { authCoreRoutes } from "../../../../src/routes/api/auth/-core";
 
 const app = new Elysia({ prefix: "/api" }).use(authCoreRoutes);
 

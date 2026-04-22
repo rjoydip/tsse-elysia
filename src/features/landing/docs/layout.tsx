@@ -77,70 +77,64 @@ export function DocsLayout() {
     : "mx-[calc(var(--sidebar-width-icon)+2rem)]";
 
   return (
-    <div className="relative isolate flex min-h-screen flex-col">
-      <AnimatedPageBackground />
-      <Header />
-      <>
-        <DocsSidebar
-          className={cn(
-            "transition-all duration-300 ease-in-out",
-            isHeaderVisible ? "pt-12" : "pt-0",
-          )}
-        />
-        <SidebarInset
-          className={cn(
-            "flex transition-all duration-300 ease-in-out",
-            isHeaderVisible ? "pt-12" : "pt-0",
-          )}
-        >
-          <header className={`flex h-16 shrink-0 items-center gap-2 ${headerMargin}`}>
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-4" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            ) : breadcrumbs.length > 0 ? (
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {breadcrumbs.map((item, index) => (
-                    <React.Fragment key={item.label}>
-                      <BreadcrumbItem
-                        className={
-                          index === breadcrumbs.length - 1 ? "hidden md:block" : "hidden md:block"
-                        }
-                      >
-                        {item.href && index < breadcrumbs.length - 1 ? (
-                          <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
-                        ) : (
-                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                        )}
-                      </BreadcrumbItem>
-                      {index < breadcrumbs.length - 1 && (
-                        <BreadcrumbSeparator className="hidden md:block" />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </BreadcrumbList>
-              </Breadcrumb>
-            ) : null}
-          </header>
-          <div className={`flex flex-col p-4 pt-0 transition-all duration-200 ${contentMargin}`}>
-            <Outlet />
-            <Footer />
-          </div>
-        </SidebarInset>
-      </>
-    </div>
-  );
-}
-
-export function DocsLayoutWrapper() {
-  return (
     <SidebarProvider defaultOpen>
-      <DocsLayout />
+      <div className="relative isolate flex min-h-screen flex-col">
+        <AnimatedPageBackground />
+        <Header />
+        <>
+          <DocsSidebar
+            className={cn(
+              "transition-all duration-300 ease-in-out",
+              isHeaderVisible ? "pt-12" : "pt-0",
+            )}
+          />
+          <SidebarInset
+            className={cn(
+              "flex transition-all duration-300 ease-in-out",
+              isHeaderVisible ? "pt-12" : "pt-0",
+            )}
+          >
+            <header className={`flex h-16 shrink-0 items-center gap-2 ${headerMargin}`}>
+              <SidebarTrigger />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-4" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ) : breadcrumbs.length > 0 ? (
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    {breadcrumbs.map((item, index) => (
+                      <React.Fragment key={item.label}>
+                        <BreadcrumbItem
+                          className={
+                            index === breadcrumbs.length - 1 ? "hidden md:block" : "hidden md:block"
+                          }
+                        >
+                          {item.href && index < breadcrumbs.length - 1 ? (
+                            <BreadcrumbLink href={item.href}>{item.label}</BreadcrumbLink>
+                          ) : (
+                            <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                          )}
+                        </BreadcrumbItem>
+                        {index < breadcrumbs.length - 1 && (
+                          <BreadcrumbSeparator className="hidden md:block" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              ) : null}
+            </header>
+            <div className={`flex flex-col p-4 pt-0 transition-all duration-200 ${contentMargin}`}>
+              <Outlet />
+              <Footer />
+            </div>
+          </SidebarInset>
+        </>
+      </div>
     </SidebarProvider>
   );
 }

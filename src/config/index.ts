@@ -54,14 +54,37 @@ export const APP_NAME = getEnvVar("VITE_APP_NAME", "TSSE");
 /**
  * Server host - defaults to localhost for development.
  * Should be configured for production deployments.
+ * @example
+ * // In production, set HOST=0.0.0.0 or yourdomain.com
  */
 export const HOST = getEnvVar("HOST", "localhost");
 
 /**
  * Server port - defaults to 3000 for local development.
  * Must match the port the Vite dev server runs on.
+ * @example
+ * // Runs on port 3000 by default
+ * // Set PORT=8080 for alternative port
  */
 export const PORT = parseInt(getEnvVar("PORT", "3000"), 10);
+
+/**
+ * Protocol used for HTTP/HTTPS connections.
+ * Defaults to "http" for development, should be "https" in production.
+ * @example
+ * // Development: http
+ * // Production: https
+ */
+export const PROTOCAL = getEnvVar("PROTOCAL", "http");
+
+/**
+ * Base URL for the application combining protocol, host, and port.
+ * Used to construct full URLs for redirects and API calls.
+ * @example
+ * // Local development: http://localhost:3000
+ * // Production: https://yourdomain.com
+ */
+export const BASE_URL = `${PROTOCAL}://${HOST}:${PORT}`;
 
 /**
  * Runtime environment detection - checks if code runs in browser.

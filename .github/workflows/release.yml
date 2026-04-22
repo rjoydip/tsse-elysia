@@ -246,9 +246,16 @@ jobs:
       - name: Install dependencies
         run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
 
-      # Version bump with changesets
+      - name: Configure Git
+        run: |
+          git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
+          git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
+
       - name: Version bump
         run: bun changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
 
       # Get the new version for tagging
       - name: Get new version
@@ -257,6 +264,8 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "new_version=$VERSION" >> $GITHUB_OUTPUT
           echo "New version: $VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
 
       # Commit version changes
       - name: Commit version changes

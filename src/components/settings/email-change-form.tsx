@@ -93,7 +93,7 @@ export function EmailChangeForm() {
         <Input
           id="currentEmail"
           type="email"
-          value={session?.user?.email || ""}
+          defaultValue={session?.user?.email ?? ""}
           disabled
           className="bg-muted"
         />

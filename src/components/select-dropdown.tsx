@@ -11,10 +11,11 @@ import {
 
 type SelectDropdownProps = {
   onValueChange?: (value: string) => void;
-  defaultValue: string | undefined;
+  defaultValue?: string;
+  value?: string;
   placeholder?: string;
   isPending?: boolean;
-  items: { label: string; value: string }[] | undefined;
+  items?: { label: string; value: string }[];
   disabled?: boolean;
   className?: string;
   isControlled?: boolean;
@@ -22,6 +23,7 @@ type SelectDropdownProps = {
 
 export function SelectDropdown({
   defaultValue,
+  value,
   onValueChange,
   isPending,
   items,
@@ -30,11 +32,11 @@ export function SelectDropdown({
   className = "",
   isControlled = false,
 }: SelectDropdownProps) {
-  const defaultState = isControlled
-    ? { value: defaultValue, onValueChange }
-    : { defaultValue, onValueChange };
+  const selectProps = isControlled
+    ? { value: value ?? "", onValueChange }
+    : { defaultValue: defaultValue ?? undefined, onValueChange };
   return (
-    <Select {...defaultState}>
+    <Select {...selectProps}>
       <FormControl>
         <SelectTrigger disabled={disabled} className={cn(className)}>
           <SelectValue placeholder={placeholder ?? "Select"} />
