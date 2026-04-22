@@ -8,19 +8,21 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { useAuthStore } from "~/lib/stores/auth-store";
+import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
 import { AuthLayout } from "../auth-layout";
 import { OtpForm } from "./components/otp-form";
 
 export function Otp() {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const isReady = useAuthInitialized();
 
   useEffect(() => {
+    if (!isReady) return;
     if (authStore.accessToken && authStore.user) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [authStore.accessToken, authStore.user, navigate]);
+  }, [authStore.accessToken, authStore.user, navigate, isReady]);
 
   if (authStore.accessToken && authStore.user) {
     return (

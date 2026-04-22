@@ -70,11 +70,10 @@ const authStore = createStore<AuthState>({
 });
 
 let initialized = false;
+let initComplete = false;
 
 function initAuth() {
   if (initialized) return;
-  if (typeof document === "undefined") return;
-
   initialized = true;
   const cookieState = getCookie(ACCESS_TOKEN);
   const initToken = cookieState ? safeAtob(cookieState) : "";
@@ -96,12 +95,17 @@ function initAuth() {
     session: null,
     accessToken: initToken,
   });
+  initComplete = true;
 }
 
 export function useAuthInit() {
   createEffect(() => {
     initAuth();
   });
+}
+
+export function useAuthInitialized(): boolean {
+  return useStore(authStore, () => initComplete);
 }
 
 export const authActions = {
