@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "~/assets/logo";
 import { cn } from "~/lib/utils";
 import { useAuthStore } from "~/lib/stores/auth-store";
@@ -19,14 +19,6 @@ export function SignUp() {
     }
   }, [authStore.accessToken, authStore.user, navigate]);
 
-  if (authStore.accessToken && authStore.user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <>
       <AnimatedPageBackground />
@@ -35,7 +27,9 @@ export function SignUp() {
           <div className="mx-auto flex w-full flex-col justify-center space-y-2 py-8 sm:w-120 sm:p-8">
             <div className="mb-4 flex items-center justify-center">
               <Logo className="me-2" />
-              <h1 className="text-xl font-medium">{APP_NAME} Admin</h1>
+              <Link className="text-xl font-medium" to="/">
+                {APP_NAME}
+              </Link>
             </div>
           </div>
           <div className="mx-auto flex w-full max-w-sm flex-col justify-center space-y-2">
@@ -75,14 +69,14 @@ export function SignUp() {
             className="dark:hidden"
             width={1024}
             height={1151}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
           <img
             src={dashboardDark}
             className="hidden dark:block"
             width={1024}
             height={1138}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
         </div>
       </div>

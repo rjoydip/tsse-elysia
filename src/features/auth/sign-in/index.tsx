@@ -19,14 +19,6 @@ export function SignIn() {
     }
   }, [authStore.accessToken, authStore.user, navigate]);
 
-  if (authStore.accessToken && authStore.user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <>
       <AnimatedPageBackground />
@@ -73,14 +65,14 @@ export function SignIn() {
             className="dark:hidden"
             width={1024}
             height={1151}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
           <img
             src={dashboardDark}
             className="hidden dark:block"
             width={1024}
             height={1138}
-            alt="TSSE-Admin"
+            alt={`${APP_NAME}-Admin`}
           />
         </div>
       </div>

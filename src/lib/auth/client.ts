@@ -5,6 +5,7 @@
  */
 
 import { createAuthClient } from "better-auth/react";
+import { BASE_URL } from "~/config";
 import { encodePassword } from "~/lib/utils/encryption";
 
 /**
@@ -13,7 +14,8 @@ import { encodePassword } from "~/lib/utils/encryption";
  * Base URL is determined from environment or window location.
  */
 export const authClient = createAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+  baseURL: typeof window !== "undefined" ? window.location.origin : BASE_URL,
+  redirect: `${BASE_URL}/dashboard`,
 });
 
 /**
@@ -225,7 +227,10 @@ export async function resetPassword(newPassword: string, token: string) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ newPassword: await encodePassword(newPassword), token }),
+    body: JSON.stringify({
+      newPassword: await encodePassword(newPassword),
+      token,
+    }),
   });
 
   if (!response.ok) {

@@ -52,8 +52,8 @@ export function ProfileForm() {
   const userDefaultValues: Partial<ProfileFormValues> = {
     username: session?.user?.name || "",
     email: session?.user?.email || "",
-    bio: "I own a computer.", // Keep existing default for bio
-    urls: [{ value: "https://shadcn.com" }, { value: "http://twitter.com/shadcn" }], // Keep existing defaults
+    bio: "",
+    urls: [],
   };
 
   const form = useForm<ProfileFormValues>({
@@ -77,11 +77,10 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="username" {...field} />
               </FormControl>
               <FormDescription>
-                This is your public display name. It can be your real name or a pseudonym. You can
-                only change this once every 30 days.
+                This is your public display name. It can be your real name or a pseudonym.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -100,13 +99,14 @@ export function ProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="m@example.com">m@example.com</SelectItem>
-                  <SelectItem value="m@google.com">m@google.com</SelectItem>
-                  <SelectItem value="m@support.com">m@support.com</SelectItem>
+                  {session?.user?.email && (
+                    <SelectItem value={session.user.email}>{session.user.email}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <FormDescription>
-                You can manage verified email addresses in your <Link to="/">email settings</Link>.
+                You can manage verified email addresses in your{" "}
+                <Link to="/dashboard/settings">account settings</Link>.
               </FormDescription>
               <FormMessage />
             </FormItem>

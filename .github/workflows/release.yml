@@ -249,6 +249,8 @@ jobs:
       # Version bump with changesets
       - name: Version bump
         run: bun changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
 
       # Get the new version for tagging
       - name: Get new version
@@ -257,6 +259,8 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "new_version=$VERSION" >> $GITHUB_OUTPUT
           echo "New version: $VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
 
       # Commit version changes
       - name: Commit version changes

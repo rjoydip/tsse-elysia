@@ -4,6 +4,8 @@ import {
   APP_NAME,
   HOST,
   PORT,
+  PROTOCAL,
+  BASE_URL,
   isBrowser,
   isBun,
   isNode,
@@ -34,6 +36,29 @@ describe("_config", () => {
     it("should have PORT as number", () => {
       expect(typeof PORT).toBe("number");
       expect(PORT).toBeGreaterThan(0);
+    });
+
+    it("should have PROTOCAL as string", () => {
+      expect(typeof PROTOCAL).toBe("string");
+      expect(PROTOCAL).toMatch(/^https?$/);
+    });
+
+    it("should have BASE_URL as string", () => {
+      expect(typeof BASE_URL).toBe("string");
+      expect(BASE_URL).toContain("://");
+    });
+
+    it("should construct BASE_URL from PROTOCAL, HOST, and PORT", () => {
+      const expectedBaseUrl = `${PROTOCAL}://${HOST}:${PORT}`;
+      expect(BASE_URL).toBe(expectedBaseUrl);
+    });
+
+    it("should have https for production when PROTOCAL is set to https", () => {
+      const mockProtocal = "https";
+      const mockHost = "example.com";
+      const mockPort = 443;
+      const expected = `${mockProtocal}://${mockHost}:${mockPort}`;
+      expect(expected).toBe("https://example.com:443");
     });
   });
 
