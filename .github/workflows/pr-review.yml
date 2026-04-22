@@ -42,6 +42,17 @@ jobs:
         with:
           bun-version-file: package.json
 
+      - name: Cache OpenCode
+        id: cache-opencode
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.bun/install/global/node_modules/opencode-ai
+          key: ${{ runner.os }}-opencode-ai
+
+      - name: Install OpenCode
+        if: steps.cache-opencode.outputs.cache-hit != 'true' && !github.event.pull_request.merged
+        run: bun install -g opencode-ai
+
       - name: Configure Git
         run: |
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
@@ -95,17 +106,6 @@ jobs:
           fi
 
           echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache OpenCode
-        id: cache-opencode
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/install/global/node_modules/opencode-ai
-          key: ${{ runner.os }}-opencode-ai
-
-      - name: Install OpenCode
-        if: steps.cache-opencode.outputs.cache-hit != 'true' && !github.event.pull_request.merged
-        run: bun install -g opencode-ai
 
       - name: Run Code Review
         if: ${{ !github.event.pull_request.merged && steps.diff.outputs.diff_size > 0 }}
