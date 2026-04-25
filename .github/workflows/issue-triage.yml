@@ -46,7 +46,7 @@ jobs:
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - uses: anomalyco/opencode/github@da6683fedcbb57a36c4ba54ba5ad00dd8bc2da65 # v1.14.24
+      - uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         if: steps.check.outputs.result == 'true'
         timeout-minutes: 10
         env:
