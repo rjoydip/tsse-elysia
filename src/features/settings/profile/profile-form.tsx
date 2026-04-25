@@ -21,6 +21,24 @@ import { Textarea } from "~/components/ui/textarea";
 import { settingsActions } from "~/lib/stores/settings-store";
 
 /**
+ * Interface for profile data received from API
+ */
+export interface ProfileData {
+  username: string;
+  email: string;
+  bio: string;
+  urls: Array<{ value: string }>;
+}
+
+/**
+ * Props for ProfileForm component
+ */
+interface ProfileFormProps {
+  initialProfile: ProfileData;
+  isLoading: boolean;
+}
+
+/**
  * Schema for validating profile form data
  */
 const profileFormSchema = z.object({
@@ -58,15 +76,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 /**
  * Profile form component for editing user profile information
  * Handles form validation, submission, and integration with settings store
- * @param {{ initialProfile: any, isLoading: boolean }} props - Component props
+ * @param {ProfileFormProps} props - Component props
  */
-export function ProfileForm({
-  initialProfile,
-  isLoading,
-}: {
-  initialProfile: any;
-  isLoading: boolean;
-}) {
+export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
   const { data: session } = useSession();
   const { updateProfile, submitProfile } = settingsActions;
 
@@ -112,8 +124,11 @@ export function ProfileForm({
       await submitProfile(profileData);
       showSubmittedData(data);
     } catch (err) {
-      // Handle error
+      // Handle error with user feedback
       console.error("Failed to update profile:", err);
+      form.setError("root", {
+        message: "Failed to update profile. Please try again.",
+      });
     }
   });
 

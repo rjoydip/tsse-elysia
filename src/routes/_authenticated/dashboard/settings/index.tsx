@@ -11,9 +11,16 @@ async function settingsLoader() {
 function SettingsProfileWithGuard() {
   const { profile, loading } = useSettingsStore();
 
+  const profileData = profile ?? {
+    username: "",
+    email: "",
+    bio: "",
+    urls: [],
+  };
+
   return (
     <AuthGuard>
-      <SettingsProfile initialProfile={profile} isLoading={loading} />
+      <SettingsProfile initialProfile={profileData} isLoading={loading} />
     </AuthGuard>
   );
 }

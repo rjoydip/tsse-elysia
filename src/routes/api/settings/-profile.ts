@@ -161,6 +161,7 @@ export const profileSettingsRoutes = new Elysia({
         settingsLogger.debug("Profile created", { userId });
       }
 
+      // Email is read-only and managed via authentication provider; returned from session.
       return {
         username,
         email: session.user.email,
@@ -172,7 +173,7 @@ export const profileSettingsRoutes = new Elysia({
       body: t.Object({
         username: t.String({ minLength: 1 }),
         bio: t.Optional(t.String()),
-        urls: t.Optional(t.Array(t.Object({ value: t.String() }))),
+        urls: t.Optional(t.Array(t.Object({ value: t.String({ format: "uri" }) }))),
       }),
       detail: {
         summary: "Update profile settings",
