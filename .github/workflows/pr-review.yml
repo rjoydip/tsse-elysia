@@ -32,9 +32,6 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          submodules: recursive
 
       - name: Configure Git
         run: |
@@ -42,6 +39,7 @@ jobs:
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
           git submodule deinit -f .opencode
+          rm -rf .gitmodules
 
       - name: Run Code Review
         uses: anomalyco/opencode/github@da6683fedcbb57a36c4ba54ba5ad00dd8bc2da65 # v1.14.24
