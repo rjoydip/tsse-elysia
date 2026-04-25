@@ -1,5 +1,5 @@
 import { ContentSection } from "../components/content-section";
-import { ProfileForm, type ProfileData } from "./profile-form";
+import { ProfileForm } from "./profile-form";
 
 /**
  * Props for SettingsProfile component
@@ -7,6 +7,16 @@ import { ProfileForm, type ProfileData } from "./profile-form";
 interface SettingsProfileProps {
   initialProfile: ProfileData;
   isLoading: boolean;
+}
+
+/**
+ * Interface for profile data received from API (includes email for display)
+ */
+export interface ProfileData {
+  username: string;
+  email: string;
+  bio: string;
+  urls: Array<{ value: string }>;
 }
 
 /**

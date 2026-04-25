@@ -11,10 +11,11 @@ import { settingsLogger } from "~/lib/logger";
 
 /**
  * Profile data structure containing user profile information.
+ * Email is optional for API submissions (managed via auth).
  */
 interface ProfileData {
   username: string;
-  email: string;
+  email?: string;
   bio: string;
   urls: Array<{ value: string }>;
 }

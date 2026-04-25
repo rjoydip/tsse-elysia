@@ -19,13 +19,13 @@ import {
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { settingsActions } from "~/lib/stores/settings-store";
+import { type ProfileData } from ".";
 
 /**
- * Interface for profile data received from API
+ * Interface for profile data sent to API (email excluded - managed via auth)
  */
-export interface ProfileData {
+export interface ApiProfileData {
   username: string;
-  email: string;
   bio: string;
   urls: Array<{ value: string }>;
 }
@@ -111,17 +111,19 @@ export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
   const handleSubmit = form.handleSubmit(async (data) => {
     const profileData = {
       username: data.username,
-      email: data.email,
       bio: data.bio,
       urls: data.urls || [],
     };
 
-    // Update profile in settings store
-    updateProfile(profileData);
+    // Update profile in settings store (includes email from form for display)
+    updateProfile({
+      ...profileData,
+      email: data.email,
+    });
 
     try {
-      // Submit the update
-      await submitProfile(profileData);
+      // Submit the update (email excluded - read-only, managed via auth)
+      await submitProfile(profileData as ApiProfileData);
       showSubmittedData(data);
     } catch (err) {
       // Handle error with user feedback
