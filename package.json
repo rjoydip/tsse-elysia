@@ -175,6 +175,7 @@
       "files": [
         "~/.bun-install-cache/**/*",
         ".e2e/**/*",
+        ".opencode/**/*",
         "load-tests/**/*",
         "test/**/*",
         "*.config.ts",
