@@ -42,7 +42,6 @@ jobs:
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
           git submodule deinit -f .opencode
-          git rm -f .opencode
 
       - name: Run Code Review
         uses: anomalyco/opencode/github@da6683fedcbb57a36c4ba54ba5ad00dd8bc2da65 # v1.14.24
