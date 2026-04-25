@@ -54,9 +54,6 @@ jobs:
           # Clean any cached index entries (no commit)
           git rm --cached .opencode 2>/dev/null || true
 
-          # Reset working tree to avoid staged changes
-          git reset --hard
-
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         timeout-minutes: 10
