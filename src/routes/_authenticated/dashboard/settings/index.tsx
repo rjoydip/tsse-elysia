@@ -2,17 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { APP_NAME } from "~/config";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { SettingsProfile } from "~/features/settings/profile";
+import { useSettingsStore, settingsActions } from "~/lib/stores/settings-store";
+
+async function settingsLoader() {
+  await settingsActions.fetchAll();
+}
 
 function SettingsProfileWithGuard() {
+  const { profile, loading } = useSettingsStore();
+
   return (
     <AuthGuard>
-      <SettingsProfile />
+      <SettingsProfile initialProfile={profile} isLoading={loading} />
     </AuthGuard>
   );
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard/settings/")({
   component: SettingsProfileWithGuard,
+  loader: async () => settingsLoader(),
   head: () => ({
     meta: [
       { name: "robots", content: "noindex, nofollow" },

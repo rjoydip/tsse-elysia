@@ -7,7 +7,7 @@
  */
 import { Elysia } from "elysia";
 import { describe, expect, it } from "bun:test";
-import { mcpKeysRoutes } from "../../../../src/routes/api/mcp/modules/-keys";
+import { mcpKeysRoutes } from "../../../../src/routes/api/mcp/-keys";
 
 const app = new Elysia({ prefix: "/api/mcp" }).use(mcpKeysRoutes);
 
@@ -66,7 +66,9 @@ describe("MCP Keys API - Unauthorized Access", () => {
 
   it("should reject DELETE without auth", async () => {
     const response = await app.handle(
-      new Request("http://localhost/api/mcp/keys/test-key-id", { method: "DELETE" }),
+      new Request("http://localhost/api/mcp/keys/test-key-id", {
+        method: "DELETE",
+      }),
     );
 
     const text = await response.text();

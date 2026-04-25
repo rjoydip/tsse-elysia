@@ -1,8 +1,9 @@
-import { z } from "zod";
-import { useFieldArray, useForm } from "react-hook-form";
-import { useSession } from "~/lib/auth/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { z } from "zod";
+import { useSession } from "~/lib/auth/client";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -16,24 +17,33 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { settingsActions } from "~/lib/stores/settings-store";
 
+/**
+ * Schema for validating profile form data
+ */
 const profileFormSchema = z.object({
+  /**
+   * Username must be 2-30 characters
+   */
   username: z
     .string("Please enter your username.")
     .min(2, "Username must be at least 2 characters.")
     .max(30, "Username must not be longer than 30 characters."),
+  /**
+   * Email must be a valid email address
+   */
   email: z.email({
     error: (iss) => (iss.input === undefined ? "Please select an email to display." : undefined),
   }),
-  bio: z.string().max(160).min(4),
+  /**
+   * Bio must be 0-160 characters
+   */
+  bio: z.string().max(160),
+  /**
+   * Array of URLs, each must be a valid URL
+   */
   urls: z
     .array(
       z.object({
@@ -45,20 +55,34 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-export function ProfileForm() {
+/**
+ * Profile form component for editing user profile information
+ * Handles form validation, submission, and integration with settings store
+ * @param {{ initialProfile: any, isLoading: boolean }} props - Component props
+ */
+export function ProfileForm({
+  initialProfile,
+  isLoading,
+}: {
+  initialProfile: any;
+  isLoading: boolean;
+}) {
   const { data: session } = useSession();
+  const { updateProfile, submitProfile } = settingsActions;
 
-  // Fetch user data from session and set as default values
-  const userDefaultValues: Partial<ProfileFormValues> = {
-    username: session?.user?.name || "",
-    email: session?.user?.email || "",
-    bio: "",
-    urls: [],
-  };
+  const profileData = useMemo(
+    () => ({
+      username: initialProfile?.username ?? session?.user?.name ?? "",
+      email: initialProfile?.email ?? session?.user?.email ?? "",
+      bio: initialProfile?.bio ?? "",
+      urls: initialProfile?.urls ?? [],
+    }),
+    [initialProfile, session],
+  );
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: userDefaultValues,
+    defaultValues: profileData,
     mode: "onChange",
   });
 
@@ -67,9 +91,35 @@ export function ProfileForm() {
     control: form.control,
   });
 
+  /**
+   * Handles form submission
+   * Updates settings store and submits data via API
+   * @param {ProfileFormValues} data - Form data to submit
+   */
+  const handleSubmit = form.handleSubmit(async (data) => {
+    const profileData = {
+      username: data.username,
+      email: data.email,
+      bio: data.bio,
+      urls: data.urls || [],
+    };
+
+    // Update profile in settings store
+    updateProfile(profileData);
+
+    try {
+      // Submit the update
+      await submitProfile(profileData);
+      showSubmittedData(data);
+    } catch (err) {
+      // Handle error
+      console.error("Failed to update profile:", err);
+    }
+  });
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => showSubmittedData(data))} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <FormField
           control={form.control}
           name="username"
@@ -77,7 +127,7 @@ export function ProfileForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="username" {...field} />
+                <Input placeholder="username" {...field} value={field.value ?? ""} />
               </FormControl>
               <FormDescription>
                 This is your public display name. It can be your real name or a pseudonym.
@@ -92,21 +142,25 @@ export function ProfileForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a verified email to display" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {session?.user?.email && (
-                    <SelectItem value={session.user.email}>{session.user.email}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  type="email"
+                  placeholder="Enter your email address"
+                  readOnly={!!field.value}
+                  disabled={!!field.value}
+                />
+              </FormControl>
               <FormDescription>
-                You can manage verified email addresses in your{" "}
-                <Link to="/dashboard/settings">account settings</Link>.
+                {field.value ? (
+                  "Email is managed in your account settings."
+                ) : (
+                  <>
+                    You can manage verified email addresses in your{" "}
+                    <Link to="/dashboard/settings">account settings</Link>.
+                  </>
+                )}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -123,6 +177,7 @@ export function ProfileForm() {
                   placeholder="Tell us a little bit about yourself"
                   className="resize-none"
                   {...field}
+                  value={field.value ?? ""}
                 />
               </FormControl>
               <FormDescription>
@@ -145,7 +200,7 @@ export function ProfileForm() {
                     Add links to your website, blog, or social media profiles.
                   </FormDescription>
                   <FormControl className={cn(index !== 0 && "mt-1.5")}>
-                    <Input {...field} />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -162,7 +217,9 @@ export function ProfileForm() {
             Add URL
           </Button>
         </div>
-        <Button type="submit">Update profile</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Updating..." : "Update profile"}
+        </Button>
       </form>
     </Form>
   );

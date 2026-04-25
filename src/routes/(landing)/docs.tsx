@@ -3,8 +3,8 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { DocsLayoutWrapper } from "~/features/landing/docs/layout";
+import { DocsLayout } from "~/features/landing/docs/layout";
 
 export const Route = createFileRoute("/(landing)/docs")({
-  component: DocsLayoutWrapper,
+  component: DocsLayout,
 });

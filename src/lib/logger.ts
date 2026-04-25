@@ -162,6 +162,15 @@ export const cacheLogger = createEvlogLogger({
 });
 
 /**
+ * Logger for settings-related logs.
+ * Useful for monitoring user settings operations.
+ */
+export const settingsLogger = createEvlogLogger({
+  minLevel: isProduction ? "info" : "debug",
+  prefix: "settings",
+});
+
+/**
  * Terminal-style script logger utilities.
  * Provides colorful output for CLI scripts and setup tasks.
  */

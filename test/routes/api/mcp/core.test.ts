@@ -5,7 +5,7 @@
 import { Elysia } from "elysia";
 import { describe, expect, it } from "bun:test";
 import { getMcpServer } from "../../../../src/lib/mcp/server";
-import { mcpCoreRoutes } from "../../../../src/routes/api/mcp/modules/-core";
+import { mcpCoreRoutes } from "../../../../src/routes/api/mcp/-core";
 
 const app = new Elysia({ prefix: "/api" }).use(mcpCoreRoutes);
 

@@ -6,8 +6,8 @@ import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
 import { AnimatedPageBackground } from "~/components/animated-page-background";
 import { ForgotPasswordForm } from "./components/forgot-password-form";
 import { APP_NAME } from "~/config";
-import dashboardDark from "../sign-in/assets/dashboard-dark.png";
-import dashboardLight from "../sign-in/assets/dashboard-light.png";
+import authBannerDark from "~/assets/auth-banner-dark.png";
+import authBannerLight from "~/assets/auth-banner-light.png";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
@@ -67,14 +67,14 @@ export function ForgotPassword() {
           )}
         >
           <img
-            src={dashboardLight}
+            src={authBannerLight}
             className="dark:hidden"
             width={1024}
             height={1151}
             alt="TSSE-Admin"
           />
           <img
-            src={dashboardDark}
+            src={authBannerDark}
             className="hidden dark:block"
             width={1024}
             height={1138}

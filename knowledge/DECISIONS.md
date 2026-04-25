@@ -204,6 +204,99 @@ Each decision must answer:
 
 ---
 
+### 012: User Settings Backend API with Separate Tables
+
+**Status:** Accepted
+
+**Why:**
+
+- Scalable settings storage with dedicated tables per settings domain
+- Clear separation of concerns (Profile, Account, Display, Notifications)
+- SQLite-compatible JSON storage for flexible data (urls, sidebar items)
+- API-driven CRUD operations with authentication via Better Auth session
+
+**Implementation:**
+
+- 4 new database tables:
+  - `user_settings_profile`: username, bio, urls (JSON)
+  - `user_settings_account`: name, dob, language
+  - `user_settings_display`: sidebar items (JSON)
+  - `user_settings_notifications`: email/mobile preferences
+- 4 new API route files under `/api/settings/`:
+  - `profile.ts` - GET/PUT `/api/settings/profile`
+  - `account.ts` - GET/PUT `/api/settings/account`
+  - `display.ts` - GET/PUT `/api/settings/display`
+  - `notifications.ts` - GET/PUT `/api/settings/notifications`
+- Updated `settingsStore` with real API calls replacing mock data
+- Unit tests for unauthenticated access and request validation
+
+**Tradeoffs:**
+
+- New tables require migration before authenticated operations work
+- JSON storage in SQLite has query limitations vs PostgreSQL JSONB
+- API pattern requires session authentication check on each endpoint
+
+---
+
+### 010: Enhanced Profile Settings Form
+
+**Status:** Accepted
+
+**Why:**
+
+- Improve user experience for editing profile information
+- Add proper form validation with Zod
+- Implement client-side state management with TanStack Store
+- Provide better feedback during form submission
+
+**Implementation:**
+
+- Created comprehensive Zod schema for profile validation (username, email, bio, URLs)
+- Used react-hook-form with Zod resolver for form handling and validation
+- Integrated with TanStack Store profile state for data persistence
+- Added loading states and error handling for form submission
+- Implemented dynamic URL field management with useFieldArray hook
+
+**Tradeoffs:**
+
+- Increased bundle size due to additional dependencies (zod, react-hook-form)
+- More complex form logic compared to simple controlled components
+- Requires careful synchronization between form state and profile store
+
+---
+
+### 011: Unified Settings Store (TanStack Store)
+
+**Status:** Accepted
+
+**Why:**
+
+- Centralize all user settings (Profile, Account, Display, Notifications) in one store
+- Simplify state management across settings components
+- Provide reactive state updates with TanStack Store
+- Reduce boilerplate code compared to multiple separate stores
+
+**Implementation:**
+
+- `settingsStore`: Single TanStack Store containing all settings state
+- `useSettingsStore()`: Hook to access settings state
+- `settingsActions`: Actions for CRUD operations on each settings type
+- Default values for display and notification settings
+- Initialize from session user data
+
+**Components Updated:**
+
+- Profile, Account, Display, Notifications forms now use unified store
+- Added JSDoc comments to all components
+- Added unit tests for settings store
+
+**Tradeoffs:**
+
+- Single store may become larger over time
+- Need to ensure proper TypeScript typing for partial updates
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

@@ -236,8 +236,9 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Role</FormLabel>
                     <SelectDropdown
-                      defaultValue={field.value}
+                      value={field.value}
                       onValueChange={field.onChange}
+                      isControlled
                       placeholder="Select a role"
                       className="col-span-4"
                       items={roles.map(({ label, value }) => ({

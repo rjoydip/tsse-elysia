@@ -43,7 +43,6 @@ const DASHBOARD_PAGES: NavItem[] = [
   { title: "Account", url: "/dashboard/settings/account" },
   { title: "Appearance", url: "/dashboard/settings/appearance" },
   { title: "Notifications", url: "/dashboard/settings/notifications" },
-  { title: "Display", url: "/dashboard/settings/display" },
   { title: "Help Center", url: "/help-center" },
 ];
 

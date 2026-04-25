@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useSession } from "~/lib/auth/client";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
@@ -26,7 +27,11 @@ import {
 import { Input } from "~/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { DatePicker } from "~/components/date-picker";
+import { settingsActions } from "~/lib/stores/settings-store";
 
+/**
+ * Available language options for the application.
+ */
 const languages = [
   { label: "English", value: "en" },
   { label: "French", value: "fr" },
@@ -39,34 +44,77 @@ const languages = [
   { label: "Chinese", value: "zh" },
 ] as const;
 
+/**
+ * Schema for validating account form data.
+ */
 const accountFormSchema = z.object({
+  /**
+   * Name must be 1-30 characters
+   */
   name: z
     .string()
     .min(1, "Please enter your name.")
     .min(2, "Name must be at least 2 characters.")
     .max(30, "Name must not be longer than 30 characters."),
+  /**
+   * Date of birth must be a valid date
+   */
   dob: z.date("Please select your date of birth."),
+  /**
+   * Language must be selected from available options
+   */
   language: z.string("Please select a language."),
 });
 
+/**
+ * Type for account form values inferred from schema.
+ */
 type AccountFormValues = z.infer<typeof accountFormSchema>;
 
-export function AccountForm() {
+/**
+ * Account form component for editing user account settings.
+ * Handles name, date of birth, and language preferences.
+ * @param {{ initialAccount: any, isLoading: boolean }} props - Component props
+ */
+export function AccountForm({
+  initialAccount,
+  isLoading,
+}: {
+  initialAccount: any;
+  isLoading: boolean;
+}) {
   const { data: session } = useSession();
-
-  // Fetch user data from session and set as default values
-  const userDefaultValues: Partial<AccountFormValues> = {
-    name: session?.user?.name || "",
-    // Note: dob and language would need to come from user settings in database
-    // For now, we'll keep them empty and let the user fill them in
-  };
+  const { updateAccount, submitAccount } = settingsActions;
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
-    defaultValues: userDefaultValues,
   });
 
+  // Update form values when initialAccount changes
+  useEffect(() => {
+    // Use initialAccount from route loader if available, otherwise fall back to session or empty values
+    const accountData = initialAccount || {
+      name: session?.user?.name || "",
+      dob: undefined,
+      language: "en",
+    };
+
+    const userDefaultValues: Partial<AccountFormValues> = {
+      name: accountData.name || session?.user?.name || "",
+      dob: accountData.dob || undefined,
+      language: accountData.language || "en",
+    };
+
+    form.reset(userDefaultValues);
+  }, [initialAccount, session, form]);
+
+  /**
+   * Handles form submission.
+   * @param {AccountFormValues} data - Form data to submit
+   */
   function onSubmit(data: AccountFormValues) {
+    updateAccount(data);
+    submitAccount(data);
     showSubmittedData(data);
   }
 
@@ -160,7 +208,9 @@ export function AccountForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Update account</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Updating..." : "Update account"}
+        </Button>
       </form>
     </Form>
   );

@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
-import { authServiceRoutes } from "../../../../src/routes/api/auth/modules/-service";
+import { authServiceRoutes } from "../../../../src/routes/api/auth/-service";
 
 describe("Auth service module", () => {
   const app = new Elysia({ prefix: "/api/auth" }).use(authServiceRoutes);
