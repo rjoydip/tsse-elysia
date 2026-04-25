@@ -1,4 +1,4 @@
 {
   "$schema": "https://unpkg.com/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["**/.bun-install-cache", "*.gen.ts"]
+  "ignorePatterns": ["**/.bun-install-cache", "*.gen.ts", ".opencode"]
 }
