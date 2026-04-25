@@ -256,7 +256,6 @@ export const userSettingsProfile = sqliteTable("user_settings_profile", {
 export const userSettingsAccount = sqliteTable("user_settings_account", {
   id: text("id").primaryKey(),
   userId: text("userId")
-    .index("idx_user_settings_account_user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull().default(""),
@@ -273,7 +272,6 @@ export const userSettingsAccount = sqliteTable("user_settings_account", {
 export const userSettingsDisplay = sqliteTable("user_settings_display", {
   id: text("id").primaryKey(),
   userId: text("userId")
-    .index("idx_user_settings_display_user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   items: text("items").notNull().default('["recents","home"]'),
@@ -288,7 +286,6 @@ export const userSettingsDisplay = sqliteTable("user_settings_display", {
 export const userSettingsNotifications = sqliteTable("user_settings_notifications", {
   id: text("id").primaryKey(),
   userId: text("userId")
-    .index("idx_user_settings_notifications_user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type", { enum: ["all", "mentions", "none"] })
