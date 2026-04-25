@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
 import { settingsStore, settingsActions, initSettings } from "~/lib/stores/settings-store";
 
 describe("Settings Store", () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     settingsStore.setState(() => ({
       profile: null,
@@ -14,7 +12,7 @@ describe("Settings Store", () => {
       error: null,
     }));
 
-    fetchMock = vi.fn((input) => {
+    global.fetch = vi.fn((input) => {
       const url = typeof input === "string" ? input : (input as Request).url;
 
       if (url.includes("/api/settings/profile")) {
@@ -64,11 +62,12 @@ describe("Settings Store", () => {
       }
 
       return Promise.reject(new Error("Unknown URL"));
-    });
+    }) as unknown as typeof fetch;
+    (global.fetch as any).preconnect = true;
   });
 
   afterEach(() => {
-    fetchMock?.mockRestore();
+    vi.restoreAllMocks();
   });
 
   describe("initSettings", () => {

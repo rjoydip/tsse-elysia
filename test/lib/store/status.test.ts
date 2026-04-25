@@ -49,6 +49,7 @@ function resetStatusStore(): void {
 describe("status store", () => {
   beforeEach(() => {
     resetStatusStore();
+    (globalThis.fetch as any).preconnect = true;
   });
 
   afterEach(() => {
@@ -71,8 +72,10 @@ describe("status store", () => {
   });
 
   it("should mark all services up when every health endpoint succeeds", async () => {
-    const fetchMock = // @ts-expect-error - Bun type workaround
-      vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      // @ts-expect-error - Bun fetch type expects preconnect
+      .mockImplementation((input: unknown) => {
         const requestUrl = String(input);
         if (requestUrl.includes("/api/database/heartbeat")) {
           return Promise.resolve(
@@ -134,7 +137,7 @@ describe("status store", () => {
 
   it("should mark failed services down when fetch rejects", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
-    // @ts-expect-error - Bun fetch types don't match mock pattern
+    // @ts-expect-error - Bun fetch type expects preconnect
     fetchMock.mockImplementation((input: unknown) => {
       const requestUrl = String(input);
       if (requestUrl.includes("/api/auth/health")) {
@@ -171,8 +174,12 @@ describe("status store", () => {
   });
 
   it("should trigger health check from refreshStatusHealth helper", async () => {
-    const fetchMock = // @ts-expect-error - Bun type workaround
-      vi.spyOn(globalThis, "fetch").mockImplementation((input: unknown) => {
+    vi.clearAllMocks();
+
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      // @ts-expect-error - Bun fetch type expects preconnect
+      .mockImplementation((input: unknown) => {
         const requestUrl = String(input);
         if (requestUrl.includes("/api/database/heartbeat")) {
           return Promise.resolve(
@@ -181,6 +188,26 @@ describe("status store", () => {
                 status: "healthy",
                 detail: "Database heartbeat query succeeded",
                 timestamp: new Date().toISOString(),
+                pools: [
+                  {
+                    name: "primary",
+                    role: "primary",
+                    healthy: true,
+                    latencyMs: 5,
+                  },
+                  {
+                    name: "replica-1",
+                    role: "replica",
+                    healthy: true,
+                    latencyMs: 3,
+                  },
+                  {
+                    name: "replica-2",
+                    role: "replica",
+                    healthy: true,
+                    latencyMs: 4,
+                  },
+                ],
               }),
               { status: 200 },
             ),
@@ -194,6 +221,7 @@ describe("status store", () => {
         );
       });
 
+    vi.clearAllMocks();
     const triggered = refreshStatusHealth();
     await new Promise((resolve) => setTimeout(resolve, 0));
 

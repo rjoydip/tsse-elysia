@@ -37,183 +37,90 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: package.json
-
-      - name: Cache OpenCode
-        id: cache-opencode
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/bin
-          key: ${{ runner.os }}-opencode-${{ hashFiles('package.json') }}
-
-      - name: Install OpenCode
-        run: bun install -g opencode-ai
-
       - name: Configure Git
         run: |
           git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
           git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Load Review Prompt
-        id: prompt
-        run: |
-          PROMPT_FILE="./knowledge/prompts/review-pr.md"
-
-          echo "Debug: Checking for prompt file..."
-          if [ ! -f "$PROMPT_FILE" ]; then
-            echo "❌ Prompt file not found: $PROMPT_FILE"
-            exit 1
-          fi
-
-          echo "✅ Prompt file validated: $PROMPT_FILE"
-          cp "$PROMPT_FILE" /tmp/review-prompt.txt
-
-      - name: Generate Branch Diff
-        id: diff
-        run: |
-          # Safe access to PR info even for non-PR issue comments
-          # GitHub Actions expressions handle this, but explicit check in shell is safer
-          BASE_REF="${{ github.event.pull_request.base.ref || github.event.issue.pull_request.base.ref || '' }}"
-          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.issue.pull_request.base.sha || '' }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || '' }}"
-
-          # If any required information is missing, fall back to HEAD~1
-          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
-            echo "⚠️ Missing SHA information (maybe not a PR?), falling back to HEAD~1"
-            git diff HEAD~1..HEAD > /tmp/branch.diff
-          else
-            # Fetch base ref with sufficient history if base ref exists
-            if [ -n "$BASE_REF" ]; then
-              echo "Fetching origin ${BASE_REF}..."
-              git fetch origin "${BASE_REF}" --depth=100 || echo "Fetch failed, continuing with local history"
-            fi
-
-            # Try merge-base diff first, fall back to direct diff
-            if git merge-base --is-ancestor "$BASE_SHA" HEAD 2>/dev/null; then
-              git diff "${BASE_SHA}...${HEAD_SHA}" > /tmp/branch.diff
-            elif git merge-base --is-ancestor "$HEAD_SHA" "$BASE_SHA" 2>/dev/null; then
-              # Base is newer - show what changed from head to base
-              git diff "${HEAD_SHA}...${BASE_SHA}" > /tmp/branch.diff
-            else
-              # No ancestor relationship or missing branch - use direct diff if both SHAs valid
-              git diff "${BASE_SHA}" "${HEAD_SHA}" > /tmp/branch.diff || git diff HEAD~1..HEAD > /tmp/branch.diff
-            fi
-          fi
-
-          echo "diff_size=$(wc -c < /tmp/branch.diff)" >> "$GITHUB_OUTPUT"
-
       - name: Run Code Review
-        if: ${{ !github.event.pull_request.merged && steps.diff.outputs.diff_size > 0 }}
+        uses: anomalyco/opencode/github@da6683fedcbb57a36c4ba54ba5ad00dd8bc2da65 # v1.14.24
         timeout-minutes: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
-        run: |
-          # Find opencode - check multiple possible locations
-          for OPENCODE_PATH in "$HOME/.bun/install/global/bin/opencode" "$HOME/.bun/bin/opencode" "$(bun bin -g opencode-ai 2>/dev/null)"; do
-            if [ -f "$OPENCODE_PATH" ]; then
-              break
-            fi
-          done
+        with:
+          model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
+          prompt: |
+            You are performing a professional code review for a pull request. Review ONLY the changes shown in the diff below — do not comment on unchanged code. Your goal is to provide clear, actionable, and structured feedback.
 
-          # Make it executable and add to PATH
-          if [ -f "$HOME/.bun/install/global/bin/opencode" ]; then
-            chmod +x "$HOME/.bun/install/global/bin/opencode"
-            export PATH="$HOME/.bun/install/global/bin:$HOME/.bun/bin:$PATH"
-          fi
+            ## Review Guidelines
 
-          # Verify opencode is available
-          bunx opencode --version || echo "OpenCode not found"
+            ### 1. Code Quality
 
-          # Guard against undefined pull_request - use fallback SHA
-          REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha || 'HEAD' }}"
+            - Identify readability issues, naming inconsistencies, or unclear logic
+            - Check adherence to best practices and coding standards
+            - Highlight overly complex or redundant code
 
-          # Append diff section header + actual diff to the prompt
-          cat >> /tmp/review-prompt.txt << 'EOF'
+            ### 2. Potential Bugs & Edge Cases
 
-          ---
+            - Look for logical errors, race conditions, or incorrect assumptions
+            - Identify missing error handling or null/undefined checks
+            - Consider edge cases that are not handled
 
-          ## Diff to Review
+            ### 3. Performance & Scalability
 
-          EOF
+            - Point out inefficient algorithms or unnecessary computations
+            - Highlight potential bottlenecks or memory issues
 
-          cat /tmp/branch.diff >> /tmp/review-prompt.txt
+            ### 4. Security Concerns
 
-          # Run OpenCode and capture raw output
-          opencode run "$(cat /tmp/review-prompt.txt)" \
-            --model "$OPENCODE_MODEL" \
-            --dir . \
-            --share \
-            --pure \
-            --title "review-${REVIEW_SHA}" \
-            > /tmp/review-raw.txt 2>&1 || true
+            - Identify vulnerabilities (e.g., injection risks, improper validation)
+            - Check for sensitive data exposure or unsafe operations
 
-          # Strip ANSI escape codes and OpenCode status lines
-          sed -e 's/\x1B\[[0-9;]*[mGKHF]//g' \
-              -e 's/\x1B\[[0-9;]*[A-Z]//g' \
-              -e '/^Performing one time database migration/d' \
-              -e '/^sqlite-migration:done/d' \
-              -e '/^Database migration complete/d' \
-              -e '/^build · /d' \
-              -e '/^~ https:\/\/opncd\.ai\//d' \
-              -e '/^\s*$/N;/^\n\s*$/d' \
-              /tmp/review-raw.txt > /tmp/review-output.txt
+            ### 5. Testing & Reliability
 
-          echo "Review output:"
-          cat /tmp/review-output.txt
+            - Verify if adequate test coverage exists
+            - Suggest missing test cases (unit/integration/edge cases)
 
-      - name: Post Review as PR Comment
-        if: ${{ !github.event.pull_request.merged && !github.event.issue.pull_request.merged && steps.diff.outputs.diff_size > 0 }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
-          REPO="${{ github.repository }}"
+            ### 6. Maintainability & Design
 
-          # Guard against undefined SHA
-          REVIEW_SHA="${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha || github.sha || 'HEAD' }}"
+            - Evaluate modularity, separation of concerns, and reusability
+            - Suggest improvements for long-term maintainability
 
-          # Build comment body - heredoc content must be at column 0 (GitHub renders leading spaces as code blocks)
-          cat > /tmp/comment-body.md << 'HEADER'
-          ## 🤖 Automated Code Review
-          HEADER
+            ---
 
-          cat >> /tmp/comment-body.md << EOF
+            ## Output Format
 
-          > 📝 Reviewed commit: \`${REVIEW_SHA}\`
-          > 🤖 Model: \`${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}\`
+            Use a table format for each category with columns: Status | Category | Description | Location | Suggestion
 
-          ---
+            ### Review Table Template
 
-          EOF
+            - Each row represents one finding
+            - Status: Emoji from the legend below
+            - Category: One of: Code Quality, Edge Cases, Performance, Security, Testing, Maintainability
+            - Description: Brief description of the issue (1-2 sentences)
+            - Location: File path and line number (e.g., src/utils.ts:42)
+            - Suggestion: Concrete improvement or fix
 
-          # Append the review output directly (preserves all markdown as-is)
-          cat /tmp/review-output.txt >> /tmp/comment-body.md
+            ### Emoji Status Legend
 
-          # Delete any previous bot review comment (so only one comment exists per PR)
-          EXISTING_COMMENT_ID=$(curl -s \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            | jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("## 🤖 Automated Code Review")))] | last | .id // empty')
+            - ✅ = Good - Code is well-written, follows best practices
+            - 💡 = Observation - Not an issue, but worth noting or considering
+            - ⚠️ = Concern - Potential issue that needs attention
+            - 🔧 = Minor - Small improvement or nitpick
+            - 🔴 = Major - Important issue that should be addressed
+            - 🛡️ = Security Concerns - Security vulnerability or risk
+            - 🎯 = LGTM - Looks Good To Me - no issues found
+            - 📝 = Gaps - Missing tests or incomplete coverage
+            - ⚡ = Edge Cases - Missing handling for edge cases
+            - 📈 = Reliability - Potential reliability or stability concerns
+            - 🏗️ = Maintainability - Code maintainability or design improvements
 
-          if [ -n "$EXISTING_COMMENT_ID" ]; then
-            curl -s -X DELETE \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}"
-            echo "Deleted previous review comment: $EXISTING_COMMENT_ID"
-          fi
+            ---
 
-          # Post fresh review comment — read body from file to avoid shell escaping issues
-          curl -s -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            -d "$(jq -n --rawfile body /tmp/comment-body.md '{"body": $body}')"
+            ## Final Verdict
 
-          echo "Review posted to PR #${PR_NUMBER}"
+            - Use the appropriate emoji status from the legend above
+            - If no issues are found, respond with: ✅🎯 LGTM
+            - For minor issues only, respond with: 🔧🎯 LGTM (minor)
+            - For concerns that should be addressed, respond with: ⚠️ Review needed
+            - For major issues, respond with: 🔴 Changes requested
+            - Summarize the overall assessment in 1-2 lines
