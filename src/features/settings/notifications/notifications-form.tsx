@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
@@ -16,37 +17,94 @@ import {
 } from "~/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Switch } from "~/components/ui/switch";
+import { settingsActions } from "~/lib/stores/settings-store";
 
+/**
+ * Schema for validating notifications form data.
+ */
 const notificationsFormSchema = z.object({
+  /**
+   * Notification type preference
+   */
   type: z.enum(["all", "mentions", "none"], {
     error: (iss) => (iss.input === undefined ? "Please select a notification type." : undefined),
   }),
-  mobile: z.boolean().default(false).optional(),
-  communication_emails: z.boolean().default(false).optional(),
-  social_emails: z.boolean().default(false).optional(),
-  marketing_emails: z.boolean().default(false).optional(),
+  /**
+   * Mobile notifications toggle
+   */
+  mobile: z.boolean(),
+  /**
+   * Communication emails toggle
+   */
+  communication_emails: z.boolean(),
+  /**
+   * Social emails toggle
+   */
+  social_emails: z.boolean(),
+  /**
+   * Marketing emails toggle
+   */
+  marketing_emails: z.boolean(),
+  /**
+   * Security emails (always required)
+   */
   security_emails: z.boolean(),
 });
 
+/**
+ * Type for notifications form values inferred from schema.
+ */
 type NotificationsFormValues = z.infer<typeof notificationsFormSchema>;
 
-// This can come from your database or API.
-const defaultValues: Partial<NotificationsFormValues> = {
+/**
+ * Default values for notifications settings.
+ */
+const defaultValues: NotificationsFormValues = {
+  type: "all",
+  mobile: false,
   communication_emails: false,
   marketing_emails: false,
   social_emails: true,
   security_emails: true,
 };
 
-export function NotificationsForm() {
+/**
+ * Notifications settings form component.
+ * Allows users to configure notification preferences.
+ * @param {{ initialNotifications: NotificationsFormValues | null; isLoading: boolean }} props - Component props
+ */
+export function NotificationsForm({
+  initialNotifications,
+  isLoading,
+}: {
+  initialNotifications: NotificationsFormValues | null;
+  isLoading: boolean;
+}) {
+  const { updateNotifications, submitNotifications } = settingsActions;
+
   const form = useForm<NotificationsFormValues>({
     resolver: zodResolver(notificationsFormSchema),
-    defaultValues,
+  });
+
+  // Update form values when initialNotifications changes
+  useEffect(() => {
+    const formValues: NotificationsFormValues = initialNotifications ?? defaultValues;
+    form.reset(formValues);
+  }, [initialNotifications, form]);
+
+  /**
+   * Handles form submission.
+   * @param {NotificationsFormValues} data - Form data to submit
+   */
+  const handleSubmit = form.handleSubmit((data) => {
+    updateNotifications(data);
+    submitNotifications(data);
+    showSubmittedData(data);
   });
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => showSubmittedData(data))} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <FormField
           control={form.control}
           name="type"
@@ -183,7 +241,9 @@ export function NotificationsForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Update notifications</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Updating..." : "Update notifications"}
+        </Button>
       </form>
     </Form>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE `user_settings_profile` ADD `email` text DEFAULT '' NOT NULL;

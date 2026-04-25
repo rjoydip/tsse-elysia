@@ -1,6 +1,9 @@
 import { ContentSection } from "../components/content-section";
 import { AppearanceForm } from "./appearance-form";
 
+/**
+ * Appearance settings page component.
+ */
 export function SettingsAppearance() {
   return (
     <ContentSection

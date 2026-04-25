@@ -103,8 +103,9 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutate
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <SelectDropdown
-                    defaultValue={field.value}
+                    value={field.value}
                     onValueChange={field.onChange}
+                    isControlled
                     placeholder="Select dropdown"
                     items={[
                       { label: "In Progress", value: "in progress" },

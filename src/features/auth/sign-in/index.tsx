@@ -4,8 +4,8 @@ import { Logo } from "~/assets/logo";
 import { cn } from "~/lib/utils";
 import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
 import { AnimatedPageBackground } from "~/components/animated-page-background";
-import dashboardDark from "./assets/dashboard-dark.png";
-import dashboardLight from "./assets/dashboard-light.png";
+import authBannerDark from "~/assets/auth-banner-dark.png";
+import authBannerLight from "~/assets/auth-banner-light.png";
 import { SignInForm } from "./components/sign-in-form";
 import { APP_NAME } from "~/config";
 
@@ -63,14 +63,14 @@ export function SignIn() {
           )}
         >
           <img
-            src={dashboardLight}
+            src={authBannerLight}
             className="dark:hidden"
             width={1024}
             height={1151}
             alt={`${APP_NAME}-Admin`}
           />
           <img
-            src={dashboardDark}
+            src={authBannerDark}
             className="hidden dark:block"
             width={1024}
             height={1138}

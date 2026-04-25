@@ -93,8 +93,9 @@ export function UsersInviteDialog({ open, onOpenChange }: UserInviteDialogProps)
                 <FormItem>
                   <FormLabel>Role</FormLabel>
                   <SelectDropdown
-                    defaultValue={field.value}
+                    value={field.value}
                     onValueChange={field.onChange}
+                    isControlled
                     placeholder="Select a role"
                     items={roles.map(({ label, value }) => ({
                       label,

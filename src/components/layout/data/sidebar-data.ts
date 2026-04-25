@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Monitor,
   ListTodo,
   HelpCircle,
   Bell,
@@ -141,11 +140,6 @@ export const sidebarData: SidebarData = {
               title: "Notifications",
               url: "/dashboard/settings/notifications",
               icon: Bell,
-            },
-            {
-              title: "Display",
-              url: "/dashboard/settings/display",
-              icon: Monitor,
             },
           ],
         },

@@ -1,5 +1,5 @@
 import { Outlet } from "@tanstack/react-router";
-import { Monitor, Bell, Palette, Wrench, UserCog } from "lucide-react";
+import { Bell, Palette, Wrench, UserCog } from "lucide-react";
 import { Separator } from "~/components/ui/separator";
 import { ConfigDrawer } from "~/components/config-drawer";
 import { Header } from "~/components/layout/header";
@@ -9,6 +9,9 @@ import { Search } from "~/components/search";
 import { ThemeSwitch } from "~/components/theme-switch";
 import { SidebarNav } from "./components/sidebar-nav";
 
+/**
+ * Sidebar navigation items for settings pages.
+ */
 const sidebarNavItems = [
   {
     title: "Profile",
@@ -30,13 +33,12 @@ const sidebarNavItems = [
     href: "/dashboard/settings/notifications",
     icon: <Bell size={18} />,
   },
-  {
-    title: "Display",
-    href: "/dashboard/settings/display",
-    icon: <Monitor size={18} />,
-  },
 ];
 
+/**
+ * Settings layout component.
+ * Provides the main settings page structure with sidebar navigation.
+ */
 export function Settings() {
   return (
     <>
