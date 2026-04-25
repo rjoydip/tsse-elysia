@@ -37,12 +37,10 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
-          git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
+          git config --global user.email "${{ 'github-actions[bot]@users.noreply.github.com' }}"
+          git config --global user.name "${{ 'github-actions[bot]' }}"
           git submodule deinit -f .opencode
           git rm -f .opencode
-          rm -rf .gitmodules
 
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
