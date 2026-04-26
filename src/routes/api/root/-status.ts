@@ -1,15 +1,11 @@
 /**
  * Status API endpoints plugin.
- * Provides historical health and status data for the dashboard.
+ * Delegates historical health data fetching to the status service.
  */
 
 import { Elysia, t } from "elysia";
-import { db, schema } from "~/lib/db";
-import { desc, gt } from "drizzle-orm";
+import { getStatusHistory } from "~/services/status";
 
-/**
- * Historical status response schema for OpenAPI.
- */
 const statusHistoryExample = [
   {
     serviceName: "Core API",
@@ -19,23 +15,11 @@ const statusHistoryExample = [
   },
 ];
 
-/**
- * Status API route group.
- * Mounted under `/api/status`.
- */
 export const statusRoutes = new Elysia({ name: "api.routes.status", prefix: "/status" }).get(
   "/history",
   async ({ query }) => {
     const hours = Number(query.hours || 24);
-    const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-    // Fetch health records from the specified period
-    const records = await db
-      .select()
-      .from(schema.serviceHealth)
-      .where(gt(schema.serviceHealth.timestamp, cutoff))
-      .orderBy(desc(schema.serviceHealth.timestamp));
-
+    const records = await getStatusHistory({ hours });
     return records;
   },
   {

@@ -297,6 +297,63 @@ Each decision must answer:
 
 ---
 
+### 013: Service Layer Architecture (Business Logic Separation)
+
+**Status:** Accepted
+
+**Why:**
+
+- Separate business logic from route handlers (thin routes)
+- Enable reuse across routes and MCP tools
+- Improve testability (services testable without HTTP overhead)
+- Cleaner route handlers focused on HTTP concerns (parsing, validation, responses)
+
+**Implementation:**
+
+- Created `src/services/` directory with 4 service modules:
+  - `settings/`: User settings CRUD (profile, account, display, notifications)
+  - `llmo/`: Schema.org data transformation for AI systems
+  - `mcp/`: Health rate limiting and tool catalog
+  - `status/`: Historical health record fetching
+- Route handlers in `src/routes/api/` now delegate to services
+- Services handle database operations, session management, data transformation
+- Routes only handle HTTP: parsing params, returning responses
+
+**Directory Structure:**
+
+```
+src/services/
+├── settings/
+│   ├── profile.ts       # Profile CRUD
+│   ├── account.ts       # Account CRUD
+│   ├── display.ts       # Display preferences CRUD
+│   ├── notifications.ts  # Notification settings CRUD
+│   └── index.ts
+├── llmo/
+│   ├── blog.ts          # Blog data + schema.org transform
+│   ├── docs.ts          # Docs static data
+│   ├── changelog.ts     # Changelog data + schema.org transform
+│   ├── faq.ts          # FAQ data + filtering
+│   ├── transform.ts     # Server info & capabilities
+│   ├── llms.ts          # LLMS.txt content generation
+│   └── index.ts
+├── mcp/
+│   ├── rate-limiter.ts  # Health endpoint rate limiting
+│   ├── tools.ts         # MCP tool catalog
+│   └── index.ts
+└── status/
+    ├── history.ts      # Historical status fetching
+    └── index.ts
+```
+
+**Tradeoffs:**
+
+- Additional indirection layer
+- Need to maintain service interfaces when APIs change
+- Services may need to be instantiated per-request for some frameworks
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

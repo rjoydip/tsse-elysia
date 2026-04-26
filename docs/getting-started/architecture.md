@@ -76,6 +76,23 @@ The application follows a server-side rendering (SSR) architecture using TanStac
 | Helmet     | `src/middlewares/helmet.ts`     | Security headers     |
 | Rate Limit | `src/middlewares/rate-limit.ts` | Request throttling   |
 
+### 5. Service Layer
+
+Business logic is organized into services under `src/services/`:
+
+| Service  | File                             | Purpose                                            |
+| -------- | -------------------------------- | -------------------------------------------------- |
+| Settings | `src/services/settings/*.ts`     | User profile, account, display, notifications CRUD |
+| LLMO     | `src/services/llmo/*.ts`         | Schema.org data transformation for AI systems      |
+| MCP      | `src/services/mcp/*.ts`          | Rate limiting and tool catalog                     |
+| Status   | `src/services/status/history.ts` | Historical health record fetching                  |
+
+The service layer separates business logic from route handlers, enabling:
+
+- Reusability across routes and MCP tools
+- Unit testability without HTTP overhead
+- Cleaner route handlers focused on HTTP concerns
+
 ## Data Flow
 
 ### Request Flow
@@ -199,6 +216,28 @@ src/
 │   ├── blog/         # Blog data
 │   ├── changelog/    # Changelog data
 │   └── logger.ts     # Structured logger built on Evlog
+├── services/          # Service layer (business logic)
+│   ├── settings/      # User settings CRUD
+│   │   ├── profile.ts
+│   │   ├── account.ts
+│   │   ├── display.ts
+│   │   ├── notifications.ts
+│   │   └── index.ts
+│   ├── llmo/         # LLM optimization services
+│   │   ├── blog.ts
+│   │   ├── docs.ts
+│   │   ├── changelog.ts
+│   │   ├── faq.ts
+│   │   ├── transform.ts
+│   │   ├── llms.ts
+│   │   └── index.ts
+│   ├── mcp/          # MCP services
+│   │   ├── rate-limiter.ts
+│   │   ├── tools.ts
+│   │   └── index.ts
+│   └── status/        # Status services
+│       ├── history.ts
+│       └── index.ts
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts
 │   ├── helmet.ts

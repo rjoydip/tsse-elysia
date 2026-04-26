@@ -230,6 +230,28 @@ src/
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
 │   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
 │   └── logger.ts      # Structured logger built on Evlog
+├── services/          # Service layer (business logic)
+│   ├── settings/      # User settings CRUD operations
+│   │   ├── profile.ts       # Profile service
+│   │   ├── account.ts       # Account service
+│   │   ├── display.ts       # Display preferences service
+│   │   ├── notifications.ts  # Notification settings service
+│   │   └── index.ts
+│   ├── llmo/         # LLM optimization services
+│   │   ├── blog.ts          # Blog data + schema.org transform
+│   │   ├── docs.ts          # Docs static data
+│   │   ├── changelog.ts     # Changelog data + schema.org transform
+│   │   ├── faq.ts          # FAQ data + filtering
+│   │   ├── transform.ts     # Server info & capabilities
+│   │   ├── llms.ts          # LLMS.txt content generation
+│   │   └── index.ts
+│   ├── mcp/          # MCP services
+│   │   ├── rate-limiter.ts  # Health rate limiting
+│   │   ├── tools.ts         # MCP tool catalog
+│   │   └── index.ts
+│   └── status/        # Status services
+│       ├── history.ts      # Historical status fetching
+│       └── index.ts
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts        # CORS headers
 │   ├── helmet.ts      # Security headers
@@ -293,11 +315,21 @@ test/                  # Unit tests (Bun)
 │   ├── helmet.test.ts # Helmet tests
 │   └── index.test.ts # traceFn, errorFn, composedMiddleware
 ├── routes/           # Route tests
+│   ├── api/          # API route tests
+│   │   ├── core.test.ts    # Core API routes
+│   │   ├── settings/      # Settings routes tests
+│   │   ├── mcp/          # MCP routes tests
+│   │   └── auth/         # Auth routes tests
 │   ├── status.test.ts # Status page tests
 │   ├── profile.test.ts
 │   ├── settings.test.ts
 │   ├── blog.test.ts
 │   └── changelog.test.ts
+├── services/         # Service layer tests
+│   ├── settings/    # Settings service tests
+│   ├── llmo/       # LLMO service tests
+│   ├── mcp/        # MCP service tests
+│   └── status/      # Status service tests
 ├── hooks/            # Hook tests
 ├── lib/              # Library tests
 │   └── redis/       # Redis tests

@@ -52,9 +52,10 @@ Core focus:
 | 4–5   | UI & UX          | ✅     |
 | 7     | Infrastructure   | ✅     |
 | 8     | Real-time        | ✅     |
-| 9     | MCP              | 🚧     |
-| 10    | Data Strategy    | 🚧     |
+| 9     | MCP              | ✅     |
+| 10    | Data Strategy    | 📅     |
 | 13    | Contract Testing | 📅     |
+| Svc   | Service Layer    | ✅     |
 
 ---
 

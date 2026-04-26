@@ -1,29 +1,18 @@
 /**
  * Account settings API endpoints.
- * Provides GET and PUT operations for user account data (name, dob, language).
+ * Delegates to the account service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { eq } from "drizzle-orm";
 import { auth } from "~/lib/auth";
-import { db, schema } from "~/lib/db";
-import { createError } from "evlog";
-import { nanoid } from "nanoid";
-import { settingsLogger } from "~/lib/logger";
+import { getAccount, updateAccount } from "~/services/settings";
 
-/**
- * Account data schema for OpenAPI documentation.
- */
 const accountExample = {
   name: "John Doe",
   dob: null,
   language: "en",
 };
 
-/**
- * Account settings route group.
- * Mounted under `/api/settings/account`.
- */
 export const accountSettingsRoutes = new Elysia({
   name: "api.routes.settings.account",
   prefix: "/settings/account",
@@ -32,44 +21,12 @@ export const accountSettingsRoutes = new Elysia({
     "/",
     async ({ set, request }) => {
       const session = await auth.api.getSession({ headers: request.headers });
-
       if (!session) {
         set.status = 401;
-        return createError({
-          message: "Unauthorized",
-          status: 401,
-          why: "No active session found",
-          fix: "Sign in to access your account settings",
-        });
+        return { error: "Unauthorized" };
       }
-
-      const userId = session.user.id;
-
-      const [account] = await db
-        .select()
-        .from(schema.userSettingsAccount)
-        .where(eq(schema.userSettingsAccount.userId, userId))
-        .limit(1);
-
-      if (!account) {
-        const [user] = await db
-          .select()
-          .from(schema.users)
-          .where(eq(schema.users.id, userId))
-          .limit(1);
-
-        return {
-          name: user?.name || "",
-          dob: null,
-          language: "en",
-        };
-      }
-
-      return {
-        name: account.name,
-        dob: account.dob ? new Date(account.dob).toISOString() : null,
-        language: account.language,
-      };
+      const data = await getAccount(session.user.id);
+      return data;
     },
     {
       detail: {
@@ -91,63 +48,19 @@ export const accountSettingsRoutes = new Elysia({
     "/",
     async ({ body, set, request }) => {
       const session = await auth.api.getSession({ headers: request.headers });
-
       if (!session) {
         set.status = 401;
-        return createError({
-          message: "Unauthorized",
-          status: 401,
-          why: "No active session found",
-          fix: "Sign in to update your account settings",
-        });
+        return { error: "Unauthorized" };
       }
 
-      const userId = session.user.id;
       const { name, dob, language } = body as {
         name: string;
         dob: string | null;
         language: string;
       };
 
-      const existing = await db
-        .select()
-        .from(schema.userSettingsAccount)
-        .where(eq(schema.userSettingsAccount.userId, userId))
-        .limit(1);
-
-      const now = new Date();
-
-      if (existing.length > 0) {
-        await db
-          .update(schema.userSettingsAccount)
-          .set({
-            name: name || "",
-            dob: dob ? new Date(dob) : null,
-            language: language || "en",
-            updatedAt: now,
-          })
-          .where(eq(schema.userSettingsAccount.userId, userId));
-
-        settingsLogger.debug("Account updated", { userId });
-      } else {
-        await db.insert(schema.userSettingsAccount).values({
-          id: nanoid(),
-          userId,
-          name: name || "",
-          dob: dob ? new Date(dob) : null,
-          language: language || "en",
-          createdAt: now,
-          updatedAt: now,
-        });
-
-        settingsLogger.debug("Account created", { userId });
-      }
-
-      return {
-        name: name || "",
-        dob: dob,
-        language: language || "en",
-      };
+      const data = await updateAccount(session.user.id, { name, dob, language });
+      return data;
     },
     {
       body: t.Object({
