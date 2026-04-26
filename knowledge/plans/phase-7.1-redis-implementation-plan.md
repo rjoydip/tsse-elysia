@@ -22,15 +22,15 @@ A["Application Code"] --> B["src/services/cache/index.ts<br/>Cache Layer"]
 
 ## File Changes Summary
 
-| File                               | Action     | Purpose                                                      |
-| ---------------------------------- | ---------- | ------------------------------------------------------------ |
-| `src/services/cache/index.ts`           | **Create** | Unstorage driver configuration (Redis/Postgres/LRU)          |
-| `src/services/cache/pubsub.ts`          | **Create** | Pub/Sub implementation (requires Redis backend) |
-| `src/services/cache/index.ts`          | **Create** | High-level cache API (get/set/delete/clear)                  |
-| `src/routes/api/modules/-redis.ts` | **Create** | Health check and status monitoring for storage               |
-| `test/lib/redis/redis.test.ts`     | **Create** | Unit tests for storage backends                              |
-| `test/lib/redis/pubsub.test.ts`    | **Create** | Unit tests for Pub/Sub functionality                         |
-| `.e2e/api/cache.spec.ts`           | **Create** | E2E test for storage health monitoring                       |
+| File                               | Action     | Purpose                                             |
+| ---------------------------------- | ---------- | --------------------------------------------------- |
+| `src/services/cache/index.ts`      | **Create** | Unstorage driver configuration (Redis/Postgres/LRU) |
+| `src/services/cache/pubsub.ts`     | **Create** | Pub/Sub implementation (requires Redis backend)     |
+| `src/services/cache/index.ts`      | **Create** | High-level cache API (get/set/delete/clear)         |
+| `src/routes/api/modules/-redis.ts` | **Create** | Health check and status monitoring for storage      |
+| `test/lib/redis/redis.test.ts`     | **Create** | Unit tests for storage backends                     |
+| `test/lib/redis/pubsub.test.ts`    | **Create** | Unit tests for Pub/Sub functionality                |
+| `.e2e/api/cache.spec.ts`           | **Create** | E2E test for storage health monitoring              |
 
 ## Implementation Details
 
