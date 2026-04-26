@@ -26,7 +26,7 @@ jobs:
           startsWith(github.event.comment.body, '/opencode')))
       )
     permissions:
-      contents: write
+      contents: read
       id-token: write
       pull-requests: write
     steps:
@@ -50,7 +50,7 @@ jobs:
         timeout-minutes: 10
         with:
           share: true
-          token: ${{ secrets.GH_TOKEN }}
+          use_github_token: true
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
             You are performing a professional code review for a pull request. Review ONLY the changes shown in the diff below — do not comment on unchanged code. Your goal is to provide clear, actionable, and structured feedback.

@@ -15,8 +15,9 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       issues: write
+      pull-requests: write
     steps:
       - name: Check account age
         id: check
@@ -54,7 +55,7 @@ jobs:
         timeout-minutes: 10
         with:
           share: true
-          token: ${{ secrets.GH_TOKEN }}
+          use_github_token: true
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
             Review this issue. If there's a clear fix or relevant docs:
