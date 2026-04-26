@@ -322,8 +322,9 @@ Each decision must answer:
 
 **Tradeoffs:**
 
-- Search-based duplicate check may have false positives for similar titles
+- Search-based duplicate check may have false positives for similar titles (uses GitHub issue search which matches partial titles)
 - Workflow now requires push permissions to commit changes
+- Consider migrating to exact title matching via `gh issue list --search "repo:OWNER/REPO \"Exact Title\""` for stricter matching
 
 ---
 

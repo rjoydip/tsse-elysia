@@ -1,5 +1,8 @@
 name: Sync TASKS with Issues
 
+# Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
+#   GH_TOKEN - Personal access token with repo permissions (for gh CLI and git push)
+
 on:
   push:
     branches:
@@ -9,6 +12,10 @@ on:
 
 permissions:
   issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -36,7 +43,7 @@ jobs:
       - name: Check if not triggered by bot
         id: check_bot
         run: |
-          if git log -1 --pretty=format:'%an' | grep -q "github-actions"; then
+          if [ "${{ github.actor }}" = "github-actions[bot]" ]; then
             echo "should_run=false" >> $GITHUB_OUTPUT
           else
             echo "should_run=true" >> $GITHUB_OUTPUT
