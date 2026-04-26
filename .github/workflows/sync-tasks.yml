@@ -1,4 +1,4 @@
-name: Sync TASKS.md with Issues
+name: Sync TASKS with Issues
 
 on:
   push:

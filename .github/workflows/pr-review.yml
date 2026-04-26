@@ -1,4 +1,4 @@
-name: pr-review
+name: PR Review
 
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
 #   OPENCODE_MODEL - Model for OpenCode (fallback: opencode/minimax-m2.5-free)
