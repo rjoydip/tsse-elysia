@@ -13,10 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BUN_INSTALL_CACHE_DIR: ~/.bun-install-cache
   DATABASE_TYPE: "sqlite"
   SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-  E2E_HOST: "localhost"
+  E2E_HOST: "0.0.0.0"
   E2E_PORT: "4173"
 
 jobs:
@@ -35,13 +34,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run Linters
         run: bun run lint:ci
@@ -64,13 +63,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run security audit
         run: bun audit --audit-level=critical
@@ -98,13 +97,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run database setup
         run: bun run db:setup
@@ -132,6 +131,8 @@ jobs:
           echo "Resolved host IP: $HOST_IP"
 
       - name: Start preview server
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
           bun run preview --port $E2E_PORT --host $E2E_HOST &
           for i in $(seq 1 30); do
@@ -145,6 +146,10 @@ jobs:
 
       # - name: Run E2E tests
       #   run: bun run test:e2e --project=chromium
+
+      - name: Stop preview server
+        if: always()
+        run: pkill -f "bun run preview" || true
 
       - name: Upload ${{ matrix.artifact_name }} artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -161,7 +166,10 @@ jobs:
     name: Docker Security Scan
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]'
-    needs: [test]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -183,15 +191,103 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "tsse-elysia:${{ github.sha }}"
-          format: "table"
+          format: "json"
           severity: "CRITICAL,HIGH"
-          exit-code: "0"
           ignore-unfixed: false
+          scan-ref: "app"
+          trivy-config: .trivy/trivy.yml
+          scanners: vuln,secret,misconfig,license
+          vuln-type: "os,library"
+          output: "trivy-vuln.json"
 
-      - name: Scan for malware
+      - name: Run Trivy malware scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "tsse-elysia:${{ github.sha }}"
+          format: "json"
           scanner: "malware"
-          format: "table"
-          exit-code: "0"
+          scan-ref: "app"
+          trivy-config: .trivy/trivy.yml
+          output: "trivy-malware.json"
+
+      - name: Post scan results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            function parseTrivyJson(path, type) {
+              if (!fs.existsSync(path)) return null;
+              try {
+                const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+                // Log vulnerabilities as a table
+                if (data.Results) {
+                  const vulns = data.Results.flatMap(r =>
+                    (r.Vulnerabilities || []).map(v => ({
+                      package: r.PackageName || r.Target,
+                      severity: v.Severity,
+                      id: v.VulnerabilityID,
+                      title: v.Title
+                    }))
+                  );
+                  console.table(vulns);
+                }
+
+                if (type === 'vuln') {
+                  let total = 0, critical = 0, high = 0;
+                  if (data.Results && Array.isArray(data.Results)) {
+                    data.Results.forEach(r => {
+                      if (r.Vulnerabilities && Array.isArray(r.Vulnerabilities)) {
+                        r.Vulnerabilities.forEach(v => {
+                          total++;
+                          if (v.Severity === 'CRITICAL') critical++;
+                          if (v.Severity === 'HIGH') high++;
+                        });
+                      }
+                    });
+                  }
+                  return { total, critical, high };
+                } else if (type === 'malware') {
+                  let found = false;
+                  if (data.Metadata && data.Metadata.DetectedAt) found = true;
+                  if (data.Results && data.Results.some(r => r.Misconfigurations?.length > 0)) found = true;
+                  return { total: found ? 1 : 0 };
+                }
+              } catch (e) {
+                console.error(`Failed to parse ${path}:`, e.message);
+              }
+              return null;
+            }
+
+            const vuln = parseTrivyJson('trivy-vuln.json', 'vuln');
+            const malware = parseTrivyJson('trivy-malware.json', 'malware');
+
+            const vulnTotal = vuln?.total ?? 0;
+            const vulnCritical = vuln?.critical ?? 0;
+            const vulnHigh = vuln?.high ?? 0;
+            const malwareTotal = malware?.total ?? 0;
+
+            const vulnStatus = vulnTotal > 0 ? '⚠️ Issues found' : '✅ Clean';
+            const malwareStatus = malwareTotal > 0 ? '⚠️ Malware detected' : '✅ Clean';
+
+            const body = `# 🐳 Docker Security Scan Results
+
+            | Scan Type     | Status           | Total           | Critical        | High        |
+            | ------------- | ---------------- | --------------- | --------------- | ----------- |
+            | Vulnerability | ${vulnStatus}    | ${vulnTotal}    | ${vulnCritical} | ${vulnHigh} |
+            | Malware       | ${malwareStatus} | ${malwareTotal} | -               | -           |
+
+            ${vulnTotal > 0 || malwareTotal > 0 ? '**Action required:** Review the issues above before merging.' : '**All checks passed!** Your image passed the security scan.'}
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body
+            });
+
+            console.log(`Posted comment: ${vulnTotal} vulns, ${malwareTotal} malware`);

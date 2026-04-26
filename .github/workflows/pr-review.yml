@@ -1,8 +1,6 @@
-name: pr-review
+name: PR Review
 
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
-#   GH_USER_EMAIL  - Email for git config (fallback: github-actions[bot]@users.noreply.github.com)
-#   GH_USER_NAME   - Name for git config (fallback: github-actions[bot])
 #   OPENCODE_MODEL - Model for OpenCode (fallback: opencode/minimax-m2.5-free)
 
 on:
@@ -28,7 +26,8 @@ jobs:
           startsWith(github.event.comment.body, '/opencode')))
       )
     permissions:
-      contents: write
+      id-token: write
+      contents: read
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -37,8 +36,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "${{ 'github-actions[bot]@users.noreply.github.com' }}"
-          git config --global user.name "${{ 'github-actions[bot]' }}"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
 
       - name: Disable submodules
         run: |
@@ -50,7 +49,7 @@ jobs:
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         timeout-minutes: 10
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           share: true
           use_github_token: true

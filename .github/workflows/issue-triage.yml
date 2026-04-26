@@ -1,8 +1,6 @@
 name: Issue Triage
 
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
-#   GH_USER_EMAIL  - Email for git config (fallback: github-actions[bot]@users.noreply.github.com)
-#   GH_USER_NAME   - Name for git config (fallback: github-actions[bot])
 #   OPENCODE_MODEL - Model for OpenCode (fallback: anthropic/claude-sonnet-4-20250514)
 
 on:
@@ -10,15 +8,16 @@ on:
     types: [opened]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 jobs:
   triage:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       issues: write
+      pull-requests: write
     steps:
       - name: Check account age
         id: check
@@ -41,10 +40,11 @@ jobs:
       - name: Configure Git
         if: steps.check.outputs.result == 'true'
         run: |
-          git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
-          git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
 
       - name: Disable submodules
+        if: steps.check.outputs.result == 'true'
         run: |
           git config --global submodule.recurse false
           git config --global fetch.recurseSubmodules false
@@ -54,13 +54,50 @@ jobs:
         if: steps.check.outputs.result == 'true'
         timeout-minutes: 10
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           share: true
           use_github_token: true
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
-            Review this issue. If there's a clear fix or relevant docs:
-            - Provide documentation links
-            - Add error handling guidance for code examples
-            Otherwise, do not comment.
+            You are an expert issue triage assistant. Analyze this GitHub issue and provide actionable guidance.
+
+            ## Your Task
+
+            Based on the issue description, provide:
+
+            ### 1. Issue Classification
+
+            - **Type**: bug, feature request, documentation, question, or enhancement
+            - **Priority**: critical, high, medium, or low
+            - **Complexity**: simple (1-2 hours), moderate (half-day), or complex (multi-day)
+
+            ### 2. Immediate Actions
+
+            If the issue is clear and actionable:
+
+            - Provide relevant documentation links
+            - Suggest code patterns or examples
+            - Add error handling guidance if applicable
+
+            ### 3. Clarification Needed
+
+            If the issue lacks details:
+
+            - List specific questions to ask the reporter
+            - Suggest what additional context would help
+
+            ### 4. Related Resources
+
+            - Link to similar issues or PRs in this repo
+            - Relevant documentation URLs
+            - Code references if applicable
+
+            ## Guidelines
+
+            - Be concise and actionable
+            - Only comment if you can add value
+            - For spam/low-quality issues: just react with 👎 (no comment)
+            - For clear bugs: provide fix guidance
+            - For feature requests: discuss feasibility and alternatives
+            - Always be helpful and constructive

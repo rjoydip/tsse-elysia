@@ -25,8 +25,8 @@ import { APP_NAME } from "~/config";
 
 export const sidebarData: SidebarData = {
   user: {
-    name: "satnaing",
-    email: "tss@gmail.com",
+    name: "rjoydip",
+    email: "tsse@gmail.com",
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
