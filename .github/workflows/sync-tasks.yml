@@ -33,22 +33,36 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
 
+      - name: Check if not triggered by bot
+        id: check_bot
+        run: |
+          if git log -1 --pretty=format:'%an' | grep -q "github-actions"; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract tasks
+        if: steps.check_bot.outputs.should_run == 'true'
         run: bun scripts/sync-tasks.ts
 
       - name: Validate GitHub token
+        if: steps.check_bot.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+          if [ -z "$GH_TOKEN" ]; then
             echo "❌ GH_TOKEN secret is not set"
             exit 1
           fi
           echo "✅ GitHub token is configured"
 
       - name: Create issues for tasks without issue numbers
+        if: steps.check_bot.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          set -e
+          set -e -o pipefail
           TASKS_FILE="knowledge/TASKS.md"
 
           if [ ! -f "$TASKS_FILE" ]; then
@@ -64,11 +78,11 @@ jobs:
             exit 0
           fi
 
-          echo "$TASKS" | while read line; do
+          echo "$TASKS" | while IFS= read -r line; do
             TITLE=$(echo "$line" | sed 's/- \[ \] //g' | sed 's/<!--.*-->//g' | xargs)
             if [ -n "$TITLE" ]; then
               # Check if issue with same title already exists
-              EXISTING=$(gh issue list --repo "${{ github.repository }}" --search "$TITLE" --state all --limit 1 | grep -c "$TITLE" || true)
+              EXISTING=$(gh issue list --repo "${{ github.repository }}" --search "repo:${{ github.repository }} \"$TITLE\"" --state all --limit 1 --json number --jq 'length')
               if [ "$EXISTING" -gt 0 ]; then
                 echo "⏭️ Issue already exists: $TITLE"
               else
