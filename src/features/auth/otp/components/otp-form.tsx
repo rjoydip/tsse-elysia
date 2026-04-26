@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { authActions } from "~/lib/stores/auth-store";
+import { authActions } from "~/lib/stores/auth";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import {

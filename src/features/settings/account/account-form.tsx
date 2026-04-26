@@ -27,7 +27,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { DatePicker } from "~/components/date-picker";
-import { settingsActions } from "~/lib/stores/settings-store";
+import { settingsActions } from "~/lib/stores/settings";
 
 /**
  * Available language options for the application.

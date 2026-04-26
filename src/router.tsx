@@ -8,7 +8,7 @@ import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { initLog } from "evlog/client";
 import { toast } from "sonner";
 import { routeTree } from "~/routeTree.gen";
-import { authActions } from "~/lib/stores/auth-store";
+import { authActions } from "~/lib/stores/auth";
 import { logger } from "~/lib/logger";
 import { isServerError, isAuthError, getErrorStatus, getErrorMessage } from "~/lib/errors";
 

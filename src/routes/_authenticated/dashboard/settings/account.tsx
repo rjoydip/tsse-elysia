@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { SettingsAccount } from "~/features/settings/account";
-import { useSettingsStore, settingsActions } from "~/lib/stores/settings-store";
+import { useSettingsStore, settingsActions } from "~/lib/stores/settings";
 
 async function settingsLoader() {
   await settingsActions.fetchAll();

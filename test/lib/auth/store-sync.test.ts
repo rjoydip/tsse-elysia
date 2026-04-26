@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { authStore, authActions } from "../../../src/lib/stores/auth-store";
+import { authStore, authActions } from "../../../src/lib/stores/auth";
 
 describe("Auth Store Sync", () => {
   beforeEach(() => {

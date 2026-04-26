@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "~/assets/logo";
 import { cn } from "~/lib/utils";
-import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
+import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth";
 import { AnimatedPageBackground } from "~/components/animated-page-background";
 import { SignUpForm } from "./components/sign-up-form";
 import { APP_NAME } from "~/config";

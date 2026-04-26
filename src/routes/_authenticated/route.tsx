@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
-import { useAuthStore } from "~/lib/stores/auth-store";
+import { useAuthStore } from "~/lib/stores/auth";
 import { useSession } from "~/lib/auth/client";
 
 export const Route = createFileRoute("/_authenticated")({

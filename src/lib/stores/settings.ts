@@ -3,7 +3,7 @@
  * Manages all user settings across Profile, Account, Display, and Notifications.
  * Provides reactive state for React components and handles CRUD operations.
  *
- * @module stores/settings-store
+ * @module stores/settings
  */
 
 import { createStore, useStore } from "@tanstack/react-store";
@@ -160,7 +160,11 @@ export const settingsActions = {
    * @param isLoading - Whether settings are loading
    */
   setLoading: (isLoading: boolean) => {
-    settingsStore.setState((state) => ({ ...state, loading: isLoading, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: isLoading,
+      error: null,
+    }));
   },
 
   /**
@@ -219,7 +223,11 @@ export const settingsActions = {
    * @returns Promise that resolves when all settings are fetched
    */
   fetchAll: async () => {
-    settingsStore.setState((state) => ({ ...state, loading: true, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: true,
+      error: null,
+    }));
 
     try {
       const [profile, account, display, notifications] = await Promise.allSettled([
@@ -261,7 +269,11 @@ export const settingsActions = {
    * @returns Promise that resolves when update completes
    */
   submitProfile: async (data: ProfileData) => {
-    settingsStore.setState((state) => ({ ...state, loading: true, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: true,
+      error: null,
+    }));
 
     try {
       const result = await apiFetch<ProfileData>("/api/settings/profile", {
@@ -292,7 +304,11 @@ export const settingsActions = {
    * @returns Promise that resolves when update completes
    */
   submitAccount: async (data: AccountData) => {
-    settingsStore.setState((state) => ({ ...state, loading: true, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: true,
+      error: null,
+    }));
 
     try {
       const payload = {
@@ -301,13 +317,14 @@ export const settingsActions = {
         language: data.language,
       };
 
-      const result = await apiFetch<{ name: string; dob: string | null; language: string }>(
-        "/api/settings/account",
-        {
-          method: "PUT",
-          body: JSON.stringify(payload),
-        },
-      );
+      const result = await apiFetch<{
+        name: string;
+        dob: string | null;
+        language: string;
+      }>("/api/settings/account", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
 
       settingsStore.setState((state) => ({
         ...state,
@@ -336,7 +353,11 @@ export const settingsActions = {
    * @returns Promise that resolves when update completes
    */
   submitDisplay: async (data: DisplayData) => {
-    settingsStore.setState((state) => ({ ...state, loading: true, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: true,
+      error: null,
+    }));
 
     try {
       const result = await apiFetch<DisplayData>("/api/settings/display", {
@@ -367,7 +388,11 @@ export const settingsActions = {
    * @returns Promise that resolves when update completes
    */
   submitNotifications: async (data: NotificationData) => {
-    settingsStore.setState((state) => ({ ...state, loading: true, error: null }));
+    settingsStore.setState((state) => ({
+      ...state,
+      loading: true,
+      error: null,
+    }));
 
     try {
       const result = await apiFetch<NotificationData>("/api/settings/notifications", {

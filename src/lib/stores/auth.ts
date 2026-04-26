@@ -3,7 +3,7 @@
  * Manages user session, tokens, and authentication state with cookie persistence.
  * Provides reactive auth state for React components.
  *
- * @module stores/auth-store
+ * @module stores/auth
  */
 
 import { createStore, useStore } from "@tanstack/react-store";
