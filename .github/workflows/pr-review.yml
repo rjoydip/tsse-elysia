@@ -45,11 +45,21 @@ jobs:
           git config --global fetch.recurseSubmodules false
           git config --global status.submoduleSummary false
 
+      - name: Load PR review prompt
+        run: |
+          {
+            echo "PR_REVIEW_PROMPT<<EOF"
+            cat knowledge/prompts/pr-review.md
+            echo "EOF"
+          } >> $GITHUB_ENV
+
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         timeout-minutes: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           share: true
           use_github_token: true
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
-          prompt-file: knowledge/prompts/pr-review.md
+          prompt: ${{ env.PR_REVIEW_PROMPT }}
