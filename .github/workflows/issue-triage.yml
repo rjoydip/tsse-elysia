@@ -53,10 +53,11 @@ jobs:
       - name: Load triage prompt
         if: steps.check.outputs.result == 'true'
         run: |
-          # Use unique delimiter to avoid conflicts with file content
-          echo "ISSUE_TRIAGE_PROMPT<<ISSUE_TRIAGE_DELIM" >> $GITHUB_ENV
+          # Generate a random delimiter to avoid conflicts with file content
+          DELIM=$(openssl rand -hex 16)
+          echo "ISSUE_TRIAGE_PROMPT<<${DELIM}" >> $GITHUB_ENV
           cat knowledge/prompts/issue-triage.md >> $GITHUB_ENV
-          echo "ISSUE_TRIAGE_DELIM" >> $GITHUB_ENV
+          echo "${DELIM}" >> $GITHUB_ENV
 
       - uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         if: steps.check.outputs.result == 'true'
