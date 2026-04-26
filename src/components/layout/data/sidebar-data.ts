@@ -24,11 +24,11 @@ import { type SidebarData } from "../types";
 import { APP_NAME } from "~/config";
 
 export const sidebarData: SidebarData = {
-  /* user: {
+  user: {
     name: "rjoydip",
     email: "tsse@gmail.com",
     avatar: "/avatars/shadcn.jpg",
-  }, */
+  },
   teams: [
     {
       name: `${APP_NAME} Admin`,
