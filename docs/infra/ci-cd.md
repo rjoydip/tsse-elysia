@@ -155,13 +155,11 @@ The following GitHub secrets and variables are required for CI/CD workflows:
 
 ### Secrets
 
-| Secrets              | Description                                        | Example Value                                  |
-| -------------------- | -------------------------------------------------- | ---------------------------------------------- |
-| `GH_USER_EMAIL`      | Git user email for git operations                  | `github-actions[bot]@users.noreply.github.com` |
-| `GH_USER_NAME`       | Git user name for git operations                   | `github-actions[bot]`                          |
-| `GH_TOKEN_CHANGESET` | GitHub token with repo/workflow scope for releases | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`       |
-| `GH_TOKEN`           | GitHub token for API access (PR reviews)           | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`       |
-| `BETTER_AUTH_SECRET` | Secret for Better Auth                             | `your-secret-key-here`                         |
+| Secrets              | Description                                        | Example Value                            |
+| -------------------- | -------------------------------------------------- | ---------------------------------------- |
+| `GH_TOKEN_CHANGESET` | GitHub token with repo/workflow scope for releases | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `GH_TOKEN`           | GitHub token for API access (PR reviews)           | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `BETTER_AUTH_SECRET` | Secret for Better Auth                             | `your-secret-key-here`                   |
 
 ### Variables
 
@@ -173,7 +171,5 @@ Required configuration:
 
 - `GH_TOKEN_CHANGESET` - GitHub token for tagging, releasing, and synchronization
 - `GH_TOKEN` - GitHub token for PR review automation
-- `GH_USER_EMAIL` - GitHub user email for git operations
-- `GH_USER_NAME` - GitHub user name for git operations
 - `BETTER_AUTH_SECRET` - Secret for Better Auth authentication
 - `OPENCODE_MODEL` - Model identifier for Opencode AI (required for GitHub Actions workflows)

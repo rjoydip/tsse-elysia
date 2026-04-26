@@ -1,8 +1,6 @@
 name: pr-review
 
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
-#   GH_USER_EMAIL  - Email for git config (fallback: github-actions[bot]@users.noreply.github.com)
-#   GH_USER_NAME   - Name for git config (fallback: github-actions[bot])
 #   OPENCODE_MODEL - Model for OpenCode (fallback: opencode/minimax-m2.5-free)
 
 on:
