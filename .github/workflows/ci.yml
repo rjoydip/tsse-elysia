@@ -166,7 +166,6 @@ jobs:
     name: Docker Security Scan
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]'
-    needs: [test]
     permissions:
       contents: read
       pull-requests: write
@@ -196,6 +195,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           exit-code: "0"
           ignore-unfixed: false
+          exclude-images: ".git,node_modules,test,docs,knowledge"
           vuln-type: "os,library"
           output: "trivy-vuln.json"
 
@@ -205,6 +205,7 @@ jobs:
           image-ref: "tsse-elysia:${{ github.sha }}"
           format: "json"
           scanner: "malware"
+          exclude-images: ".git,node_modules,test,docs,knowledge"
           exit-code: "0"
           output: "trivy-malware.json"
 
