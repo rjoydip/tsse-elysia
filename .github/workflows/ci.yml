@@ -211,10 +211,10 @@ jobs:
             const fs = require('fs');
             const vuln = fs.readFileSync('trivy-vuln.txt', 'utf8');
             const malware = fs.readFileSync('trivy-malware.txt', 'utf8');
-            const body = `## 🐳 Docker Security Scan Results\n\n### Vulnerability Scan (Critical/High)\n\`\`\`\n${vuln}\n\`\`\`\n\n### Malware Scan\n\`\`\`\n${malware}\n\`\`\``;
+            const body = `## 🐳 Docker Security Scan Results\n\n### Vulnerability Scan\n\`\`\`\n${vuln}\n\`\`\`\n\n### Malware Scan\n\`\`\`\n${malware}\n\`\`\``;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,  // Use PR number
               body: body
             });
