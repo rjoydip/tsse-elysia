@@ -193,9 +193,10 @@ jobs:
           image-ref: "tsse-elysia:${{ github.sha }}"
           format: "json"
           severity: "CRITICAL,HIGH"
-          exit-code: "0"
           ignore-unfixed: false
-          exclude-images: ".git,node_modules,test,docs,knowledge"
+          scan-ref: "app"
+          trivy-config: .trivy/trivy.yml
+          scanners: vuln,secret,misconfig,license
           vuln-type: "os,library"
           output: "trivy-vuln.json"
 
@@ -205,8 +206,8 @@ jobs:
           image-ref: "tsse-elysia:${{ github.sha }}"
           format: "json"
           scanner: "malware"
-          exclude-images: ".git,node_modules,test,docs,knowledge"
-          exit-code: "0"
+          scan-ref: "app"
+          trivy-config: .trivy/trivy.yml
           output: "trivy-malware.json"
 
       - name: Post scan results to PR

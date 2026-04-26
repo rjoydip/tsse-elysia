@@ -1,0 +1,3 @@
+ignorefile: .trivy/.trivyignore.yaml
+debug: false
+exit-code: 0
