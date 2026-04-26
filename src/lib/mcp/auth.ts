@@ -6,7 +6,7 @@
  */
 
 import { AsyncLocalStorage } from "async_hooks";
-import type { McpApiKey } from "~/lib/db/schema";
+import type { McpApiKey } from "~/schema/core";
 import { checkRateLimit, cleanupRateLimitStoreOnRequest, type RateLimitResult } from "./rate-limit";
 
 /**

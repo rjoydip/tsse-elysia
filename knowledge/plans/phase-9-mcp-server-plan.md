@@ -31,7 +31,7 @@ bun add @better-auth/plugins
 
 - Existing rate limiting: `src/middlewares/rate-limit.ts`
 - Auth configuration: `src/lib/auth/index.ts`
-- Database schema: `src/lib/db/schema.ts`
+- Database schema: `src/schema/core.ts`
 
 ---
 
@@ -39,7 +39,7 @@ bun add @better-auth/plugins
 
 ### 1.1 Add MCP API Key Table to Schema
 
-**File**: `src/lib/db/schema.ts`
+**File**: `src/schema/core.ts`
 
 Add new table `mcpApiKeys` with fields:
 

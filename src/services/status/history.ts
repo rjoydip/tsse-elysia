@@ -3,7 +3,7 @@
  * Handles historical health record fetching.
  */
 
-import { db, schema } from "~/lib/db";
+import { db, schema } from "~/config/db";
 import { desc, gt } from "drizzle-orm";
 
 export interface StatusHistoryRecord {

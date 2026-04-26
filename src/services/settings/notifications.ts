@@ -4,7 +4,7 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db, schema } from "~/lib/db";
+import { db, schema } from "~/config/db";
 import { nanoid } from "nanoid";
 import { settingsLogger } from "~/lib/logger";
 
