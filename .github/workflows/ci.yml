@@ -170,6 +170,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -191,38 +192,86 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "tsse-elysia:${{ github.sha }}"
+          format: "json"
           severity: "CRITICAL,HIGH"
           exit-code: "0"
-          format: "table"
           ignore-unfixed: false
           vuln-type: "os,library"
-          show-vulnerable-only: true # Only show packages WITH vulnerabilities
-          output: "trivy-vuln.txt"
+          output: "trivy-vuln.json"
 
-      - name: Scan for malware
+      - name: Run Trivy malware scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "tsse-elysia:${{ github.sha }}"
+          format: "json"
           scanner: "malware"
-          format: "table"
           exit-code: "0"
-          show-vulnerable-only: true # Only show malwares
-          output: trivy-malware.txt
+          output: "trivy-malware.json"
 
       - name: Post scan results to PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const fs = require('fs');
-            const vuln = fs.readFileSync('trivy-vuln.txt', 'utf8');
-            const malware = fs.readFileSync('trivy-malware.txt', 'utf8');
-            const body = `## 🐳 Docker Security Scan Results\n\n### Vulnerability Scan\n\`\`\`\n${vuln}\n\`\`\`\n\n### Malware Scan\n\`\`\`\n${malware}\n\`\`\``;
+
+            function parseTrivyJson(path, type) {
+              if (!fs.existsSync(path)) return null;
+              try {
+                const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+                if (type === 'vuln') {
+                  let total = 0, critical = 0, high = 0;
+                  if (data.Results && Array.isArray(data.Results)) {
+                    data.Results.forEach(r => {
+                      if (r.Vulnerabilities && Array.isArray(r.Vulnerabilities)) {
+                        r.Vulnerabilities.forEach(v => {
+                          total++;
+                          if (v.Severity === 'CRITICAL') critical++;
+                          if (v.Severity === 'HIGH') high++;
+                        });
+                      }
+                    });
+                  }
+                  return { total, critical, high };
+                } else if (type === 'malware') {
+                  let found = false;
+                  if (data.Metadata && data.Metadata.DetectedAt) found = true;
+                  if (data.Results && data.Results.some(r => r.Misconfigurations?.length > 0)) found = true;
+                  return { total: found ? 1 : 0 };
+                }
+              } catch (e) {
+                console.error(`Failed to parse ${path}:`, e.message);
+              }
+              return null;
+            }
+
+            const vuln = parseTrivyJson('trivy-vuln.json', 'vuln');
+            const malware = parseTrivyJson('trivy-malware.json', 'malware');
+
+            const vulnTotal = vuln?.total ?? 0;
+            const vulnCritical = vuln?.critical ?? 0;
+            const vulnHigh = vuln?.high ?? 0;
+            const malwareTotal = malware?.total ?? 0;
+
+            const vulnStatus = vulnTotal > 0 ? '⚠️ Issues found' : '✅ Clean';
+            const malwareStatus = malwareTotal > 0 ? '⚠️ Malware detected' : '✅ Clean';
+
+            const body = `# 🐳 Docker Security Scan Results
+
+            | Scan Type     | Status           | Total           | Critical        | High        |
+            | ------------- | ---------------- | --------------- | --------------- | ----------- |
+            | Vulnerability | ${vulnStatus}    | ${vulnTotal}    | ${vulnCritical} | ${vulnHigh} |
+            | Malware       | ${malwareStatus} | ${malwareTotal} | -               | -           |
+
+            ${vulnTotal > 0 || malwareTotal > 0 ? '**Action required:** Review the issues above before merging.' : '**All checks passed!** Your image passed the security scan.'}
+            `;
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,  // Use PR number
+              issue_number: context.payload.pull_request.number,
               body: body
             });
+
+            console.log(`Posted comment: ${vulnTotal} vulns, ${malwareTotal} malware`);
