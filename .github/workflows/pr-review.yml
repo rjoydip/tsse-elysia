@@ -48,9 +48,11 @@ jobs:
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         timeout-minutes: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           share: true
-          token: ${{ secrets.GH_TOKEN }}
+          use_github_token: true
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
             You are performing a professional code review for a pull request. Review ONLY the changes shown in the diff below — do not comment on unchanged code. Your goal is to provide clear, actionable, and structured feedback.
