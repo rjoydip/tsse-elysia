@@ -27,7 +27,6 @@ jobs:
       )
     permissions:
       contents: read
-      id-token: write
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -50,7 +49,7 @@ jobs:
         timeout-minutes: 10
         with:
           share: true
-          use_github_token: true
+          token: ${{ secrets.GH_TOKEN }}
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
             You are performing a professional code review for a pull request. Review ONLY the changes shown in the diff below — do not comment on unchanged code. Your goal is to provide clear, actionable, and structured feedback.
@@ -106,13 +105,12 @@ jobs:
 
             ### Emoji Status Legend
 
-            - ✅ = Good - Code is well-written, follows best practices
+            - ✅ = Good - Code is well-written, follows best practices, no issues found
             - 💡 = Observation - Not an issue, but worth noting or considering
             - ⚠️ = Concern - Potential issue that needs attention
             - 🔧 = Minor - Small improvement or nitpick
             - 🔴 = Major - Important issue that should be addressed
             - 🛡️ = Security Concerns - Security vulnerability or risk
-            - 🎯 = LGTM - Looks Good To Me - no issues found
             - 📝 = Gaps - Missing tests or incomplete coverage
             - ⚡ = Edge Cases - Missing handling for edge cases
             - 📈 = Reliability - Potential reliability or stability concerns

@@ -55,7 +55,7 @@ jobs:
         timeout-minutes: 10
         with:
           share: true
-          use_github_token: true
+          token: ${{ secrets.GH_TOKEN }}
           model: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
           prompt: |
             Review this issue. If there's a clear fix or relevant docs:
