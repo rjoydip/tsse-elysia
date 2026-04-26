@@ -220,6 +220,20 @@ jobs:
               if (!fs.existsSync(path)) return null;
               try {
                 const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+                // Log vulnerabilities as a table
+                if (data.Results) {
+                  const vulns = data.Results.flatMap(r =>
+                    (r.Vulnerabilities || []).map(v => ({
+                      package: r.PackageName || r.Target,
+                      severity: v.Severity,
+                      id: v.VulnerabilityID,
+                      title: v.Title
+                    }))
+                  );
+                  console.table(vulns);
+                }
+
                 if (type === 'vuln') {
                   let total = 0, critical = 0, high = 0;
                   if (data.Results && Array.isArray(data.Results)) {
