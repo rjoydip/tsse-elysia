@@ -299,6 +299,33 @@ Each decision must answer:
 
 ### 013: Service Layer Architecture (Business Logic Separation)
 
+- The original sync-tasks.yml created GitHub Issues from TASKS.md placeholders but never updated TASKS.md with the created issue numbers
+- This caused duplicate issues to be created on every push to main since the same `<!-- issue: # -->` placeholder remained
+
+**Changes:**
+
+- Added duplicate check using `gh issue list --search "$TITLE"` before creating new issues
+- Extract issue number from created issue URL and update TASKS.md with `sed -i`
+- Commit and push updated TASKS.md back to repository
+- Simplified git config (removed unused secrets fallback)
+
+**Implementation:**
+
+- Check if issue with same title exists: `gh issue list --search "$TITLE" --state all`
+- Extract issue number: `echo "$ISSUE_URL" | grep -oE '[0-9]+$'`
+- Update TASKS.md: `sed -i "s|<!-- issue: # -->|<!-- issue: #$ISSUE_NUM -->|"`
+- Commit changes if TASKS.md was modified
+
+**Tradeoffs:**
+
+- Search-based duplicate check may have false positives for similar titles (uses GitHub issue search which matches partial titles)
+- Workflow now requires push permissions to commit changes
+- Consider migrating to exact title matching via `gh issue list --search "repo:OWNER/REPO \"Exact Title\""` for stricter matching
+
+---
+
+### 014: Fix sync-tasks Workflow to Prevent Duplicate Issue Creation
+
 **Status:** Accepted
 
 **Why:**

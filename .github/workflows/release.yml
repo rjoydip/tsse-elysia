@@ -191,12 +191,6 @@ jobs:
       - name: Install dependencies
         run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
 
-      - name: Install node-gyp
-        run: bun install -g node-gyp
-
-      - name: Install better-sqlite3
-        run: cd node_modules/better-sqlite3 && bun run build-release
-
       - name: Setup database
         run: bun run db:setup
 
@@ -228,7 +222,6 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -243,14 +236,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
-      - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
-
       - name: Configure Git
         run: |
-          git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
-          git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+              bun install --ignore-scripts
+          else
+            bun install --frozen-lockfile --ignore-scripts
+          fi
 
       - name: Version bump
         run: bun changeset version
@@ -271,7 +269,7 @@ jobs:
       - name: Commit version changes
         run: |
           git add .
-          git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
+          git commit -m "chore: release v${{ steps.version.outputs.new_version }} [skip ci]"
           git push
 
       # Create and push git tag
@@ -279,8 +277,6 @@ jobs:
         run: |
           git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
           git push origin "v${{ steps.version.outputs.new_version }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_CHANGESET }}
 
       # Create GitHub Release
       - name: Create GitHub Release

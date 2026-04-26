@@ -1,4 +1,7 @@
-name: Sync TASKS.md with Issues
+name: Sync TASKS with Issues
+
+# Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
+#   GH_TOKEN - Personal access token with repo permissions (for gh CLI and git push)
 
 on:
   push:
@@ -9,6 +12,10 @@ on:
 
 permissions:
   issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -29,26 +36,40 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "${{ secrets.GH_USER_EMAIL || 'github-actions[bot]@users.noreply.github.com' }}"
-          git config --global user.name "${{ secrets.GH_USER_NAME || 'github-actions[bot]' }}"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
 
+      - name: Check if not triggered by bot
+        id: check_bot
+        run: |
+          if [ "${{ github.actor }}" = "github-actions[bot]" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract tasks
+        if: steps.check_bot.outputs.should_run == 'true'
         run: bun scripts/sync-tasks.ts
 
       - name: Validate GitHub token
+        if: steps.check_bot.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
+          if [ -z "$GH_TOKEN" ]; then
             echo "❌ GH_TOKEN secret is not set"
             exit 1
           fi
           echo "✅ GitHub token is configured"
 
       - name: Create issues for tasks without issue numbers
+        if: steps.check_bot.outputs.should_run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          set -e
+          set -e -o pipefail
           TASKS_FILE="knowledge/TASKS.md"
 
           if [ ! -f "$TASKS_FILE" ]; then
@@ -64,16 +85,45 @@ jobs:
             exit 0
           fi
 
-          echo "$TASKS" | while read line; do
+          echo "$TASKS" | while IFS= read -r line; do
             TITLE=$(echo "$line" | sed 's/- \[ \] //g' | sed 's/<!--.*-->//g' | xargs)
             if [ -n "$TITLE" ]; then
-              gh issue create \
-                --repo "${{ github.repository }}" \
-                --title "$TITLE" \
-                --body "Auto-created from TASKS.md" \
-                --label "auto-created"
-              echo "✅ Created issue: $TITLE"
+              # Check if issue with same title already exists
+              EXISTING=$(gh issue list --repo "${{ github.repository }}" --search "repo:${{ github.repository }} \"$TITLE\"" --state all --limit 1 --json number --jq 'length')
+              if [ "$EXISTING" -gt 0 ]; then
+                echo "⏭️ Issue already exists: $TITLE"
+              else
+                ISSUE_URL=$(gh issue create \
+                  --repo "${{ github.repository }}" \
+                  --title "$TITLE" \
+                  --body "Auto-created from TASKS.md" \
+                  --label "auto-created")
+                ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$' | head -1)
+
+                if [ -z "$ISSUE_NUM" ]; then
+                  echo "❌ Failed to extract issue number from: $ISSUE_URL"
+                  exit 1
+                fi
+
+                # Update TASKS.md with issue number
+                sed -i "s|<!-- issue: # -->|<!-- issue: #$ISSUE_NUM -->|" "$TASKS_FILE"
+
+                # Verify the replacement was successful
+                if ! grep -q "<!-- issue: #$ISSUE_NUM -->" "$TASKS_FILE"; then
+                  echo "❌ Failed to update TASKS.md with issue #$ISSUE_NUM"
+                  exit 1
+                fi
+
+                echo "✅ Created issue: $TITLE (#$ISSUE_NUM)"
+              fi
             fi
           done
+
+          # Commit the updated TASKS.md if changes were made
+          if ! git diff --quiet; then
+            git add "$TASKS_FILE"
+            git commit -m "chore: update TASKS.md with created issue numbers"
+            git push origin main
+          fi
 
           echo "✅ Task issue creation complete"

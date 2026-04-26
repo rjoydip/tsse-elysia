@@ -1,0 +1,9 @@
+scan:
+  skip-dirs:
+    - "**/test/**"
+    - "**/docs/**"
+    - "**/node_modules/**"
+    - "**/knowledge/**"
+  skip-files:
+    - "**/*.test.ts"
+    - "**/*.test.tsx"
