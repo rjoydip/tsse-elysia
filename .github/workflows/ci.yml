@@ -190,6 +190,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           exit-code: "0"
           ignore-unfixed: false
+          output: trivy-vuln.txt
 
       - name: Scan for malware
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -198,3 +199,20 @@ jobs:
           scanner: "malware"
           format: "table"
           exit-code: "0"
+          output: trivy-malware.txt
+
+      - name: Post scan results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const vuln = fs.readFileSync('trivy-vuln.txt', 'utf8');
+            const malware = fs.readFileSync('trivy-malware.txt', 'utf8');
+            const body = `## 🐳 Docker Security Scan Results\n\n### Vulnerability Scan (Critical/High)\n\`\`\`\n${vuln}\n\`\`\`\n\n### Malware Scan\n\`\`\`\n${malware}\n\`\`\``;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
