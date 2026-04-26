@@ -45,14 +45,6 @@ jobs:
           git config --global fetch.recurseSubmodules false
           git config --global status.submoduleSummary false
 
-      - name: Set PR review prompt
-        run: |
-          # Generate a random delimiter to avoid conflicts with file content
-          DELIM=$(openssl rand -hex 16)
-          echo "PR_REVIEW_PROMPT<<${DELIM}" >> $GITHUB_ENV
-          cat knowledge/prompts/pr-review.md >> $GITHUB_ENV
-          echo "${DELIM}" >> $GITHUB_ENV
-
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
         timeout-minutes: 10
