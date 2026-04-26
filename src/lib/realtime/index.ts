@@ -8,7 +8,7 @@ export {
   connectionStore,
   type ConnectionMetadata,
   type WebSocketConnection,
-} from "./connection-store";
+} from "./stores/connection";
 
 // Authentication
 export { authenticateConnection, validateOrigin, withAuth, type AuthResult } from "./auth";
@@ -31,7 +31,7 @@ export {
   type TypingMessage,
   type DashboardMessage,
   type ErrorMessage,
-} from "./schemas";
+} from "./schema";
 
 // Content sanitization
 export { sanitizeContent, stripHtml, validateContent, sanitizeMessage } from "./sanitizer";
@@ -47,7 +47,7 @@ export {
   meetsRoleRequirement,
   type UserRole,
   type Permission,
-} from "./authorization";
+} from "./auth/authorization";
 
 // Rate limiting
 export {
@@ -73,15 +73,15 @@ export {
   notificationService,
   type Notification,
   type NotificationType,
-} from "./notification-service";
-export { presenceService, type Presence, type PresenceStatus } from "./presence-service";
+} from "./services/notification";
+export { presenceService, type Presence, type PresenceStatus } from "./services/presence";
 export {
   dashboardService,
   type DashboardUpdate,
   type DashboardResource,
   type DashboardAction,
-} from "./dashboard-service";
-export { chatService, type Reaction } from "./chat-service";
+} from "./services/dashboard";
+export { chatService, type Reaction } from "./services/chat";
 
 // Re-export types
 export type { Context } from "elysia";

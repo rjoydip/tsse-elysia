@@ -6,7 +6,7 @@
 
 import { useEffect } from "react";
 import { useSession } from "~/lib/auth/client";
-import { authActions } from "~/store/auth";
+import { authActions } from "~/lib/stores/auth";
 
 /**
  * Hook that keeps auth store in sync with Better Auth session.

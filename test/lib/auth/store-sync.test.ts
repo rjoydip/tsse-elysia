@@ -26,7 +26,11 @@ describe("Auth Store Sync", () => {
     });
 
     it("should reset store completely", () => {
-      authActions.setUser({ accountNo: "123", email: "test@test.com", role: ["user"] });
+      authActions.setUser({
+        accountNo: "123",
+        email: "test@test.com",
+        role: ["user"],
+      });
       authActions.reset();
 
       expect(authStore.get().user).toBeNull();

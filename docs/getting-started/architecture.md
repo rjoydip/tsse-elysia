@@ -200,19 +200,22 @@ src/
 │   │       ├── catalog.ts
 │   │       └── users.ts
 │   ├── db/           # Database (Drizzle + SQLite/PostgreSQL)
-│   │   ├── index.ts
-│   │   └── schema.ts
+│   │   ├── core/
+│   │   │   ├── schema.ts
+│   │   │   └── index.ts
 │   ├── redis/        # Storage & Pub/Sub
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
 │   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
 │   ├── cache/        # Cache layer (Unstorage-backed)
 │   │   └── index.ts   # Multi-backend cache support
 │   ├── realtime/      # WebSocket realtime
-│   ├── rate-limit/   # Rate limiting
-│   ├── store/        # State management
+│   ├── rate-limit.ts  # Rate limiting
+│   ├── stores/        # State management
 │   │   ├── auth.ts
 │   │   ├── preferences.ts
-│   │   └── status.ts
+│   │   ├── status.ts
+│   │   ├── settings.ts
+│   │   └── rate-limit.ts
 │   ├── blog/         # Blog data
 │   ├── changelog/    # Changelog data
 │   └── logger.ts     # Structured logger built on Evlog

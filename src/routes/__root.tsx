@@ -12,7 +12,7 @@ import { Toaster } from "~/components/ui/sonner";
 import { DirectionProvider } from "~/context/direction-provider";
 import { FontProvider } from "~/context/font-provider";
 import { ThemeProvider } from "~/context/theme-provider";
-import { useAuthSync } from "~/lib/auth/store-sync";
+import { useAuthSync } from "~/lib/auth/sync";
 import { useAuthInit } from "~/lib/stores/auth";
 import { queryClient } from "~/router";
 import appCss from "~/styles/app.css?url";

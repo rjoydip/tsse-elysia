@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { faker } from "@faker-js/faker";
-import * as schema from "../../../src/lib/db/schema";
+import * as schema from "../../../src/lib/db/core/schema";
 
 const TEST_DB_PATH = ":memory:";
 

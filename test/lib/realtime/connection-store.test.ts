@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { connectionStore } from "../../../src/lib/realtime/connection-store";
+import { connectionStore } from "../../../src/lib/realtime/stores/connection";
 
 describe("Connection Store", () => {
   // Mock WebSocket data for testing

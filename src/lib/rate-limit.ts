@@ -17,4 +17,4 @@ export {
   resetRateLimit,
   cleanupRateLimitStore,
   cleanupRateLimitStoreOnRequest,
-} from "./store";
+} from "./stores/rate-limit";

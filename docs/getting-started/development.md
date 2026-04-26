@@ -112,9 +112,9 @@ src/
 │   │   ├── index.ts   # Server auth instance
 │   │   └── client.ts  # Client auth hooks and methods
 │   ├── db/           # Database (Drizzle + SQLite)
-│   │   ├── index.ts
-│   │   ├── schema.ts
-│   │   └── heartbeat.ts
+│   │   ├── core/
+│   │   │   ├── schema.ts
+│   │   │   └── index.ts
 │   ├── redis/        # Redis cache and Pub/Sub (Bun native)
 │   │   ├── index.ts   # Client singleton, health check
 │   │   └── pubsub.ts  # Typed channels and helpers
@@ -130,11 +130,12 @@ src/
 │   │       └── users.ts
 │   ├── cache/        # Cache utilities
 │   ├── realtime/      # WebSocket realtime
-│   ├── rate-limit/   # Rate limiting implementation
-│   ├── store/        # State management
+│   ├── rate-limit.ts  # Rate limiting implementation
+│   ├── stores/        # State management
 │   │   ├── auth.ts
 │   │   ├── preferences.ts
-│   │   └── status.ts
+│   │   ├── status.ts
+│   │   └── settings.ts
 │   ├── blog/         # Blog data
 │   ├── changelog/    # Changelog data
 │   └── logger.ts     # Logger configuration
