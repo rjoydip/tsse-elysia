@@ -78,9 +78,21 @@ jobs:
                   --body "Auto-created from TASKS.md" \
                   --label "auto-created")
                 ISSUE_NUM=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$' | head -1)
-                
+
+                if [ -z "$ISSUE_NUM" ]; then
+                  echo "❌ Failed to extract issue number from: $ISSUE_URL"
+                  exit 1
+                fi
+
                 # Update TASKS.md with issue number
                 sed -i "s|<!-- issue: # -->|<!-- issue: #$ISSUE_NUM -->|" "$TASKS_FILE"
+
+                # Verify the replacement was successful
+                if ! grep -q "<!-- issue: #$ISSUE_NUM -->" "$TASKS_FILE"; then
+                  echo "❌ Failed to update TASKS.md with issue #$ISSUE_NUM"
+                  exit 1
+                fi
+
                 echo "✅ Created issue: $TITLE (#$ISSUE_NUM)"
               fi
             fi
