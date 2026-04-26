@@ -13,10 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BUN_INSTALL_CACHE_DIR: ~/.bun-install-cache
   DATABASE_TYPE: "sqlite"
   SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-  E2E_HOST: "localhost"
+  E2E_HOST: "0.0.0.0"
   E2E_PORT: "4173"
 
 jobs:
@@ -35,13 +34,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run Linters
         run: bun run lint:ci
@@ -64,13 +63,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run security audit
         run: bun audit --audit-level=critical
@@ -98,13 +97,13 @@ jobs:
       - name: Cache bun dependencies
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.BUN_INSTALL_CACHE_DIR }}
+          path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-deps-
 
       - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
+        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run database setup
         run: bun run db:setup
@@ -143,8 +142,12 @@ jobs:
             sleep 2
           done
 
-      # - name: Run E2E tests
-      #   run: bun run test:e2e --project=chromium
+      - name: Run E2E tests
+        run: bun run test:e2e --project=chromium
+
+      - name: Stop preview server
+        if: always()
+        run: pkill -f "bun run preview" || true
 
       - name: Upload ${{ matrix.artifact_name }} artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

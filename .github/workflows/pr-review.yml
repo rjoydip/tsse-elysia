@@ -45,13 +45,12 @@ jobs:
           git config --global fetch.recurseSubmodules false
           git config --global status.submoduleSummary false
 
-      - name: Load PR review prompt
+      - name: Set PR review prompt
         run: |
-          {
-            echo "PR_REVIEW_PROMPT<<EOF"
-            cat knowledge/prompts/pr-review.md
-            echo "EOF"
-          } >> $GITHUB_ENV
+          # Use unique delimiter to avoid conflicts with file content
+          echo "PR_REVIEW_PROMPT<<PR_REVIEW_DELIM" >> $GITHUB_ENV
+          cat knowledge/prompts/pr-review.md >> $GITHUB_ENV
+          echo "PR_REVIEW_DELIM" >> $GITHUB_ENV
 
       - name: Run Code Review
         uses: anomalyco/opencode/github@3c85719fea0ee83389c814d7abbf1f98c5c6f0f1 # v1.14.25
