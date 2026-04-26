@@ -191,11 +191,13 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "tsse-elysia:${{ github.sha }}"
-          format: "table"
           severity: "CRITICAL,HIGH"
           exit-code: "0"
+          format: "table"
           ignore-unfixed: false
-          output: trivy-vuln.txt
+          vuln-type: "os,library"
+          show-vulnerable-only: true # Only show packages WITH vulnerabilities
+          output: "trivy-vuln.txt"
 
       - name: Scan for malware
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -204,6 +206,7 @@ jobs:
           scanner: "malware"
           format: "table"
           exit-code: "0"
+          show-vulnerable-only: true # Only show malwares
           output: trivy-malware.txt
 
       - name: Post scan results to PR
