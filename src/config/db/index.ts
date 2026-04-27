@@ -19,7 +19,7 @@ import { createClient, type Client } from "@libsql/client";
 import { Pool } from "pg";
 import { drizzle as drizzleLibsql } from "drizzle-orm/libsql";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import * as schema from "~/lib/db/core/schema";
+import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
 import { isCI, isDev, isStage, isQA, isProduction } from "~/config";
 import { dbLogger } from "~/lib/logger";

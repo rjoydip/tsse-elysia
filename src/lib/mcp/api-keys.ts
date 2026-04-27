@@ -6,7 +6,7 @@
 import { randomBytes, createHash } from "crypto";
 import { randomUUID } from "uncrypto";
 import { db } from "~/config/db";
-import { mcpApiKeys, type McpApiKey } from "~/lib/db/core/schema";
+import { mcpApiKeys, type McpApiKey } from "~/lib/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { logger } from "~/lib/logger";
 import { resetRateLimit } from "./rate-limit";

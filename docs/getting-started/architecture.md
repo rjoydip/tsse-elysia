@@ -201,7 +201,13 @@ src/
 │   │       └── users.ts
 │   ├── db/           # Database (Drizzle + SQLite/PostgreSQL)
 │   │   ├── core/
-│   │   │   ├── schema.ts
+│   │   │   ├── schema/
+│   │   │   │   ├── index.ts       # Re-exports all schema modules
+│   │   │   │   ├── auth.ts        # users, sessions, accounts, verifications
+│   │   │   │   ├── subscriptions.ts # subscriptionPlans, subscriptions
+│   │   │   │   ├── mcp.ts         # mcpApiKeys, serviceHealth
+│   │   │   │   └── user-settings.ts # user settings tables
+│   │   │   │   └── schema.ts      # Legacy redirect to schema/
 │   │   │   └── index.ts
 │   ├── redis/        # Storage & Pub/Sub
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends

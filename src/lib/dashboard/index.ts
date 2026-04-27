@@ -36,7 +36,7 @@ export {
   type TypingMessage,
   type DashboardMessage,
   type ErrorMessage,
-} from "../db/dashboard/schema";
+} from "~/services/dashboard/schema";
 
 // Content sanitization
 export { sanitizeContent, stripHtml, validateContent, sanitizeMessage } from "./sanitizer";

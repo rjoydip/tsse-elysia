@@ -8,7 +8,8 @@ import {
   resetRateLimit as resetRateLimitBase,
   type RateLimitResult,
 } from "~/lib/rate-limit";
-import type { McpApiKey } from "~/lib/db/core/schema";
+import type { McpApiKey } from "~/lib/db/schema";
+export type McpApiKeySelect = McpApiKey;
 
 /**
  * Re-export types and helpers from unified store.
@@ -28,11 +29,11 @@ export {
  * @param apiKey - The API key record with rate limit settings
  * @returns Rate limit check result
  */
-export async function checkRateLimit(apiKey: McpApiKey): Promise<RateLimitResult> {
-  const limit = apiKey.rateLimit ?? 100;
-  const duration = apiKey.rateLimitDuration ?? 60_000;
+export async function checkRateLimit(apiKey: McpApiKeySelect): Promise<RateLimitResult> {
+  const limit = (apiKey.rateLimit ?? 100) as number;
+  const duration = (apiKey.rateLimitDuration ?? 60_000) as number;
 
-  return checkRateLimitBase(apiKey.id, limit, duration);
+  return checkRateLimitBase(String(apiKey.id), limit, duration);
 }
 
 /**

@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "../../src/lib/db/core/schema";
+import * as schema from "../../src/lib/db/schema";
 import type { SubscriptionTier } from "../../src/types/subscription";
 
 const TEST_DB_PATH = ":memory:";

@@ -113,7 +113,13 @@ src/
 │   │   └── client.ts  # Client auth hooks and methods
 │   ├── db/           # Database (Drizzle + SQLite)
 │   │   ├── core/
-│   │   │   ├── schema.ts
+│   │   │   ├── schema/
+│   │   │   │   ├── index.ts       # Re-exports all schema modules
+│   │   │   │   ├── auth.ts        # users, sessions, accounts, verifications
+│   │   │   │   ├── subscriptions.ts # subscriptionPlans, subscriptions
+│   │   │   │   ├── mcp.ts         # mcpApiKeys, serviceHealth
+│   │   │   │   └── user-settings.ts # user settings tables
+│   │   │   │   └── schema.ts      # Legacy redirect to schema/
 │   │   │   └── index.ts
 │   ├── redis/        # Redis cache and Pub/Sub (Bun native)
 │   │   ├── index.ts   # Client singleton, health check

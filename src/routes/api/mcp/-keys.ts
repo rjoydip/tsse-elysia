@@ -83,7 +83,7 @@ export const mcpKeysRoutes = new Elysia({ name: "api.routes.mcp.keys", prefix: "
         });
       }
 
-      const keys = await listApiKeys(apiKey.userId);
+      const keys = await listApiKeys(String(apiKey.userId));
       const response = new Response(JSON.stringify({ keys }), {
         headers: { "Content-Type": "application/json" },
       });
@@ -141,7 +141,7 @@ export const mcpKeysRoutes = new Elysia({ name: "api.routes.mcp.keys", prefix: "
 
       const result = await createApiKey({
         name,
-        userId: apiKey.userId,
+        userId: String(apiKey.userId),
         organizationId: organizationId ?? null,
         permissions,
         rateLimit,
@@ -156,7 +156,7 @@ export const mcpKeysRoutes = new Elysia({ name: "api.routes.mcp.keys", prefix: "
           name: result.record.name,
           rateLimit: result.record.rateLimit,
           rateLimitDuration: result.record.rateLimitDuration,
-          createdAt: result.record.createdAt.toISOString(),
+          createdAt: new Date(result.record.createdAt as unknown as string).toISOString(),
         }),
         {
           status: 201,
@@ -211,7 +211,7 @@ export const mcpKeysRoutes = new Elysia({ name: "api.routes.mcp.keys", prefix: "
       }
 
       const { id } = params;
-      const revokeOutcome = await revokeApiKeyWithReason(id, apiKey.userId);
+      const revokeOutcome = await revokeApiKeyWithReason(id, String(apiKey.userId));
 
       if (revokeOutcome === "not_found") {
         return new Response(JSON.stringify({ error: "Key not found" }), {
@@ -268,7 +268,7 @@ export const mcpKeysRoutes = new Elysia({ name: "api.routes.mcp.keys", prefix: "
         expiresAt?: string;
       };
 
-      const updated = await updateApiKey(id, apiKey.userId, {
+      const updated = await updateApiKey(id, String(apiKey.userId), {
         name,
         permissions,
         rateLimit,

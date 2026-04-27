@@ -10,7 +10,7 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { seed, reset } from "drizzle-seed";
 import { scriptLogger as logger } from "../src/lib/logger";
-import * as schema from "../src/lib/db/core/schema";
+import * as schema from "../src/lib/db/schema";
 import { env } from "~/config/env";
 
 /**
