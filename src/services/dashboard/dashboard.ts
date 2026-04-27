@@ -3,7 +3,7 @@
  * Handles optimistic updates, granular subscriptions, and backpressure handling.
  */
 
-import { connectionStore } from "../stores/connection";
+import { connectionStore } from "../../lib/stores/dashboard/connection";
 import { logger } from "~/lib/logger";
 
 /**

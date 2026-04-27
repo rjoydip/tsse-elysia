@@ -3,7 +3,7 @@
  * Tracks online/offline/away status and typing indicators.
  */
 
-import { connectionStore } from "../stores/connection";
+import { connectionStore } from "../../lib/stores/dashboard/connection";
 import { logger } from "~/lib/logger";
 
 /**

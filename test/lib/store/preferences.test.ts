@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { setPreferences, resetPreferences } from "../../../src/lib/stores/preferences";
+import { setPreferences, resetPreferences } from "../../../src/lib/stores/dashboard/preferences";
 
 describe("Preferences Store API", () => {
   describe("Exports", () => {

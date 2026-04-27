@@ -5,7 +5,7 @@
  */
 
 import { randomUUID } from "uncrypto";
-import { connectionStore } from "../stores/connection";
+import { connectionStore } from "../../lib/stores/dashboard/connection";
 import { logger } from "~/lib/logger";
 
 /**

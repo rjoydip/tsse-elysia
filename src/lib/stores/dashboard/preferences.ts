@@ -6,7 +6,7 @@
 
 import { createStore, useStore } from "@tanstack/react-store";
 import { isBrowser } from "~/config";
-import { logger } from "../logger";
+import { logger } from "../../logger";
 
 /**
  * User preferences interface defining all configurable settings.

@@ -30,20 +30,45 @@ A full-stack TypeScript application demonstrating modern web development with Ta
 ```bash
 tsse-elysia/
 ├── src/
-│   ├── routes/           # File-based routing
-│   │   ├── __root.tsx   # Root layout
-│   │   ├── index.tsx    # Home page
-│   │   └── api/         # API routes (core, auth, mcp)
-│   ├── router.tsx       # Router configuration
-│   ├── lib/mcp/         # MCP server/auth/tools modules
-│   └── styles/          # CSS styles
-├── server.ts            # Tanstack server entry
-├── vite.config.ts       # Vite configuration
-├── test/
-│   ├── load-tests/      # k6 load tests
-│   └── *.test.ts       # Unit tests
-├── .e2e/                # Playwright E2E tests
-└── docs/                # Documentation
+│   ├── assets/        # Static assets (images, icons)
+│   ├── components/   # React components
+│   │   ├── ui/       # shadcn/ui components
+│   │   ├── layout/  # Layout components
+│   │   ├── docs/    # Docs components
+│   │   ├── settings/ # Settings components
+│   │   └── ...
+│   ├── config/       # Configuration
+│   ├── context/     # React context providers
+│   ├── features/    # Feature modules
+│   │   ├── auth/    # Auth features
+│   │   ├── dashboard/ # Dashboard feature
+│   │   ├── users/   # Users feature
+│   │   ├── tasks/   # Tasks feature
+│   │   └── ...
+│   ├── hooks/       # Custom React hooks
+│   ├── lib/        # Library code
+│   │   ├── auth/   # Auth (Better Auth)
+│   │   ├── cache/  # Cache layer
+│   │   ├── mcp/   # MCP server
+│   │   └── ...
+│   ├── middlewares/ # Middleware implementations
+│   ├── plugins/   # Elysia plugins
+│   ├── routes/    # File-based routing
+│   │   ├── __root.tsx
+│   │   ├── api/   # API routes
+│   │   └── _authenticated/ # Protected routes
+│   ├── services/  # Service layer
+│   └── styles/    # CSS styles
+├── test/          # Unit tests (Bun)
+│   ├── components/ # Component tests
+│   ├── config/    # Configuration tests
+│   ├── features/  # Feature tests
+│   ├── lib/       # Library tests
+│   └── services/  # Service tests
+├── .e2e/          # Playwright E2E tests
+├── server.ts      # TanStack Start server
+├── vite.config.ts # Vite configuration
+└── docs/          # Documentation
 ```
 
 ## Features

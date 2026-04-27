@@ -5,7 +5,7 @@
 
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
-import { getNotifications, updateNotifications } from "~/services/settings";
+import { getNotifications, updateNotifications } from "~/services/dashboard/settings";
 
 const notificationsExample = {
   type: "all",

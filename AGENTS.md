@@ -83,24 +83,44 @@ This project uses two testing frameworks:
 
 ```bash
 test/
-├── config/           # Configuration tests
-│   ├── docs.test.ts  # Docs config (globKeyToDocPath, getSplatPath, buildDocMap, getDisplayName)
-│   └── index.test.ts
-├── middlewares/      # Middleware tests
-│   ├── cors.test.ts
-│   ├── helmet.test.ts
-│   └── index.test.ts # traceFn, errorFn, composedMiddleware
-├── hooks/            # Hook tests
-├── lib/              # Library tests (logger, blog, utils, changelog)
-│   └── redis/       # Redis tests
-│       ├── redis.test.ts  # Redis client tests
-│       └── pubsub.test.ts # Pub/Sub tests
-├── routes/           # Route tests
-│   └── status.test.ts
-├── store/            # Store tests
 ├── components/       # Component tests
-│   └── ui/          # UI component tests
-└── ...
+│   ├── ui/          # UI component tests
+│   ├── auth/        # Auth component tests
+│   ├── data-table/  # Data-table tests
+│   ├── docs/        # Docs tests
+│   ├── layout/      # Layout tests
+│   ├── profile/     # Profile tests
+│   └── settings/    # Settings tests
+├── config/           # Configuration tests
+│   ├── db/          # Database config tests
+│   ├── docs.test.ts # Docs config tests
+│   └── index.test.ts
+├── context/         # Context tests
+├── features/        # Feature tests
+│   ├── apps/       # Apps feature tests
+│   ├── auth/       # Auth feature tests
+│   ├── chats/      # Chats feature tests
+│   ├── dashboard/ # Dashboard feature tests
+│   ├── errors/     # Errors feature tests
+│   ├── landing/   # Landing feature tests
+│   ├── settings/  # Settings feature tests
+│   ├── tasks/      # Tasks feature tests
+│   └── users/      # Users feature tests
+├── fixtures/       # Test fixtures
+├── hooks/          # Hook tests
+├── lib/            # Library tests
+│   ├── auth/       # Auth tests
+│   ├── cache/      # Cache tests
+│   ├── dashboard/ # Dashboard tests
+│   ├── mcp/       # MCP tests
+│   │   └── tools/ # MCP tools tests
+│   ├── rate-limit/ # Rate limit tests
+│   └── store/      # Store tests
+├── middlewares/    # Middleware tests
+├── plugins/       # Plugin tests
+├── routes/         # Route tests
+├── services/       # Service layer tests
+└── scripts/       # Script tests
 ```
 
 #### E2E Tests Structure

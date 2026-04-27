@@ -212,49 +212,60 @@ src/
 ```bash
 test/                  # Unit tests (Bun)
 ├── config/           # Configuration tests
+│   ├── db/           # Database config tests
 │   ├── docs.test.ts  # Docs config tests
-│   ├── env.test.ts   # Environment config tests
+│   ├── env.test.ts  # Environment config tests
 │   └── index.test.ts # App config tests
-├── middlewares/      # Middleware tests
-│   ├── cors.test.ts  # CORS tests
-│   ├── helmet.test.ts # Helmet tests
-│   └── index.test.ts # Middleware index tests
-├── hooks/            # Hook tests
-│   └── use-mobile.test.ts
-├── lib/              # Library tests
-│   ├── auth/        # Auth tests
-│   ├── db.test.ts   # Database tests
-│   ├── logger.test.ts # Logger tests
-│   ├── mcp/         # MCP tests
-│   │   ├── api-keys.test.ts
-│   │   ├── rate-limit.test.ts
-│   │   └── tools/
-│   │       ├── catalog.test.ts
-│   │       └── users.test.ts
-│   ├── redis/       # Redis tests
-│   │   ├── redis.test.ts
-│   │   └── pubsub.test.ts
-│   ├── store/       # Store tests
-│   │   ├── auth.test.ts
-│   │   ├── preferences.test.ts
-│   │   └── status.test.ts
-│   ├── cache/       # Cache tests
-│   └── realtime/    # Realtime tests
-├── routes/           # Route tests
-│   ├── status.test.ts # Status page tests
-│   ├── api/         # API route tests
-│   │   ├── core.test.ts
-│   │   ├── auth/   # Auth API tests
-│   │   ├── mcp/    # MCP API tests
-│   │   └── modules.test.ts
-│   ├── profile.test.ts
-│   └── settings.test.ts
 ├── components/       # Component tests
 │   ├── ui/          # UI component tests
-│   ├── header.test.tsx
-│   ├── footer.test.tsx
-│   ├── branding.test.tsx
-│   └── theme/       # Theme tests
+│   ├── auth/        # Auth component tests
+│   ├── data-table/ # Data-table component tests
+│   ├── docs/       # Docs component tests
+│   ├── layout/     # Layout component tests
+│   ├── profile/    # Profile component tests
+│   └── settings/   # Settings component tests
+├── context/        # Context tests
+├── features/       # Feature tests
+│   ├── apps/       # Apps feature tests
+│   ├── auth/      # Auth feature tests
+│   ├── chats/    # Chats feature tests
+│   ├── dashboard/ # Dashboard feature tests
+│   ├── errors/    # Errors feature tests
+│   ├── landing/   # Landing feature tests
+│   ├── settings/ # Settings feature tests
+│   ├── tasks/     # Tasks feature tests
+│   └── users/     # Users feature tests
+├── fixtures/       # Test fixtures
+├── hooks/         # Hook tests
+├── lib/           # Library tests
+│   ├── auth/      # Auth library tests
+│   ├── cache/     # Cache library tests
+│   ├── dashboard/ # Dashboard library tests
+│   ├── db/        # Database tests
+│   ├── mcp/       # MCP library tests
+│   │   └── tools/ # MCP tools tests
+│   ├── rate-limit/ # Rate limit tests
+│   ├── realtime/  # Realtime tests
+│   └── store/     # Store tests
+├── middlewares/   # Middleware tests
+│   ├── cors.test.ts
+│   ├── helmet.test.ts
+│   ├── rate-limit.ts
+│   └── index.test.ts
+├── plugins/      # Plugin tests
+├── routes/      # Route tests
+│   ├── api/     # API route tests
+│   │   ├── auth/
+│   │   ├── mcp/
+│   │   └── settings/
+│   └── (auth)/  # Auth route tests
+├── services/    # Service layer tests
+│   ├── cache/   # Cache service tests
+│   ├── dashboard/ # Dashboard service tests
+│   ├── llmo/    # LLMO service tests
+│   ├── mcp/    # MCP service tests
+│   └── status/  # Status service tests
+└── scripts/    # Script tests
 
 .e2e/                 # E2E tests (Playwright)
 ├── ui/               # UI E2E tests (split by component)

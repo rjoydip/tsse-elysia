@@ -5,7 +5,7 @@
 
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
-import { getProfile, updateProfile } from "~/services/settings";
+import { getProfile, updateProfile } from "~/services/dashboard/settings";
 
 const profileExample = {
   username: "johndoe",
@@ -60,7 +60,11 @@ export const profileSettingsRoutes = new Elysia({
         urls: Array<{ value: string }>;
       };
 
-      const data = await updateProfile(session.user.id, { username, bio, urls });
+      const data = await updateProfile(session.user.id, {
+        username,
+        bio,
+        urls,
+      });
       return { ...data, email: session.user.email };
     },
     {

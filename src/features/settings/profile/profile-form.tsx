@@ -18,7 +18,7 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
-import { settingsActions } from "~/lib/stores/settings";
+import { settingsActions } from "~/lib/stores/dashboard/settings";
 import { type ProfileData } from ".";
 
 /**

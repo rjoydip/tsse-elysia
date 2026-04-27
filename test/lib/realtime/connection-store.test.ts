@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { connectionStore } from "../../../src/lib/realtime/stores/connection";
+import { connectionStore } from "../../../src/lib/stores/dashboard/connection";
 
 describe("Connection Store", () => {
   // Mock WebSocket data for testing
@@ -117,8 +117,14 @@ describe("Connection Store", () => {
   describe("broadcast", () => {
     it("should broadcast message to all connections", () => {
       const sent: string[] = [];
-      const mockSocket1 = { ...mockSocket, send: (msg: string) => sent.push(msg) } as any;
-      const mockSocket2 = { ...mockSocket, send: (msg: string) => sent.push(msg) } as any;
+      const mockSocket1 = {
+        ...mockSocket,
+        send: (msg: string) => sent.push(msg),
+      } as any;
+      const mockSocket2 = {
+        ...mockSocket,
+        send: (msg: string) => sent.push(msg),
+      } as any;
 
       connectionStore.register(mockSocket1, "user-1");
       connectionStore.register(mockSocket2, "user-2");
@@ -133,8 +139,14 @@ describe("Connection Store", () => {
   describe("sendToUser", () => {
     it("should send message to specific user", () => {
       const sent: string[] = [];
-      const mockSocket1 = { ...mockSocket, send: (msg: string) => sent.push(msg) } as any;
-      const mockSocket2 = { ...mockSocket, send: (msg: string) => sent.push(msg) } as any;
+      const mockSocket1 = {
+        ...mockSocket,
+        send: (msg: string) => sent.push(msg),
+      } as any;
+      const mockSocket2 = {
+        ...mockSocket,
+        send: (msg: string) => sent.push(msg),
+      } as any;
 
       connectionStore.register(mockSocket1, "user-1");
       connectionStore.register(mockSocket2, "user-2");

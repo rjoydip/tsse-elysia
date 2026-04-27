@@ -5,7 +5,7 @@
 
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
-import { getDisplay, updateDisplay } from "~/services/settings";
+import { getDisplay, updateDisplay } from "~/services/dashboard/settings";
 
 const displayExample = {
   items: ["recents", "home"],

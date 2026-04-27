@@ -3,7 +3,7 @@
  * Uses in-memory store for synchronous WebSocket message checks.
  */
 
-import { connectionStore } from "./stores/connection";
+import { connectionStore } from "../stores/dashboard/connection";
 import { logger } from "~/lib/logger";
 
 /**

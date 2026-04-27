@@ -5,7 +5,7 @@
 
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
-import { getAccount, updateAccount } from "~/services/settings";
+import { getAccount, updateAccount } from "~/services/dashboard/settings";
 
 const accountExample = {
   name: "John Doe",
@@ -59,7 +59,11 @@ export const accountSettingsRoutes = new Elysia({
         language: string;
       };
 
-      const data = await updateAccount(session.user.id, { name, dob, language });
+      const data = await updateAccount(session.user.id, {
+        name,
+        dob,
+        language,
+      });
       return data;
     },
     {

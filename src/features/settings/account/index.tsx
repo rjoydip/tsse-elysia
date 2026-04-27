@@ -1,6 +1,6 @@
 import { ContentSection } from "../components/content-section";
 import { AccountForm } from "./account-form";
-import { AccountData } from "~/lib/stores/settings";
+import { AccountData } from "~/lib/stores/dashboard/settings";
 
 /**
  * Account settings page component.
