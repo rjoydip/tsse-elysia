@@ -1,11 +1,11 @@
 /**
  * Profile settings API endpoints.
- * Delegates to the profile service for business logic.
+ * Uses controller for session validation, service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { auth } from "~/lib/auth";
-import { getProfile, updateProfile } from "~/services/dashboard/settings";
+import { profileService } from "~/services/dashboard/settings";
+import { validateSession, formatProfileResponse } from "~/controllers/settings/controller";
 
 const profileExample = {
   username: "johndoe",
@@ -21,13 +21,11 @@ export const profileSettingsRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-      const data = await getProfile(session.user.id);
-      return data;
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
+
+      const data = await profileService.getProfile(session!.userId);
+      return formatProfileResponse(data, session!.email);
     },
     {
       detail: {
@@ -48,11 +46,8 @@ export const profileSettingsRoutes = new Elysia({
   .put(
     "/",
     async ({ body, set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
       const { username, bio, urls } = body as {
         username: string;
@@ -60,12 +55,12 @@ export const profileSettingsRoutes = new Elysia({
         urls: Array<{ value: string }>;
       };
 
-      const data = await updateProfile(session.user.id, {
+      const data = await profileService.updateProfile(session!.userId, {
         username,
         bio,
         urls,
       });
-      return { ...data, email: session.user.email };
+      return formatProfileResponse(data, session!.email);
     },
     {
       body: t.Object({

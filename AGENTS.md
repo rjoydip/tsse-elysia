@@ -54,6 +54,58 @@ All AI-generated code must adhere to these standards.
 - **Type Checking**: Ensure `bun run typecheck` passes
 - **Dead Code Prevention**: Run lint and typecheck to detect unused code before committing
 
+### API Architecture Pattern
+
+When working with API routes, follow the **layered architecture** (HTTP → Controller → Service → Repository):
+
+```
+HTTP Layer (routes/api/) → Controller Layer (controllers/) → Service Layer (services/) → Repository Layer (repositories/)
+```
+
+**Layer Responsibilities:**
+
+| Layer          | Directory           | Responsibility                                           |
+| -------------- | ------------------- | -------------------------------------------------------- |
+| **HTTP**       | `src/routes/api/`   | Route definitions, HTTP handling, OpenAPI docs           |
+| **Controller** | `src/controllers/`  | Session validation, request parsing, response formatting |
+| **Service**    | `src/services/`     | Business logic, data transformation, validation          |
+| **Repository** | `src/repositories/` | ORM operations, database queries, data access            |
+
+**When creating new API endpoints:**
+
+1. **HTTP Layer** (`src/routes/api/your-module/`):
+   - Define Elysia routes
+   - Handle HTTP details (headers, status codes)
+   - Delegate to controller for validation
+
+2. **Controller Layer** (`src/controllers/your-module/`):
+   - Validate sessions (use `auth.api.getSession()`)
+   - Parse and validate request bodies
+   - Format responses
+   - Handle HTTP-specific logic
+
+3. **Service Layer** (`src/services/your-module/`):
+   - Implement business logic
+   - Transform data
+   - Validate business rules
+   - Orchestrate repositories
+
+4. **Repository Layer** (`src/repositories/your-module/`):
+   - ORM operations (Drizzle)
+   - Database queries
+   - Define interfaces for abstraction
+
+**Reference Implementations:**
+
+- **MCP API Keys**: `src/routes/api/mcp/-keys.ts`, `src/controllers/mcp/keys.controller.ts`, `src/services/mcp/api-keys.service.ts`, `src/repositories/mcp/api-keys.repository.ts`
+- **Settings API**: `src/routes/api/settings/-profile.ts`, `src/controllers/settings/controller.ts`, `src/services/dashboard/settings/profile.ts`, `src/repositories/settings/profile.repository.ts`
+
+**Documentation:**
+
+- [API Architecture Decision](./knowledge/DECISION.md) - Full decision rationale
+- [API Task List](./knowledge/TASK.md) - Implementation details
+- [README - API Architecture](./README.md#api-architecture) - Visual diagram
+
 ### Dead Code Prevention & Security Scanning
 
 This project enforces code quality and security via:

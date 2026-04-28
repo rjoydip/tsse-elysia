@@ -1,76 +1,82 @@
 /**
  * Display settings service.
- * Encapsulates display preferences CRUD operations.
+ * Encapsulates display business logic, uses repository for DB operations.
  */
 
-import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
-import { nanoid } from "nanoid";
+import type { DisplayResponse, UpdateDisplayInput } from "./types";
+import {
+  displayRepository,
+  type IDisplayRepository,
+} from "~/repositories/settings/display.repository";
 import { settingsLogger } from "~/lib/logger";
 
-export interface DisplayResponse {
-  items: string[];
+/**
+ * Display service interface.
+ */
+export interface IDisplayService {
+  getDisplay(userId: string): Promise<DisplayResponse>;
+  updateDisplay(userId: string, input: UpdateDisplayInput): Promise<DisplayResponse>;
 }
 
-export interface UpdateDisplayInput {
-  items: string[];
-}
+/**
+ * Display service implementation.
+ */
+export class DisplayService implements IDisplayService {
+  private repository: IDisplayRepository;
 
-export async function getDisplay(userId: string): Promise<DisplayResponse> {
-  const [display] = await db
-    .select()
-    .from(schema.userSettingsDisplay)
-    .where(eq(schema.userSettingsDisplay.userId, userId))
-    .limit(1);
+  constructor(repository: IDisplayRepository = displayRepository) {
+    this.repository = repository;
+  }
 
-  if (!display) {
+  /**
+   * Gets a user's display settings, returning defaults if not found.
+   */
+  async getDisplay(userId: string): Promise<DisplayResponse> {
+    const display = await this.repository.findDisplayByUserId(userId);
+
+    if (!display) {
+      return {
+        items: ["recents", "home"],
+      };
+    }
+
     return {
-      items: ["recents", "home"],
+      items: JSON.parse(display.items || '["recents","home"]'),
     };
   }
 
-  return {
-    items: JSON.parse(display.items || '["recents","home"]'),
-  };
-}
+  /**
+   * Updates a user's display settings.
+   */
+  async updateDisplay(userId: string, input: UpdateDisplayInput): Promise<DisplayResponse> {
+    const { items } = input;
+    const existing = await this.repository.findDisplayByUserId(userId);
+    const now = new Date();
+    const itemsJson = JSON.stringify(items || ["recents", "home"]);
 
-export async function updateDisplay(
-  userId: string,
-  input: UpdateDisplayInput,
-): Promise<DisplayResponse> {
-  const { items } = input;
-  const existing = await db
-    .select()
-    .from(schema.userSettingsDisplay)
-    .where(eq(schema.userSettingsDisplay.userId, userId))
-    .limit(1);
-
-  const now = new Date();
-  const itemsJson = JSON.stringify(items || ["recents", "home"]);
-
-  if (existing.length > 0) {
-    await db
-      .update(schema.userSettingsDisplay)
-      .set({
+    if (existing) {
+      await this.repository.updateDisplay(userId, { items: itemsJson, updatedAt: now });
+      settingsLogger.debug("Display updated", { userId });
+    } else {
+      await this.repository.createDisplay({
+        userId,
         items: itemsJson,
+        createdAt: now,
         updatedAt: now,
-      })
-      .where(eq(schema.userSettingsDisplay.userId, userId));
+      });
+      settingsLogger.debug("Display created", { userId });
+    }
 
-    settingsLogger.debug("Display updated", { userId });
-  } else {
-    await db.insert(schema.userSettingsDisplay).values({
-      id: nanoid(),
-      userId,
-      items: itemsJson,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    settingsLogger.debug("Display created", { userId });
+    return {
+      items: items || ["recents", "home"],
+    };
   }
-
-  return {
-    items: items || ["recents", "home"],
-  };
 }
+
+/**
+ * Singleton instance of the display service.
+ */
+export const displayService = new DisplayService();
+
+// Re-export types
+export type { DisplayResponse, UpdateDisplayInput };

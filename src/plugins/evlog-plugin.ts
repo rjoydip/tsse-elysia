@@ -239,7 +239,5 @@ export function evlogIngestEndpoint(options: EvlogPluginOptions = {}) {
           },
         },
       );
-
-    return app;
   };
 }

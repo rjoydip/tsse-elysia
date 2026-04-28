@@ -43,6 +43,63 @@ The application follows a server-side rendering (SSR) architecture using TanStac
 
 ## Core Components
 
+## API Architecture
+
+The API follows a layered architecture pattern for separation of concerns:
+
+```
+┌─────────────────────────────────────────────────┐
+│                     HTTP Layer (routes/api/)                    │
+│  - Elysia route definitions                         │
+│  - Request/Response handling                        │
+│  - OpenAPI documentation                        │
+│  - Delegates to controllers                      │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                Controller Layer (controllers/)              │
+│  - Session validation                          │
+│  - Request parsing and validation                │
+│  - Response formatting                        │
+│  - HTTP-specific logic                        │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                 Service Layer (services/)                   │
+│  - Business logic                              │
+│  - Data transformation                         │
+│  - Validation rules                           │
+│  - Orchestrates repositories                   │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│              Repository Layer (repositories/)              │
+│  - ORM operations (Drizzle)                     │
+│  - Database queries                          │
+│  - Data access abstraction                    │
+│  - Interface-based design                     │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                     Database (SQLite/PostgreSQL)              │
+└─────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer          | Directory           | Responsibility                                           |
+| -------------- | ------------------- | -------------------------------------------------------- |
+| **HTTP**       | `src/routes/api/`   | Route definitions, HTTP handling, OpenAPI docs           |
+| **Controller** | `src/controllers/`  | Session validation, request parsing, response formatting |
+| **Service**    | `src/services/`     | Business logic, data transformation, validation          |
+| **Repository** | `src/repositories/` | ORM operations, database queries, data access            |
+
+See [README.md - API Architecture](../../README.md#api-architecture) for full details.
+
 ### 1. Client Layer
 
 | Component        | File                   | Purpose                |

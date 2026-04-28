@@ -1,91 +1,95 @@
 /**
  * Account settings service.
- * Encapsulates account CRUD operations.
+ * Encapsulates account business logic, uses repository for DB operations.
  */
 
-import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
-import { nanoid } from "nanoid";
+import type { AccountResponse, UpdateAccountInput } from "./types";
+import {
+  accountRepository,
+  type IAccountRepository,
+} from "~/repositories/settings/account.repository";
 import { settingsLogger } from "~/lib/logger";
 
-export interface AccountResponse {
-  name: string;
-  dob: string | null;
-  language: string;
+/**
+ * Account service interface.
+ */
+export interface IAccountService {
+  getAccount(userId: string): Promise<AccountResponse>;
+  updateAccount(userId: string, input: UpdateAccountInput): Promise<AccountResponse>;
 }
 
-export interface UpdateAccountInput {
-  name?: string;
-  dob?: string | null;
-  language?: string;
-}
+/**
+ * Account service implementation.
+ */
+export class AccountService implements IAccountService {
+  private repository: IAccountRepository;
 
-export async function getAccount(userId: string): Promise<AccountResponse> {
-  const [account] = await db
-    .select()
-    .from(schema.userSettingsAccount)
-    .where(eq(schema.userSettingsAccount.userId, userId))
-    .limit(1);
+  constructor(repository: IAccountRepository = accountRepository) {
+    this.repository = repository;
+  }
 
-  if (!account) {
-    const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
+  /**
+   * Gets a user's account settings, returning defaults if not found.
+   */
+  async getAccount(userId: string): Promise<AccountResponse> {
+    const account = await this.repository.findAccountByUserId(userId);
+
+    if (!account) {
+      const user = await this.repository.findUserById(userId);
+      return {
+        name: user?.name || "",
+        dob: null,
+        language: "en",
+      };
+    }
 
     return {
-      name: user?.name || "",
-      dob: null,
-      language: "en",
+      name: account.name,
+      dob: account.dob ? new Date(account.dob).toISOString() : null,
+      language: account.language,
     };
   }
 
-  return {
-    name: account.name,
-    dob: account.dob ? new Date(account.dob).toISOString() : null,
-    language: account.language,
-  };
-}
+  /**
+   * Updates a user's account settings.
+   */
+  async updateAccount(userId: string, input: UpdateAccountInput): Promise<AccountResponse> {
+    const { name, dob, language } = input;
+    const existing = await this.repository.findAccountByUserId(userId);
+    const now = new Date();
 
-export async function updateAccount(
-  userId: string,
-  input: UpdateAccountInput,
-): Promise<AccountResponse> {
-  const { name, dob, language } = input;
-  const existing = await db
-    .select()
-    .from(schema.userSettingsAccount)
-    .where(eq(schema.userSettingsAccount.userId, userId))
-    .limit(1);
-
-  const now = new Date();
-
-  if (existing.length > 0) {
-    await db
-      .update(schema.userSettingsAccount)
-      .set({
+    if (existing) {
+      await this.repository.updateAccount(userId, {
         name: name || "",
         dob: dob ? new Date(dob) : null,
         language: language || "en",
         updatedAt: now,
-      })
-      .where(eq(schema.userSettingsAccount.userId, userId));
+      });
+      settingsLogger.debug("Account updated", { userId });
+    } else {
+      await this.repository.createAccount({
+        userId,
+        name: name || "",
+        dob: dob ? new Date(dob) : null,
+        language: language || "en",
+        createdAt: now,
+        updatedAt: now,
+      });
+      settingsLogger.debug("Account created", { userId });
+    }
 
-    settingsLogger.debug("Account updated", { userId });
-  } else {
-    await db.insert(schema.userSettingsAccount).values({
-      id: nanoid(),
-      userId,
-      name: name || "",
-      dob: dob ? new Date(dob) : null,
+    return {
+      name: name ?? "",
+      dob: dob ?? null,
       language: language || "en",
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    settingsLogger.debug("Account created", { userId });
+    };
   }
-
-  return {
-    name: name ?? "",
-    dob: dob ?? null,
-    language: language || "en",
-  };
 }
+
+/**
+ * Singleton instance of the account service.
+ */
+export const accountService = new AccountService();
+
+// Re-export types
+export type { AccountResponse, UpdateAccountInput };

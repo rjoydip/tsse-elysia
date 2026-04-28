@@ -1,11 +1,11 @@
 /**
  * Account settings API endpoints.
- * Delegates to the account service for business logic.
+ * Uses controller for session validation, service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { auth } from "~/lib/auth";
-import { getAccount, updateAccount } from "~/services/dashboard/settings";
+import { accountService } from "~/services/dashboard/settings";
+import { validateSession } from "~/controllers/settings/controller";
 
 const accountExample = {
   name: "John Doe",
@@ -20,12 +20,10 @@ export const accountSettingsRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-      const data = await getAccount(session.user.id);
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
+
+      const data = await accountService.getAccount(session!.userId);
       return data;
     },
     {
@@ -47,11 +45,8 @@ export const accountSettingsRoutes = new Elysia({
   .put(
     "/",
     async ({ body, set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
       const { name, dob, language } = body as {
         name: string;
@@ -59,7 +54,7 @@ export const accountSettingsRoutes = new Elysia({
         language: string;
       };
 
-      const data = await updateAccount(session.user.id, {
+      const data = await accountService.updateAccount(session!.userId, {
         name,
         dob,
         language,

@@ -39,7 +39,12 @@ export {
 } from "~/services/dashboard/schema";
 
 // Content sanitization
-export { sanitizeContent, stripHtml, validateContent, sanitizeMessage } from "./sanitizer";
+export {
+  sanitizeContent,
+  stripHtml,
+  validateContent,
+  sanitizeMessage,
+} from "./sanitizer";
 
 // Authorization
 export {
@@ -89,8 +94,8 @@ export {
   type DashboardUpdate,
   type DashboardResource,
   type DashboardAction,
-} from "../../services/dashboard/dashboard";
-export { chatService, type Reaction } from "../../services/dashboard/chat";
+} from "~/services/dashboard/main";
+export { chatService, type Reaction } from "~/services/dashboard/chat";
 
 // Re-export types
 export type { Context } from "elysia";

@@ -1,11 +1,11 @@
 /**
  * Display settings API endpoints.
- * Delegates to the display service for business logic.
+ * Uses controller for session validation, service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { auth } from "~/lib/auth";
-import { getDisplay, updateDisplay } from "~/services/dashboard/settings";
+import { displayService } from "~/services/dashboard/settings";
+import { validateSession } from "~/controllers/settings/controller";
 
 const displayExample = {
   items: ["recents", "home"],
@@ -18,12 +18,10 @@ export const displaySettingsRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-      const data = await getDisplay(session.user.id);
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
+
+      const data = await displayService.getDisplay(session!.userId);
       return data;
     },
     {
@@ -44,14 +42,11 @@ export const displaySettingsRoutes = new Elysia({
   .put(
     "/",
     async ({ body, set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
       const { items } = body as { items: string[] };
-      const data = await updateDisplay(session.user.id, { items });
+      const data = await displayService.updateDisplay(session!.userId, { items });
       return data;
     },
     {

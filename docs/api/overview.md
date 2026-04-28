@@ -37,6 +37,21 @@ This project uses TanStack Start with file-based routing. Routes are defined in 
 | GET    | `/settings/*`             | Settings routes                   |
 | GET    | `/status`                 | Health monitor                    |
 
+### API Architecture
+
+The API follows a layered architecture:
+
+```
+HTTP Layer (routes/api/) → Controller Layer (controllers/) → Service Layer (services/) → Repository Layer (repositories/)
+```
+
+- **HTTP Layer**: Route definitions in `src/routes/api/`
+- **Controller Layer**: Session validation, request parsing in `src/controllers/`
+- **Service Layer**: Business logic in `src/services/`
+- **Repository Layer**: ORM operations in `src/repositories/`
+
+See [Architecture Guide](../../docs/getting-started/architecture.md#api-architecture) for full details.
+
 ### Route File Structure
 
 ```bash
@@ -44,24 +59,22 @@ src/routes/
   __root.tsx        # Root route (layout)
   index.tsx         # Home page (/)
   account/          # Account routes
-    login.tsx
-    register.tsx
-    forgot-password.tsx
-    verify-email.tsx
-  api/
-    $.ts           # API catch-all route (/api/*)
-    auth/
-      $.ts         # Auth route (/api/auth/*)
-    mcp/
-      $.ts         # MCP route (/api/mcp/*)
-      -keys.ts     # MCP API key management routes
-  blog.tsx          # Blog routes
-  changelog.tsx     # Changelog routes
-  docs.tsx          # Documentation layout
-  docs.$.tsx        # Docs catch-all (/docs/*)
-  profile.tsx        # Profile page
-  settings.tsx       # Settings page
-  status.tsx        # Health monitoring dashboard
+    login.tsx  # Login page (/account/login)
+    register.tsx # Register page (/account/register)
+    forgot-password.tsx # Forgot password page (/account/forgot-password)
+    verify-email.tsx # Email verification (/account/verify-email)
+  api/              # API routes (HTTP Layer)
+    $.ts           # API catch-all route
+    auth/          # Auth routes (Better Auth)
+      $.ts
+    mcp/           # MCP routes
+      -core.ts
+      -keys.ts     # Uses controllers/mcp/keys.controller.ts
+    settings/       # Settings routes
+      -profile.ts   # Uses controllers/settings/controller.ts
+      -account.ts
+      -display.ts
+      -notifications.ts
 ```
 
 ### API Route Implementation

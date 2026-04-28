@@ -1,11 +1,11 @@
 /**
  * Notification settings API endpoints.
- * Delegates to the notification service for business logic.
+ * Uses controller for session validation, service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { auth } from "~/lib/auth";
-import { getNotifications, updateNotifications } from "~/services/dashboard/settings";
+import { notificationsService } from "~/services/dashboard/settings";
+import { validateSession } from "~/controllers/settings/controller";
 
 const notificationsExample = {
   type: "all",
@@ -23,12 +23,10 @@ export const notificationSettingsRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-      const data = await getNotifications(session.user.id);
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
+
+      const data = await notificationsService.getNotifications(session!.userId);
       return data;
     },
     {
@@ -50,11 +48,8 @@ export const notificationSettingsRoutes = new Elysia({
   .put(
     "/",
     async ({ body, set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
       const {
         type,
@@ -72,7 +67,7 @@ export const notificationSettingsRoutes = new Elysia({
         security_emails: boolean;
       };
 
-      const data = await updateNotifications(session.user.id, {
+      const data = await notificationsService.updateNotifications(session!.userId, {
         type,
         mobile,
         communication_emails,

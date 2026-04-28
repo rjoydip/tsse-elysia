@@ -1,78 +1,77 @@
 /**
  * Notification settings service.
- * Encapsulates notification preferences CRUD operations.
+ * Encapsulates notification business logic, uses repository for DB operations.
  */
 
-import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
-import { nanoid } from "nanoid";
+import type { NotificationsResponse, UpdateNotificationsInput } from "./types";
+import {
+  notificationsRepository,
+  type INotificationsRepository,
+} from "~/repositories/settings/notifications.repository";
 import { settingsLogger } from "~/lib/logger";
 
-export interface NotificationsResponse {
-  type: "all" | "mentions" | "none";
-  mobile: boolean;
-  communication_emails: boolean;
-  social_emails: boolean;
-  marketing_emails: boolean;
-  security_emails: boolean;
+/**
+ * Notifications service interface.
+ */
+export interface INotificationsService {
+  getNotifications(userId: string): Promise<NotificationsResponse>;
+  updateNotifications(
+    userId: string,
+    input: UpdateNotificationsInput,
+  ): Promise<NotificationsResponse>;
 }
 
-export interface UpdateNotificationsInput {
-  type: "all" | "mentions" | "none";
-  mobile: boolean;
-  communication_emails: boolean;
-  social_emails: boolean;
-  marketing_emails: boolean;
-  security_emails: boolean;
-}
+/**
+ * Notifications service implementation.
+ */
+export class NotificationsService implements INotificationsService {
+  private repository: INotificationsRepository;
 
-export async function getNotifications(userId: string): Promise<NotificationsResponse> {
-  const [notifications] = await db
-    .select()
-    .from(schema.userSettingsNotifications)
-    .where(eq(schema.userSettingsNotifications.userId, userId))
-    .limit(1);
+  constructor(repository: INotificationsRepository = notificationsRepository) {
+    this.repository = repository;
+  }
 
-  if (!notifications) {
+  /**
+   * Gets a user's notification settings, returning defaults if not found.
+   */
+  async getNotifications(userId: string): Promise<NotificationsResponse> {
+    const notifications = await this.repository.findNotificationsByUserId(userId);
+
+    if (!notifications) {
+      return {
+        type: "all",
+        mobile: false,
+        communication_emails: false,
+        social_emails: true,
+        marketing_emails: false,
+        security_emails: true,
+      };
+    }
+
     return {
-      type: "all",
-      mobile: false,
-      communication_emails: false,
-      social_emails: true,
-      marketing_emails: false,
-      security_emails: true,
+      type: notifications.type,
+      mobile: notifications.mobile,
+      communication_emails: notifications.communicationEmails,
+      social_emails: notifications.socialEmails,
+      marketing_emails: notifications.marketingEmails,
+      security_emails: notifications.securityEmails,
     };
   }
 
-  return {
-    type: notifications.type,
-    mobile: notifications.mobile,
-    communication_emails: notifications.communicationEmails,
-    social_emails: notifications.socialEmails,
-    marketing_emails: notifications.marketingEmails,
-    security_emails: notifications.securityEmails,
-  };
-}
+  /**
+   * Updates a user's notification settings.
+   */
+  async updateNotifications(
+    userId: string,
+    input: UpdateNotificationsInput,
+  ): Promise<NotificationsResponse> {
+    const { type, mobile, communication_emails, social_emails, marketing_emails, security_emails } =
+      input;
+    const existing = await this.repository.findNotificationsByUserId(userId);
+    const now = new Date();
 
-export async function updateNotifications(
-  userId: string,
-  input: UpdateNotificationsInput,
-): Promise<NotificationsResponse> {
-  const { type, mobile, communication_emails, social_emails, marketing_emails, security_emails } =
-    input;
-
-  const existing = await db
-    .select()
-    .from(schema.userSettingsNotifications)
-    .where(eq(schema.userSettingsNotifications.userId, userId))
-    .limit(1);
-
-  const now = new Date();
-
-  if (existing.length > 0) {
-    await db
-      .update(schema.userSettingsNotifications)
-      .set({
+    if (existing) {
+      await this.repository.updateNotifications(userId, {
         type,
         mobile,
         communicationEmails: communication_emails,
@@ -80,33 +79,38 @@ export async function updateNotifications(
         marketingEmails: marketing_emails,
         securityEmails: security_emails,
         updatedAt: now,
-      })
-      .where(eq(schema.userSettingsNotifications.userId, userId));
+      });
+      settingsLogger.debug("Notifications updated", { userId });
+    } else {
+      await this.repository.createNotifications({
+        userId,
+        type,
+        mobile,
+        communicationEmails: communication_emails,
+        socialEmails: social_emails,
+        marketingEmails: marketing_emails,
+        securityEmails: security_emails,
+        createdAt: now,
+        updatedAt: now,
+      });
+      settingsLogger.debug("Notifications created", { userId });
+    }
 
-    settingsLogger.debug("Notifications updated", { userId });
-  } else {
-    await db.insert(schema.userSettingsNotifications).values({
-      id: nanoid(),
-      userId,
+    return {
       type,
       mobile,
-      communicationEmails: communication_emails,
-      socialEmails: social_emails,
-      marketingEmails: marketing_emails,
-      securityEmails: security_emails,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    settingsLogger.debug("Notifications created", { userId });
+      communication_emails,
+      social_emails,
+      marketing_emails,
+      security_emails,
+    };
   }
-
-  return {
-    type,
-    mobile,
-    communication_emails,
-    social_emails,
-    marketing_emails,
-    security_emails,
-  };
 }
+
+/**
+ * Singleton instance of the notifications service.
+ */
+export const notificationsService = new NotificationsService();
+
+// Re-export types
+export type { NotificationsResponse, UpdateNotificationsInput };
