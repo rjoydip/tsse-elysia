@@ -9,9 +9,7 @@ import { mcpApiKeyService } from "~/services/mcp/api-keys";
  * Validates the create API key request body.
  * Returns an error response if invalid, otherwise returns the parsed data.
  */
-export async function validateCreateKeyRequest(
-  body: Record<string, unknown>,
-): Promise<{
+export async function validateCreateKeyRequest(body: Record<string, unknown>): Promise<{
   error?: Response;
   data?: {
     name: string;

@@ -49,7 +49,7 @@ export const mcpKeysRoutes = new Elysia({
       logger.error(
         `[MCP keys] auth derive failure: ${
           error instanceof Error ? error.message : "unknown error"
-        }`
+        }`,
       );
       return { apiKey: null, rateLimitInfo: null };
     }
@@ -77,7 +77,7 @@ export const mcpKeysRoutes = new Elysia({
           },
         },
       },
-    }
+    },
   )
   .post(
     "/",
@@ -86,7 +86,7 @@ export const mcpKeysRoutes = new Elysia({
       if (error) return error;
 
       const { error: validationError, data } = await validateCreateKeyRequest(
-        body as Record<string, unknown>
+        body as Record<string, unknown>,
       );
       if (validationError) return validationError;
 
@@ -103,14 +103,8 @@ export const mcpKeysRoutes = new Elysia({
       const response = formatCreateKeyResponse(result);
       if (rateLimitInfo) {
         response.headers.set("X-RateLimit-Limit", String(rateLimitInfo.limit));
-        response.headers.set(
-          "X-RateLimit-Remaining",
-          String(rateLimitInfo.remaining)
-        );
-        response.headers.set(
-          "X-RateLimit-Reset",
-          String(Math.ceil(rateLimitInfo.resetAt / 1000))
-        );
+        response.headers.set("X-RateLimit-Remaining", String(rateLimitInfo.remaining));
+        response.headers.set("X-RateLimit-Reset", String(Math.ceil(rateLimitInfo.resetAt / 1000)));
       }
       return response;
     },
@@ -142,7 +136,7 @@ export const mcpKeysRoutes = new Elysia({
           },
         },
       },
-    }
+    },
   )
   .delete(
     "/:id",
@@ -150,10 +144,7 @@ export const mcpKeysRoutes = new Elysia({
       const { error, userId } = await requireApiKey(apiKey);
       if (error) return error;
 
-      const outcome = await mcpApiKeyService.revokeApiKeyWithReason(
-        params.id,
-        userId!
-      );
+      const outcome = await mcpApiKeyService.revokeApiKeyWithReason(params.id, userId!);
       if (outcome === "not_found") {
         return new Response(JSON.stringify({ error: "Key not found" }), {
           status: 404,
@@ -187,7 +178,7 @@ export const mcpKeysRoutes = new Elysia({
           404: { description: "Key not found" },
         },
       },
-    }
+    },
   )
   .put(
     "/:id",
@@ -195,23 +186,18 @@ export const mcpKeysRoutes = new Elysia({
       const { error, userId } = await requireApiKey(apiKey);
       if (error) return error;
 
-      const { name, permissions, rateLimit, rateLimitDuration, expiresAt } =
-        body as Record<string, unknown>;
+      const { name, permissions, rateLimit, rateLimitDuration, expiresAt } = body as Record<
+        string,
+        unknown
+      >;
       const updated = await mcpApiKeyService.updateApiKey(params.id, userId!, {
         name: typeof name === "string" ? name : undefined,
         permissions:
-          typeof permissions === "object"
-            ? (permissions as Record<string, unknown>)
-            : undefined,
+          typeof permissions === "object" ? (permissions as Record<string, unknown>) : undefined,
         rateLimit: typeof rateLimit === "number" ? rateLimit : undefined,
-        rateLimitDuration:
-          typeof rateLimitDuration === "number" ? rateLimitDuration : undefined,
+        rateLimitDuration: typeof rateLimitDuration === "number" ? rateLimitDuration : undefined,
         expiresAt:
-          expiresAt === undefined
-            ? undefined
-            : expiresAt
-            ? new Date(expiresAt as string)
-            : null,
+          expiresAt === undefined ? undefined : expiresAt ? new Date(expiresAt as string) : null,
       });
 
       if (!updated) {
@@ -248,5 +234,5 @@ export const mcpKeysRoutes = new Elysia({
           404: { description: "Key not found" },
         },
       },
-    }
+    },
   );

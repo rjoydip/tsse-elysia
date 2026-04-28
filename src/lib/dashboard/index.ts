@@ -39,12 +39,7 @@ export {
 } from "~/services/dashboard/schema";
 
 // Content sanitization
-export {
-  sanitizeContent,
-  stripHtml,
-  validateContent,
-  sanitizeMessage,
-} from "./sanitizer";
+export { sanitizeContent, stripHtml, validateContent, sanitizeMessage } from "./sanitizer";
 
 // Authorization
 export {
