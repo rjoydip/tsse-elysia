@@ -48,3 +48,17 @@ jobs:
         with:
           sarif_file: fallow-results.sarif
           category: fallow
+
+      - name: Generate health badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: npx fallow health --format badge > health-badge.svg
+
+      - name: Publish badge to badges branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@4f195b95d0f5d0ec9a6b6909e79059315e4e6c3 # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: badges
+          keep_files: true
+          include_files: health-badge.svg
