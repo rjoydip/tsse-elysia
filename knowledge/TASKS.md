@@ -169,3 +169,15 @@ A task is complete ONLY if:
 
 - "Add pgBouncer connection pooling"
 - "Implement Redis-based rate limiter for API keys"
+
+## knowledge\plans
+
+References to detailed plan documents:
+
+- [api-architecture-refactoring-tasks.md](./plans/api-architecture-refactoring-tasks.md)
+- [phase-db0-database-refactoring.md](./plans/phase-db0-database-refactoring.md)
+- [phase-9-mcp-server-plan.md](./plans/phase-9-mcp-server-plan.md)
+- [phase-8-realtime-features.md](./plans/phase-8-realtime-features.md)
+- [phase-7.1-redis-implementation-plan.md](./plans/phase-7.1-redis-implementation-plan.md)
+- [phase-13-contract-testing-implementation-plan.md](./plans/phase-13-contract-testing-implementation-plan.md)
+- [phase-5.2-user-management-dashboard.md](./plans/phase-5.2-user-management-dashboard.md)

@@ -252,10 +252,11 @@ All necessary information is in [README.md](./README.md), including:
 4. Run `bun run fmt` to ensure formatting
 5. Run `bun run lint:fix` to auto-fix issues
 6. Run `bun run typecheck` to verify types
-7. Run `bun test` to verify unit test
-8. Run `bun run test:e2e` to verify E2E test
-9. Once changes are complete, verify and update `PLAN.md` (mark completed tasks/goals)
-10. Commit changes (hooks will verify)
+7. Run `bun run fallow` to check for dead code, duplicates, and complexity issues
+8. Run `bun test` to verify unit test
+9. Run `bun run test:e2e` to verify E2E test
+10. Once changes are complete, verify and update `PLAN.md` (mark completed tasks/goals)
+11. Commit changes (hooks will verify)
 
 ## Environment Configuration
 

@@ -1,0 +1,37 @@
+"$schema" = "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json"
+
+ignorePatterns = [
+  "**/*.generated.ts",
+  "**/*.d.ts",
+  "**/dist/**",
+  "**/.artifacts/**",
+  "**/.opencode/**",
+  "**/.e2e/**",
+  "**/test/**",
+  "**/scripts/**",
+  "**/*.config.ts",
+  "**/drizzle.config.ts",
+]
+
+ignoreDependencies = ["@types/bun", "@types/node", "bun:sqlite"]
+
+dynamicallyLoaded = ["src/routes/**/*.ts", "src/plugins/**/*.ts"]
+
+[rules]
+"unused-files" = "warn"
+"unused-exports" = "warn"
+"unused-types" = "off"
+"unresolved-imports" = "error"
+"circular-dependency" = "warn"
+
+[duplicates]
+mode = "mild"
+minTokens = 50
+minLines = 5
+threshold = 0
+ignore = ["**/*.test.ts", "**/*.spec.ts"]
+
+[health]
+maxCyclomatic = 20
+maxCognitive = 15
+ignore = ["**/*.test.ts", "**/*.spec.ts", "test/**", ".e2e/**"]
