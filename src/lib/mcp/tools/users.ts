@@ -11,6 +11,8 @@ import { db } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
+import { createErrorResponse, createSuccessResponse } from "./shared-utils";
+import { buildUserResponse, mapUserToListResponse } from "./response-helpers";
 
 /**
  * Upper bound for `list-users` pagination to prevent oversized responses.
@@ -49,20 +51,14 @@ export function registerUserTools(server: McpServer): void {
       try {
         const apiKey = getCurrentApiKey();
         if (!apiKey) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
+          return createErrorResponse("Authentication required");
         }
 
         const targetUserId = args.userId as string;
 
         // Check access - user can only access themselves unless org-scoped
         if (!apiKey.organizationId && targetUserId !== apiKey.userId) {
-          return {
-            content: [{ type: "text", text: "Access denied" }],
-            isError: true,
-          };
+          return createErrorResponse("Access denied");
         }
 
         const user = await db.query.users.findFirst({
@@ -70,47 +66,14 @@ export function registerUserTools(server: McpServer): void {
         });
 
         if (!user) {
-          return {
-            content: [{ type: "text", text: "User not found" }],
-            isError: true,
-          };
+          return createErrorResponse("User not found");
         }
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                emailVerified: user.emailVerified,
-                image: user.image,
-                createdAt: user.createdAt.toISOString(),
-                subscriptionTier: user.subscriptionTier,
-              }),
-            },
-          ],
-          structuredContent: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            image: user.image,
-            createdAt: user.createdAt.toISOString(),
-            subscriptionTier: user.subscriptionTier,
-          },
-        };
+        return buildUserResponse(user);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );
@@ -153,10 +116,7 @@ export function registerUserTools(server: McpServer): void {
       try {
         const apiKey = getCurrentApiKey();
         if (!apiKey) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
+          return createErrorResponse("Authentication required");
         }
 
         let userList: Array<{
@@ -175,15 +135,9 @@ export function registerUserTools(server: McpServer): void {
 
         if (apiKey.organizationId) {
           // Until organization membership joins are implemented, do not allow broad user listing.
-          return {
-            content: [
-              {
-                type: "text",
-                text: "Organization-scoped user listing is temporarily unavailable until organization membership filtering is implemented.",
-              },
-            ],
-            isError: true,
-          };
+          return createErrorResponse(
+            "Organization-scoped user listing is temporarily unavailable until organization membership filtering is implemented.",
+          );
         } else {
           // For user-scoped, return only self
           const user = await db.query.users.findFirst({
@@ -192,35 +146,17 @@ export function registerUserTools(server: McpServer): void {
           if (user) userList = [user as (typeof userList)[number]];
         }
 
-        const userData = userList.map((u) => ({
-          id: u.id,
-          name: u.name ?? undefined,
-          email: u.email,
-          emailVerified: u.emailVerified,
-          image: u.image ?? undefined,
-          createdAt: u.createdAt.toISOString(),
-        }));
+        const userData = userList.map((u) => mapUserToListResponse(u));
         const paginatedUserData = userData.slice(offset, offset + limit);
 
         return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(paginatedUserData),
-            },
-          ],
+          content: [{ type: "text", text: JSON.stringify(paginatedUserData) }],
           structuredContent: { users: paginatedUserData },
         };
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );
@@ -255,10 +191,7 @@ export function registerUserTools(server: McpServer): void {
       try {
         const apiKey = getCurrentApiKey();
         if (!apiKey) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
+          return createErrorResponse("Authentication required");
         }
 
         const updates: { name?: string; image?: string } = {};
@@ -271,10 +204,7 @@ export function registerUserTools(server: McpServer): void {
         }
 
         if (Object.keys(updates).length === 0) {
-          return {
-            content: [{ type: "text", text: "No fields to update" }],
-            isError: true,
-          };
+          return createErrorResponse("No fields to update");
         }
 
         const [updated] = await db
@@ -283,35 +213,16 @@ export function registerUserTools(server: McpServer): void {
           .where(eq(users.id, apiKey.userId))
           .returning();
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                id: updated.id,
-                name: updated.name,
-                email: updated.email,
-                image: updated.image,
-              }),
-            },
-          ],
-          structuredContent: {
-            id: updated.id,
-            name: updated.name,
-            email: updated.email,
-            image: updated.image,
-          },
-        };
+        return createSuccessResponse({
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          image: updated.image,
+        });
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );

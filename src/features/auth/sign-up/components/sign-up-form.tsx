@@ -29,6 +29,10 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { BASE_URL } from "~/config";
+import {
+  extractAuthErrorMessage,
+  getAuthErrorMessage,
+} from "~/features/auth/shared/auth-error-utils";
 
 interface PasswordRequirement {
   label: string;
@@ -69,65 +73,6 @@ const formSchema = z
     message: "Passwords don't match.",
     path: ["confirmPassword"],
   });
-
-/**
- * Extracts a readable signup error message from unknown client/server error shapes.
- * Better Auth can return different payload structures depending on transport/runtime.
- *
- * @param error - Unknown error payload or thrown error
- * @returns Normalized raw message before UX-specific mapping
- */
-const extractRegisterErrorMessage = (error: unknown): string => {
-  if (typeof error === "string") {
-    return error;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (error && typeof error === "object") {
-    const maybeError = error as {
-      message?: string;
-      error?: { message?: string } | string;
-      body?: { message?: string };
-    };
-    if (typeof maybeError.message === "string") {
-      return maybeError.message;
-    }
-    if (typeof maybeError.error === "string") {
-      return maybeError.error;
-    }
-    if (maybeError.error && typeof maybeError.error === "object") {
-      const nestedError = maybeError.error as { message?: string };
-      if (typeof nestedError.message === "string") {
-        return nestedError.message;
-      }
-    }
-    if (maybeError.body && typeof maybeError.body.message === "string") {
-      return maybeError.body.message;
-    }
-  }
-  return "Failed to create account";
-};
-
-/**
- * Maps Better Auth signup errors to user-friendly toast messages.
- * Normalizes common duplicate-account responses from different runtimes/providers.
- *
- * @param errorMessage - Raw backend/client error text
- * @returns Human-friendly error message for registration failures
- */
-const getRegisterErrorMessage = (errorMessage?: string): string => {
-  const normalizedMessage = (errorMessage ?? "").toLowerCase();
-  if (
-    normalizedMessage.includes("already exists") ||
-    normalizedMessage.includes("already registered") ||
-    normalizedMessage.includes("user exists") ||
-    normalizedMessage.includes("email has already been used")
-  ) {
-    return "User already exists. Use another email";
-  }
-  return errorMessage || "Failed to create account";
-};
 
 const getPasswordStrength = (pwd: string): number => {
   return PASSWORD_REQUIREMENTS.filter((req) => req.test(pwd)).length;
@@ -181,10 +126,10 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
         callbackURL: `${BASE_URL}/dashboard`,
       });
       if (result.error) {
-        toast.error(extractRegisterErrorMessage(result.error));
+        toast.error(extractAuthErrorMessage(result.error));
       }
     } catch (error) {
-      toast.error(extractRegisterErrorMessage(error));
+      toast.error(extractAuthErrorMessage(error));
     } finally {
       setLoadingProvider(null);
     }
@@ -202,7 +147,7 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
       );
 
       if (result.error) {
-        const errorMessage = getRegisterErrorMessage(extractRegisterErrorMessage(result.error));
+        const errorMessage = getAuthErrorMessage(extractAuthErrorMessage(result.error));
         toast.error(errorMessage);
         return;
       }

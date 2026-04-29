@@ -29,6 +29,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { BASE_URL } from "~/config";
+import { extractAuthErrorMessage } from "~/features/auth/shared/auth-error-utils";
 
 const formSchema = z.object({
   email: z.email({
@@ -36,42 +37,6 @@ const formSchema = z.object({
   }),
   password: z.string().min(1, "Password is required"),
 });
-
-/**
- * Extracts a readable sign-in error message from unknown client/server error shapes.
- * Better Auth can return different payload structures depending on transport/runtime.
- */
-const extractLoginErrorMessage = (error: unknown): string => {
-  if (typeof error === "string") {
-    return error;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (error && typeof error === "object") {
-    const maybeError = error as {
-      message?: string;
-      error?: { message?: string } | string;
-      body?: { message?: string };
-    };
-    if (typeof maybeError.message === "string") {
-      return maybeError.message;
-    }
-    if (typeof maybeError.error === "string") {
-      return maybeError.error;
-    }
-    if (maybeError.error && typeof maybeError.error === "object") {
-      const nestedError = maybeError.error as { message?: string };
-      if (typeof nestedError.message === "string") {
-        return nestedError.message;
-      }
-    }
-    if (maybeError.body && typeof maybeError.body.message === "string") {
-      return maybeError.body.message;
-    }
-  }
-  return "Failed to sign in";
-};
 
 interface SignInFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string;
@@ -110,10 +75,10 @@ export function SignInForm({ className, redirectTo, ...props }: SignInFormProps)
       });
 
       if (result.error) {
-        toast.error(extractLoginErrorMessage(result.error));
+        toast.error(extractAuthErrorMessage(result.error));
       }
     } catch (error) {
-      toast.error(extractLoginErrorMessage(error));
+      toast.error(extractAuthErrorMessage(error));
     } finally {
       setLoadingProvider(null);
     }
@@ -126,7 +91,7 @@ export function SignInForm({ className, redirectTo, ...props }: SignInFormProps)
     try {
       const result = await signInWithEmail(data.email, await encodePassword(data.password));
       if (result.error) {
-        toast.error(extractLoginErrorMessage(result.error));
+        toast.error(extractAuthErrorMessage(result.error));
         return;
       }
 
