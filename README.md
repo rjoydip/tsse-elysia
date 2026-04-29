@@ -32,7 +32,7 @@ bun run dev
 | `bun run build`        | Build for production                    |
 | `bun run start`        | Run production server                   |
 | `bun run lint`         | Run oxlint with GitHub format           |
-| `bun run lint:ci`      | Lint + format check (CI mode)           |
+| `bun run lint:check`   | Lint + format check (CI mode)           |
 | `bun run lint:fix`     | Auto-fix lint issues and format         |
 | `bun run fmt`          | Format code with oxfmt                  |
 | `bun run fmt:check`    | Check formatting without fixing         |

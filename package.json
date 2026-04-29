@@ -23,7 +23,7 @@
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint . --format=github",
-    "lint:ci": "bun run lint && bun run fmt:check && actions-up",
+    "lint:check": "bun run lint && bun run fmt:check && actions-up",
     "lint:fix": "oxlint . --fix && oxfmt .",
     "typecheck": "tsc --noEmit",
     "react:doctor": "react-doctor . -y",
@@ -47,9 +47,8 @@
     "db:reset": "bun run db:remove && bun run db:push",
     "security": "bun audit --audit-level=critical",
     "changeset": "changeset",
-    "changesets": "changeset",
+    "actions-up": "actions-up",
     "version": "changeset version",
-    "knip": "knip",
     "fallow": "fallow",
     "fallow:dead": "fallow dead-code",
     "fallow:dupes": "fallow dupes",
@@ -171,7 +170,7 @@
     "typescript": "^6.0.2"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun run lint:ci && bun run typecheck && bun run react:doctor"
+    "pre-commit": "bun run lint:check && bun run typecheck && bun run react:doctor"
   },
   "reactDoctor": {
     "lint": false,

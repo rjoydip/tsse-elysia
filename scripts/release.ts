@@ -81,7 +81,7 @@ async function runQualityChecks(): Promise<boolean> {
   logger.step(2, "Running quality checks...");
 
   logger.info("Running linters...");
-  let code = await exec("bun", ["run", "lint:ci"]);
+  let code = await exec("bun", ["run", "lint:check"]);
   if (code !== 0) {
     logger.error("Linting failed");
     return false;

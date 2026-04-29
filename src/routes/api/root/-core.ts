@@ -16,7 +16,9 @@ import { statusRoutes } from "./-status";
  * Read package.json to extract metadata (name, version).
  * Uses `import.meta.url` to resolve path relative to this file.
  */
-const pkg = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as {
+const pkg = JSON.parse(
+  readFileSync(new URL("../../../../package.json", import.meta.url), "utf8"),
+) as {
   name: string;
   version: string;
 };

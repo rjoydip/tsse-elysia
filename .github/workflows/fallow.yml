@@ -35,7 +35,7 @@ jobs:
         run: bun install --frozen
 
       - name: Run Fallow analysis
-        uses: fallow-rs/fallow@v2
+        uses: fallow-rs/fallow@49ddb3a64862b520b0cfc19c2bcd46deb6427b31 # v2.54.3
         with:
           format: sarif
           comment: true
@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           sarif_file: fallow-results.sarif
           category: fallow
@@ -55,7 +55,7 @@ jobs:
 
       - name: Publish badge to badges branch
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: peaceiris/actions-gh-pages@4f195b95d0f5d0ec9a6b6909e79059315e4e6c3 # v4.0.0
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .

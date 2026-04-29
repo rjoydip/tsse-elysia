@@ -43,7 +43,7 @@ jobs:
         run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
 
       - name: Run Linters
-        run: bun run lint:ci
+        run: bun run lint:check
 
       - name: Run type checking
         run: bun run typecheck

@@ -4,7 +4,7 @@
  */
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { buttonVariants } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Header } from "~/components/layout/landing/header";
@@ -182,12 +182,21 @@ const features = [
 ];
 
 function Home() {
+  const [version, setVersion] = useState<string | null>(null);
+
   /**
    * Preloads the shared Shiki highlighter once the landing page mounts.
    * This reduces perceived delay before the first highlighted code block appears.
    */
   useEffect(() => {
     void getShikiHighlighter();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/meta")
+      .then((res) => res.json())
+      .then((data) => setVersion(data.version))
+      .catch(() => setVersion(null));
   }, []);
 
   return (
@@ -204,7 +213,7 @@ function Home() {
           >
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-background dark:bg-ring animate-pulse self-center" />
-              v{APP_VERSION} Released
+              v{version ?? APP_VERSION} Released
             </span>
           </Badge>
           <BrandTitle size="5xl" />
