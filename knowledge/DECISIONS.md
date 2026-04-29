@@ -297,11 +297,7 @@ Each decision must answer:
 
 ---
 
-### 013: Fix sync-tasks Workflow to Prevent Duplicate Issue Creation
-
-**Status:** Accepted
-
-**Why:**
+### 013: Service Layer Architecture (Business Logic Separation)
 
 - The original sync-tasks.yml created GitHub Issues from TASKS.md placeholders but never updated TASKS.md with the created issue numbers
 - This caused duplicate issues to be created on every push to main since the same `<!-- issue: # -->` placeholder remained
@@ -325,6 +321,63 @@ Each decision must answer:
 - Search-based duplicate check may have false positives for similar titles (uses GitHub issue search which matches partial titles)
 - Workflow now requires push permissions to commit changes
 - Consider migrating to exact title matching via `gh issue list --search "repo:OWNER/REPO \"Exact Title\""` for stricter matching
+
+---
+
+### 014: Fix sync-tasks Workflow to Prevent Duplicate Issue Creation
+
+**Status:** Accepted
+
+**Why:**
+
+- Separate business logic from route handlers (thin routes)
+- Enable reuse across routes and MCP tools
+- Improve testability (services testable without HTTP overhead)
+- Cleaner route handlers focused on HTTP concerns (parsing, validation, responses)
+
+**Implementation:**
+
+- Created `src/services/` directory with 4 service modules:
+  - `settings/`: User settings CRUD (profile, account, display, notifications)
+  - `llmo/`: Schema.org data transformation for AI systems
+  - `mcp/`: Health rate limiting and tool catalog
+  - `status/`: Historical health record fetching
+- Route handlers in `src/routes/api/` now delegate to services
+- Services handle database operations, session management, data transformation
+- Routes only handle HTTP: parsing params, returning responses
+
+**Directory Structure:**
+
+```
+src/services/
+├── settings/
+│   ├── profile.ts       # Profile CRUD
+│   ├── account.ts       # Account CRUD
+│   ├── display.ts       # Display preferences CRUD
+│   ├── notifications.ts  # Notification settings CRUD
+│   └── index.ts
+├── llmo/
+│   ├── blog.ts          # Blog data + schema.org transform
+│   ├── docs.ts          # Docs static data
+│   ├── changelog.ts     # Changelog data + schema.org transform
+│   ├── faq.ts          # FAQ data + filtering
+│   ├── transform.ts     # Server info & capabilities
+│   ├── llms.ts          # LLMS.txt content generation
+│   └── index.ts
+├── mcp/
+│   ├── rate-limiter.ts  # Health endpoint rate limiting
+│   ├── tools.ts         # MCP tool catalog
+│   └── index.ts
+└── status/
+    ├── history.ts      # Historical status fetching
+    └── index.ts
+```
+
+**Tradeoffs:**
+
+- Additional indirection layer
+- Need to maintain service interfaces when APIs change
+- Services may need to be instantiated per-request for some frameworks
 
 ---
 

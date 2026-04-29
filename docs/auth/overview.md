@@ -49,7 +49,7 @@ The auth system is configured in `src/lib/auth/index.ts`:
 
 ## Auth UI State (TanStack Store)
 
-Auth form UI state is centralized in `src/lib/store/auth.ts` using TanStack Store.
+Auth form UI state is centralized in `src/store/auth.ts` using TanStack Store.
 
 - **Forms Covered**: Login, Register, Forgot Password
 - **Centralized State**: `isSubmitting`, `submitErrorMessage` (per form)

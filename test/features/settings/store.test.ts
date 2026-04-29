@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
-import { settingsStore, settingsActions, initSettings } from "~/lib/stores/settings-store";
+import { settingsStore, settingsActions, initSettings } from "~/lib/stores/dashboard/settings";
 
 describe("Settings Store", () => {
   beforeEach(() => {

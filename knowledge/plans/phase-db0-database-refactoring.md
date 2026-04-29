@@ -11,8 +11,8 @@ This plan outlines the refactoring of the current database setup to use the DB0 
 ## Current State Analysis
 
 - **Database Library**: Drizzle ORM with direct SQLite/PostgreSQL drivers
-- **Initialization**: `src/lib/db/index.ts`
-- **Schema**: `src/lib/db/schema.ts` (Drizzle schema definitions)
+- **Initialization**: `src/config/db/index.ts`
+- **Schema**: `src/schema/core.ts` (Drizzle schema definitions)
 - **Auth Integration**: Better Auth with drizzle-adapter in `src/lib/auth/index.ts`
 - **Testing**: SQLite in-memory databases in test fixtures
 
@@ -38,7 +38,7 @@ DB0 provides:
 
 ### Phase 2: Core Database Abstraction (Estimated: 4 hours)
 
-Create new database layer in `src/lib/db/index.ts` that:
+Create new database layer in `src/config/db/index.ts` that:
 
 - Uses DB0 as underlying driver
 - Maintains identical interface to current Drizzle setup:
@@ -93,8 +93,8 @@ Update database scripts in package.json:
 
 ### Primary Changes:
 
-1. `src/lib/db/index.ts` - Main database initialization and abstraction layer
-2. `src/lib/db/schema.ts` - Potential adjustments for DB0 compatibility
+1. `src/config/db/index.ts` - Main database initialization and abstraction layer
+2. `src/schema/core.ts` - Database schema definitions
 3. `src/lib/auth/index.ts` - Better Auth adapter integration
 4. `test/fixtures/db.ts` - Test database setup
 5. `test/lib/db.test.ts` - Database unit tests
@@ -109,7 +109,7 @@ Update database scripts in package.json:
 
 ### Backward Compatibility
 
-- Maintain identical export interface from `src/lib/db/index.ts`
+- Maintain identical export interface from `src/config/db/index.ts`
 - Ensure all existing consumers (auth, routes, etc.) work without changes
 - Keep same function signatures and return types
 
@@ -158,7 +158,7 @@ Update database scripts in package.json:
 
 ## Rollback Plan
 
-1. Keep backup of original `src/lib/db/index.ts` and related files
+1. Keep backup of original `src/config/db/index.ts` and related files
 2. Maintain ability to revert to Drizzle implementation via git
 3. Feature flag approach allows gradual rollback if needed
 4. Comprehensive test suite provides validation before/after

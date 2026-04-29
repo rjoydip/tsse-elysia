@@ -14,7 +14,7 @@ import {
   notificationService,
   presenceService,
   dashboardService,
-} from "~/lib/realtime";
+} from "~/lib/dashboard";
 import { apiLogger } from "~/lib/logger";
 
 /**
@@ -76,7 +76,9 @@ export function createWebSocketPlugin(config: Partial<WebSocketConfig> = {}) {
         // Authenticate connection
         let authResult = null;
         if (finalConfig.requireAuth) {
-          authResult = await authenticateConnection({ query: ws.data.query } as any);
+          authResult = await authenticateConnection({
+            query: ws.data.query,
+          } as any);
           if (!authResult) {
             (ws.raw as any).close(1008, "Authentication required");
             return;
@@ -125,7 +127,10 @@ export function createWebSocketPlugin(config: Partial<WebSocketConfig> = {}) {
           ws.send(
             JSON.stringify({
               type: "error",
-              error: { code: "INVALID_MESSAGE", message: "Invalid message format" },
+              error: {
+                code: "INVALID_MESSAGE",
+                message: "Invalid message format",
+              },
             }),
           );
           return;
@@ -163,7 +168,13 @@ export function createWebSocketPlugin(config: Partial<WebSocketConfig> = {}) {
     })
     .ws("/ws/health", {
       open(ws: any) {
-        ws.send(JSON.stringify({ type: "health", status: "ok", timestamp: Date.now() }));
+        ws.send(
+          JSON.stringify({
+            type: "health",
+            status: "ok",
+            timestamp: Date.now(),
+          }),
+        );
       },
     });
 }

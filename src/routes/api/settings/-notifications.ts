@@ -1,19 +1,12 @@
 /**
  * Notification settings API endpoints.
- * Provides GET and PUT operations for user notification preferences.
+ * Uses controller for session validation, service for business logic.
  */
 
 import { Elysia, t } from "elysia";
-import { eq } from "drizzle-orm";
-import { auth } from "~/lib/auth";
-import { db, schema } from "~/lib/db";
-import { createError } from "evlog";
-import { nanoid } from "nanoid";
-import { settingsLogger } from "~/lib/logger";
+import { notificationsService } from "~/services/dashboard/settings";
+import { validateSession } from "~/controllers/settings/controller";
 
-/**
- * Notification data schema for OpenAPI documentation.
- */
 const notificationsExample = {
   type: "all",
   mobile: false,
@@ -23,10 +16,6 @@ const notificationsExample = {
   security_emails: true,
 };
 
-/**
- * Notification settings route group.
- * Mounted under `/api/settings/notifications`.
- */
 export const notificationSettingsRoutes = new Elysia({
   name: "api.routes.settings.notifications",
   prefix: "/settings/notifications",
@@ -34,45 +23,11 @@ export const notificationSettingsRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
-      if (!session) {
-        set.status = 401;
-        return createError({
-          message: "Unauthorized",
-          status: 401,
-          why: "No active session found",
-          fix: "Sign in to access your notification settings",
-        });
-      }
-
-      const userId = session.user.id;
-
-      const [notifications] = await db
-        .select()
-        .from(schema.userSettingsNotifications)
-        .where(eq(schema.userSettingsNotifications.userId, userId))
-        .limit(1);
-
-      if (!notifications) {
-        return {
-          type: "all",
-          mobile: false,
-          communication_emails: false,
-          social_emails: true,
-          marketing_emails: false,
-          security_emails: true,
-        };
-      }
-
-      return {
-        type: notifications.type,
-        mobile: notifications.mobile,
-        communication_emails: notifications.communicationEmails,
-        social_emails: notifications.socialEmails,
-        marketing_emails: notifications.marketingEmails,
-        security_emails: notifications.securityEmails,
-      };
+      const data = await notificationsService.getNotifications(session!.userId);
+      return data;
     },
     {
       detail: {
@@ -93,19 +48,9 @@ export const notificationSettingsRoutes = new Elysia({
   .put(
     "/",
     async ({ body, set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
+      const { error, session } = await validateSession(request, set);
+      if (error) return error;
 
-      if (!session) {
-        set.status = 401;
-        return createError({
-          message: "Unauthorized",
-          status: 401,
-          why: "No active session found",
-          fix: "Sign in to update your notification settings",
-        });
-      }
-
-      const userId = session.user.id;
       const {
         type,
         mobile,
@@ -122,54 +67,15 @@ export const notificationSettingsRoutes = new Elysia({
         security_emails: boolean;
       };
 
-      const existing = await db
-        .select()
-        .from(schema.userSettingsNotifications)
-        .where(eq(schema.userSettingsNotifications.userId, userId))
-        .limit(1);
-
-      const now = new Date();
-
-      if (existing.length > 0) {
-        await db
-          .update(schema.userSettingsNotifications)
-          .set({
-            type,
-            mobile,
-            communicationEmails: communication_emails,
-            socialEmails: social_emails,
-            marketingEmails: marketing_emails,
-            securityEmails: security_emails,
-            updatedAt: now,
-          })
-          .where(eq(schema.userSettingsNotifications.userId, userId));
-
-        settingsLogger.debug("Notifications updated", { userId });
-      } else {
-        await db.insert(schema.userSettingsNotifications).values({
-          id: nanoid(),
-          userId,
-          type,
-          mobile,
-          communicationEmails: communication_emails,
-          socialEmails: social_emails,
-          marketingEmails: marketing_emails,
-          securityEmails: security_emails,
-          createdAt: now,
-          updatedAt: now,
-        });
-
-        settingsLogger.debug("Notifications created", { userId });
-      }
-
-      return {
+      const data = await notificationsService.updateNotifications(session!.userId, {
         type,
         mobile,
         communication_emails,
         social_emails,
         marketing_emails,
         security_emails,
-      };
+      });
+      return data;
     },
     {
       body: t.Object({

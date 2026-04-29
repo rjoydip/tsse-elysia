@@ -1,5 +1,5 @@
 import { afterEach } from "bun:test";
-import { initializeDatabase, getDatabasePools } from "../src/lib/db";
+import { initializeDatabase, getDatabasePools } from "~/config/db";
 
 export async function setup() {
   // Ensure the database is initialized (it might already be via module side-effect,

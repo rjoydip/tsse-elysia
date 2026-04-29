@@ -10,7 +10,7 @@ import { betterAuth } from "better-auth";
 import { openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createError } from "evlog";
-import { db, schema, getDatabaseType } from "~/lib/db";
+import { db, schema, getDatabaseType } from "~/config/db";
 import { env } from "~/config/env";
 import type { SubscriptionTier } from "~/types/subscription";
 import { isTest, sessionConfig } from "~/config";

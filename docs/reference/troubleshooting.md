@@ -65,7 +65,7 @@ export default defineConfig({
 });
 ```
 
-Or in `src/lib/db/index.ts`, add a check:
+Or in `src/config/db/index.ts`, add a check:
 
 ```typescript
 // This file only runs on server

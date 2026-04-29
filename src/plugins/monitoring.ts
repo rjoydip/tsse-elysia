@@ -6,8 +6,8 @@
 
 import { Elysia } from "elysia";
 import { cron } from "@elysiajs/cron";
-import { db, schema } from "~/lib/db";
-import { getDatabaseHeartbeat } from "~/lib/db/heartbeat";
+import { db, schema } from "~/config/db";
+import { getDatabaseHeartbeat } from "~/config/db/heartbeat";
 import { PORT, HOST } from "~/config";
 import { logger } from "~/lib/logger";
 import { monitoringConfig } from "~/config";

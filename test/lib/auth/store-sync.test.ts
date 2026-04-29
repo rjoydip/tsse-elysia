@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it, beforeEach } from "bun:test";
-import { authStore, authActions } from "../../../src/lib/stores/auth-store";
+import { authStore, authActions } from "../../../src/lib/stores/auth";
 
 describe("Auth Store Sync", () => {
   beforeEach(() => {
@@ -26,7 +26,11 @@ describe("Auth Store Sync", () => {
     });
 
     it("should reset store completely", () => {
-      authActions.setUser({ accountNo: "123", email: "test@test.com", role: ["user"] });
+      authActions.setUser({
+        accountNo: "123",
+        email: "test@test.com",
+        role: ["user"],
+      });
       authActions.reset();
 
       expect(authStore.get().user).toBeNull();

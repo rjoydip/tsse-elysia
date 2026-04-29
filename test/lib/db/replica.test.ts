@@ -10,7 +10,7 @@ import {
   getDatabasePools,
   getReadDb,
   getWriteDb,
-} from "~/lib/db";
+} from "~/config/db";
 import { env as configEnv } from "~/config/env";
 
 describe("getDatabaseType", () => {

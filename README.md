@@ -119,6 +119,75 @@ Detailed documentation available in `docs/`:
   - LRU Cache (default for SQLite)
 - **Pub/Sub**: Unstorage-based with multi-backend support (Redis recommended for cross-instance)
 
+## API Architecture
+
+The API follows a layered architecture pattern (HTTP → Controller → Service → Repository):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     HTTP Layer (routes/)                    │
+│  - Elysia route definitions                         │
+│  - Request/Response handling                        │
+│  - OpenAPI documentation                        │
+│  - Delegates to controllers                      │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                Controller Layer (controllers/)              │
+│  - Session validation                          │
+│  - Request parsing and validation                │
+│  - Response formatting                        │
+│  - HTTP-specific logic                        │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Service Layer (services/)                   │
+│  - Business logic                              │
+│  - Data transformation                         │
+│  - Validation rules                           │
+│  - Orchestrates repositories                   │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Repository Layer (repositories/)              │
+│  - ORM operations (Drizzle)                     │
+│  - Database queries                          │
+│  - Data access abstraction                    │
+│  - Interface-based design                     │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Database (SQLite/PostgreSQL)              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer          | Directory           | Responsibility                                           |
+| -------------- | ------------------- | -------------------------------------------------------- |
+| **HTTP**       | `src/routes/api/`   | Route definitions, HTTP handling, OpenAPI docs           |
+| **Controller** | `src/controllers/`  | Session validation, request parsing, response formatting |
+| **Service**    | `src/services/`     | Business logic, data transformation, validation          |
+| **Repository** | `src/repositories/` | ORM operations, database queries, data access            |
+
+### Example Flow (Settings API)
+
+```
+Request → routes/api/settings/-profile.ts (HTTP)
+         ↓
+         controllers/settings/controller.ts (session validation)
+         ↓
+         services/dashboard/settings/profile.ts (business logic)
+         ↓
+         repositories/settings/profile.repository.ts (ORM query)
+         ↓
+         Database
+```
+
 ## Project Structure
 
 ```bash
@@ -187,6 +256,12 @@ src/
 │       ├── provider.tsx
 │       ├── toggle.tsx
 │       └── context.tsx
+├── controllers/       # Controller layer (HTTP-specific logic)
+│   ├── mcp/          # MCP controllers
+│   │   └── keys.controller.ts
+│   ├── settings/     # Settings controllers
+│   │   └── controller.ts
+│   └── index.ts
 ├── features/          # Feature modules with data, components, and pages
 │   ├── dashboard/     # Dashboard feature
 │   │   ├── index.tsx            # Dashboard page
@@ -230,6 +305,38 @@ src/
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
 │   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
 │   └── logger.ts      # Structured logger built on Evlog
+├── repositories/       # Repository layer (ORM operations)
+│   ├── mcp/          # MCP repositories
+│   │   └── api-keys.repository.ts
+│   ├── settings/     # Settings repositories
+│   │   ├── profile.repository.ts
+│   │   ├── account.repository.ts
+│   │   ├── display.repository.ts
+│   │   └── notifications.repository.ts
+│   └── index.ts
+├── services/          # Service layer (business logic)
+│   ├── settings/      # User settings CRUD operations
+│   │   ├── types.ts        # Shared type definitions
+│   │   ├── profile.ts       # Profile service
+│   │   ├── account.ts       # Account service
+│   │   ├── display.ts       # Display preferences service
+│   │   ├── notifications.ts  # Notification settings service
+│   │   └── index.ts
+│   ├── llmo/         # LLM optimization services
+│   │   ├── blog.ts          # Blog data + schema.org transform
+│   │   ├── docs.ts          # Docs static data
+│   │   ├── changelog.ts     # Changelog data + schema.org transform
+│   │   ├── faq.ts          # FAQ data + filtering
+│   │   ├── transform.ts     # Server info & capabilities
+│   │   ├── llms.ts          # LLMS.txt content generation
+│   │   └── index.ts
+│   ├── mcp/          # MCP services
+│   │   ├── rate-limiter.ts  # Health rate limiting
+│   │   ├── tools.ts         # MCP tool catalog
+│   │   └── index.ts
+│   └── status/        # Status services
+│       ├── history.ts      # Historical status fetching
+│       └── index.ts
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts        # CORS headers
 │   ├── helmet.ts      # Security headers
@@ -267,10 +374,27 @@ src/
 │   │   ├── help-center/
 │   │   ├── errors/
 │   │   └── settings/   # Settings sub-routes
-│   └── api/            # API routes
+│   └── api/            # API routes (HTTP Layer)
 │       ├── $.ts       # API catch-all route
-│       └── auth/      # Auth routes (Better Auth)
-│           └── $.ts
+│       ├── auth/      # Auth routes (Better Auth)
+│       │   ├── -core.ts
+│       │   └── -service.ts
+│       ├── mcp/       # MCP routes
+│       │   ├── -core.ts
+│       │   └── -keys.ts
+│       ├── root/      # Core API routes
+│       │   ├── -core.ts
+│       │   ├── -cache.ts
+│       │   ├── -database.ts
+│       │   ├── -llmo.ts
+│       │   ├── -realtime.ts
+│       │   └── -status.ts
+│       └── settings/  # Settings routes
+│           ├── -core.ts
+│           ├── -account.ts
+│           ├── -profile.ts
+│           ├── -display.ts
+│           └── -notifications.ts
 ├── server.ts          # TanStack Start server entry
 ├── types/             # TypeScript type definitions
 │   └── subscription.ts
@@ -286,30 +410,63 @@ tsconfig.json          # TypeScript configuration
 ```bash
 test/                  # Unit tests (Bun)
 ├── config/           # Configuration tests
+│   ├── db/           # Database config tests
 │   ├── docs.test.ts  # Docs config tests (globKeyToDocPath, getSplatPath, buildDocMap)
 │   └── index.test.ts # App config tests
-├── middlewares/      # Middleware tests
-│   ├── cors.test.ts  # CORS tests
-│   ├── helmet.test.ts # Helmet tests
-│   └── index.test.ts # traceFn, errorFn, composedMiddleware
-├── routes/           # Route tests
-│   ├── status.test.ts # Status page tests
-│   ├── profile.test.ts
-│   ├── settings.test.ts
-│   ├── blog.test.ts
-│   └── changelog.test.ts
-├── hooks/            # Hook tests
-├── lib/              # Library tests
-│   └── redis/       # Redis tests
-│       ├── redis.test.ts  # Redis client tests
-│       └── pubsub.test.ts # Pub/Sub tests
-├── store/            # Store tests
 ├── components/       # Component tests
-│   └── ui/          # UI component tests
-├── db.test.ts        # Database tests
-├── auth.test.ts      # Auth tests
-└── fixtures/         # Test fixtures
-    └── db.ts
+│   ├── ui/          # UI component tests
+│   ├── auth/        # Auth component tests
+│   ├── data-table/   # Data-table component tests
+│   ├── docs/        # Docs component tests
+│   ├── layout/      # Layout component tests
+│   ├── profile/     # Profile component tests
+│   └── settings/    # Settings component tests
+├── context/        # Context tests
+├── features/       # Feature tests
+│   ├── apps/       # Apps feature tests
+│   ├── auth/      # Auth feature tests
+│   │   ├── sign-in/
+│   │   ├── sign-up/
+│   │   ├── forgot-password/
+│   │   └── otp/
+│   ├── chats/      # Chats feature tests
+│   ├── dashboard/ # Dashboard feature tests
+│   ├── errors/    # Errors feature tests
+│   ├── landing/    # Landing feature tests
+│   ├── settings/  # Settings feature tests
+│   ├── tasks/     # Tasks feature tests
+│   └── users/     # Users feature tests
+├── fixtures/       # Test fixtures
+├── hooks/         # Hook tests
+├── lib/           # Library tests
+│   ├── auth/      # Auth library tests
+│   ├── cache/     # Cache library tests
+│   ├── dashboard/ # Dashboard library tests
+│   ├── db/        # Database tests
+│   ├── mcp/      # MCP library tests
+│   │   └── tools/ # MCP tools tests
+│   ├── rate-limit/ # Rate limit tests
+│   ├── realtime/  # Realtime tests
+│   └── store/     # Store tests
+├── middlewares/   # Middleware tests
+│   ├── cors.test.ts
+│   ├── helmet.test.ts
+│   ├── rate-limit.ts
+│   └── index.test.ts
+├── plugins/      # Plugin tests
+├── routes/      # Route tests
+│   ├── api/     # API route tests
+│   │   ├── auth/
+│   │   ├── mcp/
+│   │   └── settings/
+│   └── (auth)/  # Auth route tests
+├── services/    # Service layer tests
+│   ├── cache/   # Cache service tests
+│   ├── dashboard/ # Dashboard service tests
+│   ├── llmo/    # LLMO service tests
+│   ├── mcp/    # MCP service tests
+│   └── status/  # Status service tests
+└── scripts/    # Script tests/
 
 .e2e/                 # E2E tests (Playwright)
 ├── ui/               # UI E2E tests (split by component)
@@ -368,12 +525,12 @@ test/                  # Unit tests (Bun)
 - **Components**: PascalCase (e.g., `RootDocument`)
 - **Files**: kebab-case for routes (e.g., `__root.tsx`)
 - **Utilities**: camelCase (e.g., `getRouter()`)
-- **Constants**: SCREAMING_SNAKE_CASE
+- **Constants**: SCREAMING_SNAKE_CASE`
 
 ### Imports
 
 - Use path alias `~/*` for src imports (e.g., `import appCss from "~/styles/app.css?url"`)
-- CSS imports require `?url` suffix for Vite
+- CSS imports require `?url` suffix for Vite`
 
 ### React Patterns
 
@@ -385,7 +542,7 @@ test/                  # Unit tests (Bun)
 ### Error Handling
 
 - Use `defaultErrorComponent` and `defaultNotFoundComponent` in router config
-- Return proper HTTP status codes in server handlers
+- Return proper HTTP status codes in server handlers`
 
 ### CSS
 
@@ -395,7 +552,7 @@ test/                  # Unit tests (Bun)
 ### Validation
 
 - Uses **Zod v4** for runtime validation
-- Prefer Zod schemas over custom validation logic
+- Prefer Zod schemas over custom validation logic`
 
 ## Git Workflow
 
@@ -414,9 +571,9 @@ For more detailed troubleshooting guide, see [Troubleshooting](docs/guides/troub
 
 Common issues:
 
-- If imports fail, ensure `bun install` has run
-- Path alias `~/*` requires TypeScript paths configuration
-- CSS files must use `?url` suffix for Vite's asset handling
+- If imports fail, ensure `bun install` has run`
+- Path alias `~/*` requires TypeScript paths configuration`
+- CSS files must use `?url` suffix for Vite's asset handling`
 
 ## For AI Agents
 

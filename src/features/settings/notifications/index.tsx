@@ -1,6 +1,6 @@
 import { ContentSection } from "../components/content-section";
 import { NotificationsForm } from "./notifications-form";
-import { NotificationData } from "~/lib/stores/settings-store";
+import { NotificationData } from "~/lib/stores/dashboard/settings";
 
 /**
  * Notifications settings page component.

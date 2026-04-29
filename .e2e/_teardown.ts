@@ -5,7 +5,7 @@
 import { eq, like } from "drizzle-orm";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "../src/lib/db/schema";
+import * as schema from "../src/lib/db/core/schema";
 import { logger } from "../src/lib/logger";
 
 /**

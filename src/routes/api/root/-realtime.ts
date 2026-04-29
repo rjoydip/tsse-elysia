@@ -5,7 +5,7 @@
 
 import { Elysia } from "elysia";
 import { API_PREFIX } from "~/config";
-import { connectionStore } from "~/lib/realtime";
+import { connectionStore } from "~/lib/dashboard";
 
 /**
  * Realtime discovery payload example for OpenAPI.
@@ -34,7 +34,10 @@ const realtimeHealthExample = {
  * Realtime API route group.
  * Mounted under `/api` by the root API application.
  */
-export const realtimeRoutes = new Elysia({ name: "api.routes.realtime", prefix: "/realtime" })
+export const realtimeRoutes = new Elysia({
+  name: "api.routes.realtime",
+  prefix: "/realtime",
+})
   .get(
     "/",
     () =>
@@ -57,7 +60,9 @@ export const realtimeRoutes = new Elysia({ name: "api.routes.realtime", prefix: 
         responses: {
           200: {
             description: "Realtime endpoint metadata",
-            content: { "application/json": { example: realtimeDiscoveryExample } },
+            content: {
+              "application/json": { example: realtimeDiscoveryExample },
+            },
           },
         },
       },

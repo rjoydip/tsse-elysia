@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth-store";
+import { useAuthStore, useAuthInitialized } from "~/lib/stores/auth";
 import { AuthLayout } from "../auth-layout";
 import { OtpForm } from "./components/otp-form";
 

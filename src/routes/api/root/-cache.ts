@@ -4,7 +4,7 @@
  */
 
 import { Elysia } from "elysia";
-import { getStorageStatus } from "~/lib/cache";
+import { getStorageStatus } from "~/services/cache";
 
 /**
  * Cache heartbeat response example used for OpenAPI documentation.

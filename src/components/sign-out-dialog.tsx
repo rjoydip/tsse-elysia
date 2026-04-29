@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { authActions } from "~/lib/stores/auth-store";
+import { authActions } from "~/lib/stores/auth";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { signOut } from "~/lib/auth/client";
 import { toast } from "sonner";

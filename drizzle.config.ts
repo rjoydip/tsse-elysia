@@ -15,10 +15,10 @@ const postgresUrl =
 const schemas = new fdir()
   .withBasePath()
   .withDirs()
-  .glob("./src/lib/**/schema.ts")
-  .exclude((dirName) => dirName.startsWith("node_modules"))
+  .glob("./src/lib/db/schema/*.ts")
   .crawl()
   .sync()
+  .filter((p) => !p.endsWith("index.ts"))
   .map((p) => `./${p.replaceAll("\\", "/")}`);
 
 export default defineConfig({

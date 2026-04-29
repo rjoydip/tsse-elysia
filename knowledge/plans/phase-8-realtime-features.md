@@ -31,18 +31,18 @@ bun add @elysiajs/ws
 
 ### 1.1 Connection Authentication
 
-| Task                            | Description                                      | Location                               |
-| ------------------------------- | ------------------------------------------------ | -------------------------------------- |
-| WebSocket Handshake Interceptor | Validate session tokens during handshake         | `src/lib/realtime/auth.ts`             |
-| Session Token Extraction        | Extract and verify JWT from headers/query params | `src/lib/realtime/auth.ts`             |
-| Reject Unauthenticated          | Block connections without valid session          | `src/plugins/websocket.ts`             |
-| Connection User Mapping         | Store user session data with connection          | `src/lib/realtime/connection-store.ts` |
+| Task                            | Description                                      | Location                                |
+| ------------------------------- | ------------------------------------------------ | --------------------------------------- |
+| WebSocket Handshake Interceptor | Validate session tokens during handshake         | `src/lib/realtime/auth.ts`              |
+| Session Token Extraction        | Extract and verify JWT from headers/query params | `src/lib/realtime/auth.ts`              |
+| Reject Unauthenticated          | Block connections without valid session          | `src/plugins/websocket.ts`              |
+| Connection User Mapping         | Store user session data with connection          | `src/lib/realtime/stores/connection.ts` |
 
 ### 1.2 Message-Level Security
 
 | Task                         | Description                                   | Location                            |
 | ---------------------------- | --------------------------------------------- | ----------------------------------- |
-| Message Validation Schema    | Validate all incoming messages with Zod       | `src/lib/realtime/schemas.ts`       |
+| Message Validation Schema    | Validate all incoming messages with Zod       | `src/lib/realtime/schema.ts`        |
 | Content Sanitization         | Sanitize user-generated content               | `src/lib/realtime/sanitizer.ts`     |
 | RBAC for Messages            | Role-based access for different message types | `src/lib/realtime/authorization.ts` |
 | Per-Connection Rate Limiting | Limit messages/minute per connection          | `src/lib/realtime/rate-limit.ts`    |
@@ -90,7 +90,7 @@ const CONNECTION_TIMEOUT = 300000; // 5 minutes
 
 ### 3.1 Real-time Notifications
 
-**Service**: `src/lib/realtime/notification-service.ts`
+**Service**: `src/lib/realtime/services/notification.ts`
 
 | Feature              | Implementation                               |
 | -------------------- | -------------------------------------------- |
@@ -115,7 +115,7 @@ interface Notification {
 
 ### 3.2 Live User Presence
 
-**Service**: `src/lib/realtime/presence-service.ts`
+**Service**: `src/lib/realtime/services/presence.ts`
 
 | Feature           | Implementation                            |
 | ----------------- | ----------------------------------------- |
@@ -126,7 +126,7 @@ interface Notification {
 
 ### 3.3 Real-time Dashboard Updates
 
-**Service**: `src/lib/realtime/dashboard-service.ts`
+**Service**: `src/lib/realtime/services/dashboard.ts`
 
 | Feature                | Implementation                              |
 | ---------------------- | ------------------------------------------- |
@@ -137,7 +137,7 @@ interface Notification {
 
 ### 3.4 Chat/Messaging Infrastructure
 
-**Service**: `src/lib/realtime/chat-service.ts`
+**Service**: `src/lib/realtime/services/chat.ts`
 
 | Feature             | Implementation                        |
 | ------------------- | ------------------------------------- |
@@ -208,18 +208,21 @@ src/
 │   └── realtime/
 │       ├── index.ts              # Main entry point
 │       ├── auth.ts               # Connection authentication
-│       ├── connection-store.ts   # Connection management
-│       ├── schemas.ts            # Message validation schemas
+│       ├── stores/
+│       │   └── connection.ts   # Connection management
+│       ├── schema.ts            # Message validation schemas
 │       ├── sanitizer.ts          # Content sanitization
 │       ├── authorization.ts      # RBAC for messages
 │       ├── rate-limit.ts         # Per-connection rate limiting
 │       ├── csrf.ts               # CSRF validation
-│       ├── notification-service.ts
-│       ├── presence-service.ts
-│       ├── dashboard-service.ts
-│       └── chat-service.ts
+│       ├── services/
+│       │   ├── notification.ts
+│       │   ├── presence.ts
+│       │   ├── dashboard.ts
+│       │   └── chat.ts
 ├── plugins/
 │   └── websocket.ts              # Elysia WebSocket plugin
+├── router.tsx                  # TanStack Router
 └── routes/
     └── api/
         └── ws.ts                 # WebSocket upgrade endpoint

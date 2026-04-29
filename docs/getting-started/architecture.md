@@ -43,6 +43,63 @@ The application follows a server-side rendering (SSR) architecture using TanStac
 
 ## Core Components
 
+## API Architecture
+
+The API follows a layered architecture pattern for separation of concerns:
+
+```
+┌─────────────────────────────────────────────────┐
+│                     HTTP Layer (routes/api/)                    │
+│  - Elysia route definitions                         │
+│  - Request/Response handling                        │
+│  - OpenAPI documentation                        │
+│  - Delegates to controllers                      │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                Controller Layer (controllers/)              │
+│  - Session validation                          │
+│  - Request parsing and validation                │
+│  - Response formatting                        │
+│  - HTTP-specific logic                        │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                 Service Layer (services/)                   │
+│  - Business logic                              │
+│  - Data transformation                         │
+│  - Validation rules                           │
+│  - Orchestrates repositories                   │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│              Repository Layer (repositories/)              │
+│  - ORM operations (Drizzle)                     │
+│  - Database queries                          │
+│  - Data access abstraction                    │
+│  - Interface-based design                     │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────┐
+│                     Database (SQLite/PostgreSQL)              │
+└─────────────────────────────────────────────────┘
+```
+
+### Layer Responsibilities
+
+| Layer          | Directory           | Responsibility                                           |
+| -------------- | ------------------- | -------------------------------------------------------- |
+| **HTTP**       | `src/routes/api/`   | Route definitions, HTTP handling, OpenAPI docs           |
+| **Controller** | `src/controllers/`  | Session validation, request parsing, response formatting |
+| **Service**    | `src/services/`     | Business logic, data transformation, validation          |
+| **Repository** | `src/repositories/` | ORM operations, database queries, data access            |
+
+See [README.md - API Architecture](../../README.md#api-architecture) for full details.
+
 ### 1. Client Layer
 
 | Component        | File                   | Purpose                |
@@ -75,6 +132,23 @@ The application follows a server-side rendering (SSR) architecture using TanStac
 | CORS       | `src/middlewares/cors.ts`       | Cross-Origin headers |
 | Helmet     | `src/middlewares/helmet.ts`     | Security headers     |
 | Rate Limit | `src/middlewares/rate-limit.ts` | Request throttling   |
+
+### 5. Service Layer
+
+Business logic is organized into services under `src/services/`:
+
+| Service  | File                             | Purpose                                            |
+| -------- | -------------------------------- | -------------------------------------------------- |
+| Settings | `src/services/settings/*.ts`     | User profile, account, display, notifications CRUD |
+| LLMO     | `src/services/llmo/*.ts`         | Schema.org data transformation for AI systems      |
+| MCP      | `src/services/mcp/*.ts`          | Rate limiting and tool catalog                     |
+| Status   | `src/services/status/history.ts` | Historical health record fetching                  |
+
+The service layer separates business logic from route handlers, enabling:
+
+- Reusability across routes and MCP tools
+- Unit testability without HTTP overhead
+- Cleaner route handlers focused on HTTP concerns
 
 ## Data Flow
 
@@ -183,22 +257,53 @@ src/
 │   │       ├── catalog.ts
 │   │       └── users.ts
 │   ├── db/           # Database (Drizzle + SQLite/PostgreSQL)
-│   │   ├── index.ts
-│   │   └── schema.ts
+│   │   ├── core/
+│   │   │   ├── schema/
+│   │   │   │   ├── index.ts       # Re-exports all schema modules
+│   │   │   │   ├── auth.ts        # users, sessions, accounts, verifications
+│   │   │   │   ├── subscriptions.ts # subscriptionPlans, subscriptions
+│   │   │   │   ├── mcp.ts         # mcpApiKeys, serviceHealth
+│   │   │   │   └── user-settings.ts # user settings tables
+│   │   │   │   └── schema.ts      # Legacy redirect to schema/
+│   │   │   └── index.ts
 │   ├── redis/        # Storage & Pub/Sub
 │   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
 │   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
 │   ├── cache/        # Cache layer (Unstorage-backed)
 │   │   └── index.ts   # Multi-backend cache support
 │   ├── realtime/      # WebSocket realtime
-│   ├── rate-limit/   # Rate limiting
-│   ├── store/        # State management
+│   ├── rate-limit.ts  # Rate limiting
+│   ├── stores/        # State management
 │   │   ├── auth.ts
 │   │   ├── preferences.ts
-│   │   └── status.ts
+│   │   ├── status.ts
+│   │   ├── settings.ts
+│   │   └── rate-limit.ts
 │   ├── blog/         # Blog data
 │   ├── changelog/    # Changelog data
 │   └── logger.ts     # Structured logger built on Evlog
+├── services/          # Service layer (business logic)
+│   ├── settings/      # User settings CRUD
+│   │   ├── profile.ts
+│   │   ├── account.ts
+│   │   ├── display.ts
+│   │   ├── notifications.ts
+│   │   └── index.ts
+│   ├── llmo/         # LLM optimization services
+│   │   ├── blog.ts
+│   │   ├── docs.ts
+│   │   ├── changelog.ts
+│   │   ├── faq.ts
+│   │   ├── transform.ts
+│   │   ├── llms.ts
+│   │   └── index.ts
+│   ├── mcp/          # MCP services
+│   │   ├── rate-limiter.ts
+│   │   ├── tools.ts
+│   │   └── index.ts
+│   └── status/        # Status services
+│       ├── history.ts
+│       └── index.ts
 ├── middlewares/       # Middleware implementations
 │   ├── cors.ts
 │   ├── helmet.ts

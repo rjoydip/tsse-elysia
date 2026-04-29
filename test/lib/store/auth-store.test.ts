@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { authStore, authActions } from "../../../src/lib/stores/auth-store";
+import { authStore, authActions } from "../../../src/lib/stores/auth";
 
 describe("Auth Store", () => {
   beforeEach(() => {

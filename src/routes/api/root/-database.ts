@@ -4,7 +4,7 @@
  */
 
 import { Elysia } from "elysia";
-import { getDatabaseHeartbeat } from "~/lib/db/heartbeat";
+import { getDatabaseHeartbeat } from "~/config/db/heartbeat";
 
 /**
  * Database heartbeat response example used for OpenAPI documentation.

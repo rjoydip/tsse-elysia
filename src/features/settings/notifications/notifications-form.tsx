@@ -17,7 +17,7 @@ import {
 } from "~/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Switch } from "~/components/ui/switch";
-import { settingsActions } from "~/lib/stores/settings-store";
+import { settingsActions } from "~/lib/stores/dashboard/settings";
 
 /**
  * Schema for validating notifications form data.

@@ -52,9 +52,11 @@ Core focus:
 | 4–5   | UI & UX          | ✅     |
 | 7     | Infrastructure   | ✅     |
 | 8     | Real-time        | ✅     |
-| 9     | MCP              | 🚧     |
-| 10    | Data Strategy    | 🚧     |
+| 9     | MCP              | ✅     |
+| 10    | Data Strategy    | 📅     |
 | 13    | Contract Testing | 📅     |
+| Svc   | Service Layer    | ✅     |
+| 11    | API Architecture | ✅     |
 
 ---
 
@@ -70,6 +72,32 @@ Core focus:
 
 - Vector + Graph DB
 - Performance & scaling
+
+### Phase 11 – API Architecture Refactoring ✅
+
+**Completed:**
+
+- Implemented layered architecture (HTTP → Controller → Service → Repository)
+- Created `src/controllers/` for HTTP-specific logic
+- Created `src/repositories/` for ORM operations
+- Refactored MCP API keys (moved ORM logic to repository, business logic to service)
+- Refactored Settings API (profile, account, display, notifications)
+- Added barrel files (index.ts) for all new layers
+- All 932 unit tests pass
+- TypeScript typecheck passes
+- Linter passes with 0 errors
+
+**Structure:**
+
+```
+src/
+├── routes/api/         # HTTP Layer (Elysia route definitions)
+├── controllers/        # Controller Layer (session validation, request parsing)
+├── services/          # Service Layer (business logic)
+└── repositories/      # Repository Layer (ORM operations)
+```
+
+See [README.md](./README.md#api-architecture) for detailed diagram.
 
 ---
 

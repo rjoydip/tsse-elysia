@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { APP_NAME } from "~/config";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { SettingsProfile, type ProfileData } from "~/features/settings/profile";
-import { useSettingsStore, settingsActions } from "~/lib/stores/settings-store";
+import { useSettingsStore, settingsActions } from "~/lib/stores/dashboard/settings";
 
 const defaultProfile: ProfileData = {
   username: "",
