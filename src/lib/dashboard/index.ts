@@ -1,96 +1,21 @@
 /**
- * Real-time module entry point.
- * Exports all real-time services and utilities for easy access.
+ * Dashboard library barrel file.
+ * Re-exports all dashboard-related modules for convenient importing.
  */
 
-// Connection management
-export {
-  connectionStore,
-  type ConnectionMetadata,
-  type WebSocketConnection,
-} from "../stores/dashboard/connection";
+// Connection store (WebSocket connections)
+export { connectionStore } from "~/lib/stores/dashboard/connection";
 
-// Authentication
-export {
-  authenticateConnection,
-  validateOrigin,
-  withAuth,
-  type AuthResult,
-} from "../auth/dashboard";
+// Authentication for WebSocket connections
+export { authenticateConnection, validateOrigin } from "~/lib/auth/dashboard";
 
-// Message schemas
-export {
-  messageSchema,
-  baseMessageSchema,
-  parseMessage,
-  createErrorMessage,
-  createPongMessage,
-  type ValidMessage,
-  type MessageType,
-  type PingMessage,
-  type PongMessage,
-  type SubscribeMessage,
-  type UnsubscribeMessage,
-  type NotificationMessage,
-  type PresenceMessage,
-  type TypingMessage,
-  type DashboardMessage,
-  type ErrorMessage,
-} from "~/services/dashboard/schema";
+// Message parsing and creation for WebSocket
+export { parseMessage, createPongMessage } from "~/services/dashboard/schema";
 
-// Content sanitization
-export { sanitizeContent, stripHtml, validateContent, sanitizeMessage } from "./sanitizer";
+// Rate limiting for dashboard/WebSocket
+export { checkRateLimit } from "./rate-limit";
 
-// Authorization
-export {
-  authorize,
-  hasPermission,
-  getPermissions,
-  getUserRole,
-  createGuard,
-  checkAuthorization,
-  meetsRoleRequirement,
-  type UserRole,
-  type Permission,
-} from "../auth/dashboard/authorization";
-
-// Rate limiting
-export {
-  checkRateLimit,
-  getRateLimitStatus,
-  resetRateLimit,
-  rateLimiter,
-  defaultRateLimitConfig,
-  type RateLimitConfig,
-} from "./rate-limit";
-
-// CSRF
-export {
-  validateCsrfToken,
-  generateCsrfToken,
-  csrfTokenStore,
-  defaultCsrfConfig,
-  type CsrfConfig,
-} from "./csrf";
-
-// Services
-export {
-  notificationService,
-  type Notification,
-  type NotificationType,
-} from "../../services/dashboard/notification";
-export {
-  presenceService,
-  type Presence,
-  type PresenceStatus,
-} from "../../services/dashboard/presence";
-export {
-  dashboardService,
-  type DashboardUpdate,
-  type DashboardResource,
-  type DashboardAction,
-} from "~/services/dashboard/main";
-export { chatService, type Reaction } from "~/services/dashboard/chat";
-
-// Re-export types
-export type { Context } from "elysia";
+// Dashboard services
+export { notificationService } from "~/services/dashboard/notification";
+export { presenceService } from "~/services/dashboard/presence";
+export { dashboardService } from "~/services/dashboard/main";

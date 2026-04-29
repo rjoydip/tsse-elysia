@@ -54,7 +54,13 @@
     "fallow:dupes": "fallow dupes",
     "fallow:health": "fallow health",
     "fallow:fix": "fallow fix --dry-run",
-    "start": "node ./dist/server/server.js"
+    "start": "node ./dist/server/server.js",
+    "check-db": "bun run ./scripts/check-db.ts",
+    "fix-migrations": "bun run ./scripts/fix-migrations.ts",
+    "opencode-session-clear": "bun run ./scripts/opencode-session-clear.ts",
+    "script:release": "bun run ./scripts/release.ts",
+    "sync-tasks": "bun run ./scripts/sync-tasks.ts",
+    "task-config": "bun run ./scripts/task-config.ts"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.4.2",
@@ -116,7 +122,6 @@
     "pg": "^8.20.0",
     "react": "^19.2.5",
     "react-day-picker": "9.14.0",
-    "react-dom": "^19.2.5",
     "react-hook-form": "^7.74.0",
     "react-markdown": "^10.1.0",
     "react-top-loading-bar": "^3.0.2",
@@ -161,6 +166,7 @@
     "oxlint": "^1.62.0",
     "portless": "^0.10.3",
     "react-doctor": "^0.0.30",
+    "react-dom": "^19.2.5",
     "simple-git-hooks": "^2.13.1",
     "std-env": "^4.1.0",
     "typescript": "^6.0.3",

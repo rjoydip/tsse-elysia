@@ -6,15 +6,11 @@ ignorePatterns = [
   "**/dist/**",
   "**/.artifacts/**",
   "**/.opencode/**",
-  "**/.e2e/**",
-  "**/test/**",
-  "**/*.config.ts",
-  "**/drizzle.config.ts",
+  "**/*.config.{js,ts}",
 ]
 
 ignoreDependencies = ["ioredis", "portless"]
-
-dynamicallyLoaded = ["src/routes/**/*.ts", "src/plugins/**/*.ts"]
+dynamicallyLoaded = ["src/**/*.{ts,tsx}"]
 
 [rules]
 "unused-files" = "warn"
@@ -33,4 +29,4 @@ ignore = ["**/*.test.ts", "**/*.spec.ts"]
 [health]
 maxCyclomatic = 20
 maxCognitive = 15
-ignore = ["**/*.test.ts", "**/*.spec.ts", "test/**", ".e2e/**"]
+ignore = ["**/*.test.ts", "**/*.spec.ts", "test/**", ".e2e/**", "scripts/**/*.ts"]

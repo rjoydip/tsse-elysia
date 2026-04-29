@@ -111,7 +111,7 @@ export function getDatabaseType(): DatabaseType {
  *
  * @returns SQLite database client and Drizzle ORM
  */
-export function createSQLiteConnection(): {
+function createSQLiteConnection(): {
   sqliteClient: Client;
   db: typeof db;
 } {

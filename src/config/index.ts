@@ -20,7 +20,7 @@ function getEnvVar(key: string, fallback: string): string {
  * Application version from package.json.
  * Automatically synced with the root package.json version.
  */
-export const APP_VERSION = "0.0.0";
+export const APP_VERSION = "0.1.0";
 
 /**
  * API route prefix - defaults to /api.

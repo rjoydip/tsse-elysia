@@ -4,16 +4,16 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
+import { db } from "~/config/db";
 import { nanoid } from "nanoid";
+import { userSettingsProfile } from "~/lib/db/schema/user-settings";
+import { users } from "~/lib/db/schema/auth";
 
 /**
  * Repository interface for profile settings database operations.
  */
 export interface IProfileRepository {
-  findProfileByUserId(
-    userId: string,
-  ): Promise<typeof schema.userSettingsProfile.$inferSelect | undefined>;
+  findProfileByUserId(userId: string): Promise<typeof userSettingsProfile.$inferSelect | undefined>;
   createProfile(data: {
     userId: string;
     username: string;
@@ -42,11 +42,11 @@ export class ProfileRepository implements IProfileRepository {
    */
   async findProfileByUserId(
     userId: string,
-  ): Promise<typeof schema.userSettingsProfile.$inferSelect | undefined> {
+  ): Promise<typeof userSettingsProfile.$inferSelect | undefined> {
     const [profile] = await db
       .select()
-      .from(schema.userSettingsProfile)
-      .where(eq(schema.userSettingsProfile.userId, userId))
+      .from(userSettingsProfile)
+      .where(eq(userSettingsProfile.userId, userId))
       .limit(1);
     return profile;
   }
@@ -62,7 +62,7 @@ export class ProfileRepository implements IProfileRepository {
     urls: string;
   }): Promise<void> {
     const now = new Date();
-    await db.insert(schema.userSettingsProfile).values({
+    await db.insert(userSettingsProfile).values({
       id: nanoid(),
       userId: data.userId,
       username: data.username,
@@ -87,14 +87,14 @@ export class ProfileRepository implements IProfileRepository {
     },
   ): Promise<void> {
     await db
-      .update(schema.userSettingsProfile)
+      .update(userSettingsProfile)
       .set({
         username: data.username,
         bio: data.bio,
         urls: data.urls,
         updatedAt: data.updatedAt,
       })
-      .where(eq(schema.userSettingsProfile.userId, userId));
+      .where(eq(userSettingsProfile.userId, userId));
   }
 
   /**
@@ -104,9 +104,9 @@ export class ProfileRepository implements IProfileRepository {
     userId: string,
   ): Promise<{ name: string | null; email: string | null } | undefined> {
     const [user] = await db
-      .select({ name: schema.users.name, email: schema.users.email })
-      .from(schema.users)
-      .where(eq(schema.users.id, userId))
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, userId))
       .limit(1);
     return user;
   }

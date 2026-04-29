@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { CommandMenu } from "~/components/command-menu";
 
 type SearchContextType = {
   open: boolean;
@@ -26,12 +25,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  return (
-    <SearchContext value={{ open, setOpen }}>
-      {children}
-      <CommandMenu />
-    </SearchContext>
-  );
+  return <SearchContext value={{ open, setOpen }}>{children}</SearchContext>;
 }
 
 export const useSearch = () => {

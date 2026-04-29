@@ -8,9 +8,7 @@ let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
 
 async function createHighlighter() {
   const { createHighlighterCore } = await import("@shikijs/core");
-  const { createJavaScriptRegexEngine } = await import(
-    "@shikijs/engine-javascript"
-  );
+  const { createJavaScriptRegexEngine } = await import("@shikijs/engine-javascript");
 
   const [githubLight, githubDark] = await Promise.all([
     import("@shikijs/themes/github-light"),

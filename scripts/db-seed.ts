@@ -10,7 +10,9 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { seed, reset } from "drizzle-seed";
 import { scriptLogger as logger } from "../src/lib/logger";
-import * as schema from "../src/lib/db/schema";
+import { subscriptionPlans } from "../src/lib/db/schema/subscriptions";
+import { users } from "../src/lib/db/schema/auth";
+import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
 
 /**
@@ -149,7 +151,7 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
   }));
 
   logger.info(`Seeding ${planRecords.length} subscription plans...`);
-  await db.insert(schema.subscriptionPlans).values(planRecords);
+  await db.insert(subscriptionPlans).values(planRecords);
 }
 
 /**
@@ -179,7 +181,7 @@ async function main(): Promise<void> {
     await seedPlans(db);
 
     logger.step(3, "Seeding users with drizzle-seed...");
-    await seed(db as any, { users: schema.users } as any, {
+    await seed(db as any, { users } as any, {
       count: options.count,
       seed: options.seed,
     });

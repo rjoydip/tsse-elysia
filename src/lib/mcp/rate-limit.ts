@@ -8,7 +8,7 @@ import {
   resetRateLimit as resetRateLimitBase,
   type RateLimitResult,
 } from "~/lib/rate-limit";
-import type { McpApiKey } from "~/lib/db/schema";
+import type { McpApiKey } from "~/lib/db/schema/mcp";
 export type McpApiKeySelect = McpApiKey;
 
 /**

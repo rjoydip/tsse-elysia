@@ -4,8 +4,9 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
+import { db } from "~/config/db";
 import { nanoid } from "nanoid";
+import { userSettingsNotifications } from "~/lib/db/schema/user-settings";
 
 /**
  * Repository interface for notifications settings database operations.
@@ -13,7 +14,7 @@ import { nanoid } from "nanoid";
 export interface INotificationsRepository {
   findNotificationsByUserId(
     userId: string,
-  ): Promise<typeof schema.userSettingsNotifications.$inferSelect | undefined>;
+  ): Promise<typeof userSettingsNotifications.$inferSelect | undefined>;
   createNotifications(data: {
     userId: string;
     type: string;
@@ -48,11 +49,11 @@ export class NotificationsRepository implements INotificationsRepository {
    */
   async findNotificationsByUserId(
     userId: string,
-  ): Promise<typeof schema.userSettingsNotifications.$inferSelect | undefined> {
+  ): Promise<typeof userSettingsNotifications.$inferSelect | undefined> {
     const [notifications] = await db
       .select()
-      .from(schema.userSettingsNotifications)
-      .where(eq(schema.userSettingsNotifications.userId, userId))
+      .from(userSettingsNotifications)
+      .where(eq(userSettingsNotifications.userId, userId))
       .limit(1);
     return notifications;
   }
@@ -71,7 +72,7 @@ export class NotificationsRepository implements INotificationsRepository {
     createdAt: Date;
     updatedAt: Date;
   }): Promise<void> {
-    await db.insert(schema.userSettingsNotifications).values({
+    await db.insert(userSettingsNotifications).values({
       id: nanoid(),
       userId: data.userId,
       type: data.type,
@@ -101,7 +102,7 @@ export class NotificationsRepository implements INotificationsRepository {
     },
   ): Promise<void> {
     await db
-      .update(schema.userSettingsNotifications)
+      .update(userSettingsNotifications)
       .set({
         type: data.type,
         mobile: data.mobile,
@@ -111,7 +112,7 @@ export class NotificationsRepository implements INotificationsRepository {
         securityEmails: data.securityEmails,
         updatedAt: data.updatedAt,
       })
-      .where(eq(schema.userSettingsNotifications.userId, userId));
+      .where(eq(userSettingsNotifications.userId, userId));
   }
 }
 

@@ -4,16 +4,16 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
+import { db } from "~/config/db";
 import { nanoid } from "nanoid";
+import { users } from "~/lib/db/schema/auth";
+import { userSettingsAccount } from "~/lib/db/schema/user-settings";
 
 /**
  * Repository interface for account settings database operations.
  */
 export interface IAccountRepository {
-  findAccountByUserId(
-    userId: string,
-  ): Promise<typeof schema.userSettingsAccount.$inferSelect | undefined>;
+  findAccountByUserId(userId: string): Promise<typeof userSettingsAccount.$inferSelect | undefined>;
   createAccount(data: {
     userId: string;
     name: string;
@@ -43,11 +43,11 @@ export class AccountRepository implements IAccountRepository {
    */
   async findAccountByUserId(
     userId: string,
-  ): Promise<typeof schema.userSettingsAccount.$inferSelect | undefined> {
+  ): Promise<typeof userSettingsAccount.$inferSelect | undefined> {
     const [account] = await db
       .select()
-      .from(schema.userSettingsAccount)
-      .where(eq(schema.userSettingsAccount.userId, userId))
+      .from(userSettingsAccount)
+      .where(eq(userSettingsAccount.userId, userId))
       .limit(1);
     return account;
   }
@@ -63,7 +63,7 @@ export class AccountRepository implements IAccountRepository {
     createdAt: Date;
     updatedAt: Date;
   }): Promise<void> {
-    await db.insert(schema.userSettingsAccount).values({
+    await db.insert(userSettingsAccount).values({
       id: nanoid(),
       userId: data.userId,
       name: data.name,
@@ -87,14 +87,14 @@ export class AccountRepository implements IAccountRepository {
     },
   ): Promise<void> {
     await db
-      .update(schema.userSettingsAccount)
+      .update(userSettingsAccount)
       .set({
         name: data.name,
         dob: data.dob,
         language: data.language,
         updatedAt: data.updatedAt,
       })
-      .where(eq(schema.userSettingsAccount.userId, userId));
+      .where(eq(userSettingsAccount.userId, userId));
   }
 
   /**
@@ -102,9 +102,9 @@ export class AccountRepository implements IAccountRepository {
    */
   async findUserById(userId: string): Promise<{ name: string | null } | undefined> {
     const [user] = await db
-      .select({ name: schema.users.name })
-      .from(schema.users)
-      .where(eq(schema.users.id, userId))
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, userId))
       .limit(1);
     return user;
   }

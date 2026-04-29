@@ -4,16 +4,15 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db, schema } from "~/config/db";
+import { db } from "~/config/db";
 import { nanoid } from "nanoid";
+import { userSettingsDisplay } from "~/lib/db/schema/user-settings";
 
 /**
  * Repository interface for display settings database operations.
  */
 export interface IDisplayRepository {
-  findDisplayByUserId(
-    userId: string,
-  ): Promise<typeof schema.userSettingsDisplay.$inferSelect | undefined>;
+  findDisplayByUserId(userId: string): Promise<typeof userSettingsDisplay.$inferSelect | undefined>;
   createDisplay(data: {
     userId: string;
     items: string;
@@ -38,11 +37,11 @@ export class DisplayRepository implements IDisplayRepository {
    */
   async findDisplayByUserId(
     userId: string,
-  ): Promise<typeof schema.userSettingsDisplay.$inferSelect | undefined> {
+  ): Promise<typeof userSettingsDisplay.$inferSelect | undefined> {
     const [display] = await db
       .select()
-      .from(schema.userSettingsDisplay)
-      .where(eq(schema.userSettingsDisplay.userId, userId))
+      .from(userSettingsDisplay)
+      .where(eq(userSettingsDisplay.userId, userId))
       .limit(1);
     return display;
   }
@@ -56,7 +55,7 @@ export class DisplayRepository implements IDisplayRepository {
     createdAt: Date;
     updatedAt: Date;
   }): Promise<void> {
-    await db.insert(schema.userSettingsDisplay).values({
+    await db.insert(userSettingsDisplay).values({
       id: nanoid(),
       userId: data.userId,
       items: data.items,
@@ -76,12 +75,12 @@ export class DisplayRepository implements IDisplayRepository {
     },
   ): Promise<void> {
     await db
-      .update(schema.userSettingsDisplay)
+      .update(userSettingsDisplay)
       .set({
         items: data.items,
         updatedAt: data.updatedAt,
       })
-      .where(eq(schema.userSettingsDisplay.userId, userId));
+      .where(eq(userSettingsDisplay.userId, userId));
   }
 }
 
