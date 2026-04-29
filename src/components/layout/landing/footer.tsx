@@ -9,6 +9,7 @@ import { APP_NAME, GITHUB_REPO_URL } from "~/config";
 import { cn } from "~/lib/utils";
 import { BrandLogo } from "./branding";
 import { useSession } from "~/lib/auth/client";
+import { useState, useEffect } from "react";
 
 interface FooterProps {
   className?: string;
@@ -21,6 +22,14 @@ interface FooterProps {
 export function Footer({ className, showTerms = true, showLogo = false }: FooterProps) {
   const { data: session, isPending } = useSession();
   const currentYear = new Date().getFullYear();
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/meta")
+      .then((res) => res.json())
+      .then((data) => setVersion(data.version))
+      .catch(() => setVersion(null));
+  }, []);
 
   /**
    * Keep the footer visible while the session query is resolving on public pages.
@@ -99,7 +108,8 @@ export function Footer({ className, showTerms = true, showLogo = false }: Footer
 
           {/* Copyright */}
           <div className="text-center text-xs text-muted-foreground">
-            &copy; {currentYear} {APP_NAME}. All rights reserved.
+            &copy; {currentYear} {APP_NAME}
+            {version && <span className="ml-1">v{version}</span>}. All rights reserved.
           </div>
         </div>
       </div>

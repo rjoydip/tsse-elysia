@@ -4,12 +4,22 @@
  */
 
 import { Elysia } from "elysia";
+import { readFileSync } from "node:fs";
 import { APP_NAME } from "~/config";
 import { realtimeRoutes } from "./-realtime";
 import { databaseRoutes } from "./-database";
 import { cacheRoutes } from "./-cache";
 import { llmoRoutes } from "./-llmo";
 import { statusRoutes } from "./-status";
+
+/**
+ * Read package.json to extract metadata (name, version).
+ * Uses `import.meta.url` to resolve path relative to this file.
+ */
+const pkg = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")) as {
+  name: string;
+  version: string;
+};
 
 /**
  * OpenAPI response schema for the API health endpoint.
@@ -77,6 +87,30 @@ export const coreRoutes = new Elysia({ name: "api.routes.core" })
             content: {
               "application/json": {
                 example: apiHealthResponseExample,
+              },
+            },
+          },
+        },
+      },
+    },
+  )
+  .get(
+    "/meta",
+    () =>
+      new Response(JSON.stringify({ name: pkg.name, version: pkg.version }), {
+        headers: { "Content-Type": "application/json" },
+      }),
+    {
+      detail: {
+        summary: "API metadata",
+        description: "Returns application metadata including name and version from package.json.",
+        tags: ["api"],
+        responses: {
+          200: {
+            description: "Metadata payload with name and version",
+            content: {
+              "application/json": {
+                example: { name: "tsse-elysia", version: "0.1.0" },
               },
             },
           },
