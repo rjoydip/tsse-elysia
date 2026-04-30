@@ -102,7 +102,7 @@ HTTP Layer (routes/api/) → Controller Layer (controllers/) → Service Layer (
 
 **Documentation:**
 
-- [API Architecture Decision](./knowledge/DECISION.md) - Full decision rationale
+- [API Architecture Decision](./knowledge/DECISIONS.md) - Full decision rationale
 - [API Task List](./knowledge/TASK.md) - Implementation details
 - [README - API Architecture](./README.md#api-architecture) - Visual diagram
 
