@@ -47,7 +47,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           sarif_file: fallow-results.sarif
-          category: fallow
+          category: fallow-analysis-${{ github.run_id }}
 
       - name: Generate health badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
