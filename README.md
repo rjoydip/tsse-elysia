@@ -7,8 +7,8 @@ description: A full-stack TypeScript application using TanStack Start, Elysia, R
 
 [![React Doctor](https://www.react.doctor/share/badge?p=tsse-elysia&s=98&w=3&f=3)](https://www.react.doctor/share?p=tsse-elysia&s=98&w=3&f=3)
 [![License](https://img.shields.io/github/license/rjoydip/tsse-elysia)](https://github.com/rjoydip/tsse-elysia/blob/main/LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/Bun-1.2+-green)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-blue)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.3+-green)](https://bun.sh)
 [![Fallow Health](https://raw.githubusercontent.com/rjoydip/tsse-elysia/badges/health-badge.svg)](https://docs.fallow.tools/)
 
 A full-stack TypeScript application using TanStack Start, Elysia, React 19, and Bun.

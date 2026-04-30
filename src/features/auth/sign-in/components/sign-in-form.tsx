@@ -4,7 +4,7 @@
  * Integrates with auth client for actual authentication.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,12 +14,12 @@ import { toast } from "sonner";
 import { authClient, signInWithEmail, useSession } from "~/lib/auth/client";
 import { authActions } from "~/lib/stores/auth";
 import { env } from "~/config/env";
-import { getEnabledSocialProviders, type AuthProviderId } from "~/config/auth";
+import { getEnabledSocialProviders } from "~/config/auth";
 import { cn } from "~/lib/utils";
 import { encodePassword } from "~/lib/utils/encryption";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { PasswordInput } from "~/components/password-input";
+import { EmailField } from "~/features/auth/shared/components/email-field";
 import {
   Form,
   FormControl,
@@ -29,6 +29,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { BASE_URL } from "~/config";
+import { createHandleSocialSignIn } from "~/features/auth/shared/handle-social-sign-in";
 import { extractAuthErrorMessage } from "~/features/auth/shared/auth-error-utils";
 
 const formSchema = z.object({
@@ -44,45 +45,21 @@ interface SignInFormProps extends React.HTMLAttributes<HTMLFormElement> {
 
 export function SignInForm({ className, redirectTo, ...props }: SignInFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<AuthProviderId | "email" | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const navigate = useNavigate();
   const enabledProviders = getEnabledSocialProviders(env);
-  const { data: session } = useSession();
-
-  const targetPath = redirectTo || "/dashboard";
-
-  // If we already have a session (e.g. after OAuth redirect), redirect to target
-  useEffect(() => {
-    if (session?.user) {
-      navigate({ to: targetPath, replace: true });
-    }
-  }, [session, navigate, targetPath]);
+  useSession();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
-  async function handleSocialSignIn(provider: AuthProviderId) {
-    setLoadingProvider(provider);
-    try {
-      const result = await authClient.signIn.social({
-        provider,
-        callbackURL: `${BASE_URL}/dashboard`,
-      });
-
-      if (result.error) {
-        toast.error(extractAuthErrorMessage(result.error));
-      }
-    } catch (error) {
-      toast.error(extractAuthErrorMessage(error));
-    } finally {
-      setLoadingProvider(null);
-    }
-  }
+  const handleSocialSignIn = createHandleSocialSignIn({
+    setLoadingProvider,
+    authClient,
+    BASE_URL,
+  });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -107,101 +84,86 @@ export function SignInForm({ className, redirectTo, ...props }: SignInFormProps)
         toast.success("Signed in successfully");
         navigate({ to: targetPath, replace: true });
       }
+    } catch (error) {
+      toast.error(extractAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
       setLoadingProvider(null);
     }
   }
 
+  const targetPath = redirectTo || "/dashboard";
+
   return (
     <Form {...form}>
-      <div className={cn("grid gap-3", className)}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3" {...props}>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="relative">
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <PasswordInput placeholder="********" {...field} />
-                </FormControl>
-                <FormMessage />
-                <Link
-                  to="/forgot-password"
-                  className="absolute inset-e-0 -top-0.5 text-sm font-medium text-muted-foreground hover:opacity-75"
-                >
-                  Forgot password?
-                </Link>
-              </FormItem>
-            )}
-          />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Do not have an account?</span>
-            <Link
-              to="/sign-up"
-              className="text-sm font-medium text-muted-foreground hover:opacity-75"
-            >
-              Sign up
-            </Link>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className={cn("grid gap-3", className)}
+        {...props}
+      >
+        <EmailField form={form} fieldName="email" />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem className="relative">
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <PasswordInput placeholder="********" {...field} />
+              </FormControl>
+              <FormMessage />
+              <Link
+                to="/forgot-password"
+                className="absolute inset-e-0 -top-0.5 text-sm font-medium text-muted-foreground hover:opacity-75"
+              >
+                Forgot password?
+              </Link>
+            </FormItem>
+          )}
+        />
+        <Button className="mt-2" disabled={isLoading} type="submit">
+          {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <LogIn />}
+          Sign in
+        </Button>
+      </form>
+
+      {enabledProviders.length > 0 && (
+        <>
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
           </div>
-          <Button type="submit" className="mt-2" disabled={isLoading}>
-            {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <LogIn />}
-            Sign in
-          </Button>
-        </form>
 
-        {enabledProviders.length > 0 && (
-          <>
-            <div className="relative my-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            <div
-              className={cn("grid gap-2", {
-                "grid-cols-2": enabledProviders.length > 1,
-                "grid-cols-1": enabledProviders.length === 1,
-              })}
-            >
-              {enabledProviders.map((provider) => (
-                <Button
-                  key={provider.id}
-                  variant="outline"
-                  type="button"
-                  className="border-2"
-                  disabled={loadingProvider !== null}
-                  onClick={() => handleSocialSignIn(provider.id)}
-                >
-                  {loadingProvider === provider.id ? (
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                  ) : (
-                    <provider.icon className="h-4 w-4 mr-2" />
-                  )}{" "}
-                  {provider.name}
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+          <div
+            className={cn("grid gap-2", {
+              "grid-cols-2": enabledProviders.length > 1,
+              "grid-cols-1": enabledProviders.length === 1,
+            })}
+          >
+            {enabledProviders.map((provider) => (
+              <Button
+                key={provider.id}
+                variant="outline"
+                type="button"
+                className="border-2"
+                disabled={loadingProvider !== null}
+                onClick={() => handleSocialSignIn(provider.id)}
+              >
+                {loadingProvider === provider.id ? (
+                  <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                ) : (
+                  <provider.icon className="h-4 w-4 mr-2" />
+                )}{" "}
+                {provider.name}
+              </Button>
+            ))}
+          </div>
+        </>
+      )}
     </Form>
   );
 }

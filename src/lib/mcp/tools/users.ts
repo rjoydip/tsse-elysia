@@ -12,7 +12,7 @@ import { users } from "~/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
 import { createErrorResponse, createSuccessResponse } from "./shared-utils";
-import { buildUserResponse, mapUserToListResponse } from "./response-helpers";
+import { mapUserToListResponse, fetchUserAndBuildResponse } from "../shared/response-helpers";
 import { requireAuthentication } from "../shared/auth-utils";
 
 /**
@@ -62,15 +62,7 @@ export function registerUserTools(server: McpServer): void {
           return createErrorResponse("Access denied");
         }
 
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, targetUserId),
-        });
-
-        if (!user) {
-          return createErrorResponse("User not found");
-        }
-
-        return buildUserResponse(user);
+        return fetchUserAndBuildResponse(targetUserId);
       } catch (error) {
         return createErrorResponse(
           `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

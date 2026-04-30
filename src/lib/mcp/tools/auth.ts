@@ -8,11 +8,11 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types";
 import { z } from "zod";
 import { db } from "~/config/db";
-import { users, sessions } from "~/lib/db/schema/auth";
+import { sessions } from "~/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
 import { createErrorResponse, createSuccessResponse } from "./shared-utils";
-import { buildUserResponse, mapSessionToResponse } from "./response-helpers";
+import { mapSessionToResponse, fetchUserAndBuildResponse } from "../shared/response-helpers";
 import { requireUserId } from "../shared/auth-utils";
 
 /**
@@ -48,15 +48,7 @@ export function registerAuthTools(server: McpServer): void {
 
         const apiKey = getCurrentApiKey()!;
 
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, apiKey.userId),
-        });
-
-        if (!user) {
-          return createErrorResponse("User not found");
-        }
-
-        return buildUserResponse(user);
+        return fetchUserAndBuildResponse(apiKey.userId);
       } catch (error) {
         return createErrorResponse(
           `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

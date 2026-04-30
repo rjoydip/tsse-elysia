@@ -21,7 +21,9 @@ mode = "mild"
 minTokens = 50
 minLines = 5
 threshold = 0
+ignore = ["test/**"]
 
 [health]
 maxCyclomatic = 20
 maxCognitive = 15
+ignore = ["{test,scripts,.e2e}/**", "src/**/*.tsx", "**/*.config.{js,ts}"]

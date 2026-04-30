@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { authClient, signUpWithEmail } from "~/lib/auth/client";
 import { authActions } from "~/lib/stores/auth";
 import { env } from "~/config/env";
-import { getEnabledSocialProviders, type AuthProviderId } from "~/config/auth";
+import { getEnabledSocialProviders } from "~/config/auth";
 import { cn } from "~/lib/utils";
 import { encodePassword } from "~/lib/utils/encryption";
 import { Button } from "~/components/ui/button";
@@ -33,6 +33,9 @@ import {
   extractAuthErrorMessage,
   getAuthErrorMessage,
 } from "~/features/auth/shared/auth-error-utils";
+import { createHandleSocialSignIn } from "~/features/auth/shared/handle-social-sign-in";
+import { EmailField } from "~/features/auth/shared/components/email-field";
+import { SocialSignIn } from "~/features/auth/shared/components/social-sign-in";
 
 interface PasswordRequirement {
   label: string;
@@ -104,7 +107,7 @@ interface SignUpFormProps extends React.HTMLAttributes<HTMLFormElement> {
 
 export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<AuthProviderId | "email" | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const navigate = useNavigate();
   const enabledProviders = getEnabledSocialProviders(env);
 
@@ -118,22 +121,11 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
     },
   });
 
-  async function handleSocialSignIn(provider: AuthProviderId) {
-    setLoadingProvider(provider);
-    try {
-      const result = await authClient.signIn.social({
-        provider,
-        callbackURL: `${BASE_URL}/dashboard`,
-      });
-      if (result.error) {
-        toast.error(extractAuthErrorMessage(result.error));
-      }
-    } catch (error) {
-      toast.error(extractAuthErrorMessage(error));
-    } finally {
-      setLoadingProvider(null);
-    }
-  }
+  const handleSocialSignIn = createHandleSocialSignIn({
+    setLoadingProvider,
+    authClient,
+    BASE_URL,
+  });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -191,19 +183,7 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <EmailField form={form} fieldName="email" />
           <FormField
             control={form.control}
             name="password"
@@ -287,43 +267,11 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
           </Button>
         </form>
 
-        {enabledProviders.length > 0 && (
-          <>
-            <div className="relative my-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            <div
-              className={cn("grid gap-2", {
-                "grid-cols-2": enabledProviders.length > 1,
-                "grid-cols-1": enabledProviders.length === 1,
-              })}
-            >
-              {enabledProviders.map((provider) => (
-                <Button
-                  key={provider.id}
-                  variant="outline"
-                  type="button"
-                  className="border-2"
-                  disabled={loadingProvider !== null}
-                  onClick={() => handleSocialSignIn(provider.id)}
-                >
-                  {loadingProvider === provider.id ? (
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                  ) : (
-                    <provider.icon className="h-4 w-4 mr-2" />
-                  )}{" "}
-                  {provider.name}
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
+        <SocialSignIn
+          enabledProviders={enabledProviders}
+          loadingProvider={loadingProvider}
+          handleSocialSignIn={handleSocialSignIn}
+        />
       </div>
     </Form>
   );

@@ -4,7 +4,7 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types";
-import { createSuccessResponse, createErrorResponse } from "./shared-utils";
+import { createSuccessResponse, createErrorResponse } from "../tools/shared-utils";
 
 /**
  * Builds a standard user response object.
@@ -94,4 +94,27 @@ export function withErrorHandling<T extends Record<string, unknown>>(
       );
     }
   };
+}
+
+/**
+ * Fetches a user by ID and builds a standardized response.
+ * Eliminates duplication between auth.ts and users.ts.
+ *
+ * @param userId - The ID of the user to fetch
+ * @returns CallToolResult with user data or error
+ */
+export async function fetchUserAndBuildResponse(userId: string): Promise<CallToolResult> {
+  const { db } = await import("~/config/db");
+  const { users } = await import("~/lib/db/schema/auth");
+  const { eq } = await import("drizzle-orm");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user) {
+    return createErrorResponse("User not found");
+  }
+
+  return buildUserResponse(user);
 }

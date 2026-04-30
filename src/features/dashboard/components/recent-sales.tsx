@@ -1,4 +1,4 @@
-import { UserRow } from "~/components/shared/user-row";
+import { UserRow } from "./shared/user-row";
 
 interface SalesData {
   avatarSrc: string;
