@@ -126,7 +126,7 @@ jobs:
         run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen-lockfile' }} --ignore-scripts
 
       - name: Run linters
-        run: bun run lint:check
+        run: bun run lint:ci
 
       - name: Run type checking
         run: bun run typecheck

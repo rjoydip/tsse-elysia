@@ -47,80 +47,80 @@ This document lists all available npm scripts in `package.json`.
 
 ## Database
 
-| Script        | Command                                                                   | Description                 |
-| ------------- | ------------------------------------------------------------------------- | --------------------------- |
-| `db:generate` | `drizzle-kit generate`                                                    | Generate Drizzle migrations |
-| `db:migrate`  | `drizzle-kit migrate`                                                     | Run database migrations     |
-| `db:push`     | `drizzle-kit push`                                                        | Push schema to database     |
-| `db:studio`   | `drizzle-kit studio`                                                      | Open Drizzle Studio         |
-| `db:seed`     | `bun run ./scripts/db-seed.ts`                                            | Seed the database           |
-| `db:setup`    | `bun run db:remove && bun run db:push && bun run db:seed`                 | Full database setup         |
-| `db:reset`    | `bun run db:remove && bun run db:push`                                    | Reset database              |
-| `db:remove`   | `bun run ./scripts/remove-db.ts`                                          | Remove database             |
+| Script        | Command                                                   | Description                 |
+| ------------- | --------------------------------------------------------- | --------------------------- |
+| `db:generate` | `drizzle-kit generate`                                    | Generate Drizzle migrations |
+| `db:migrate`  | `drizzle-kit migrate`                                     | Run database migrations     |
+| `db:push`     | `drizzle-kit push`                                        | Push schema to database     |
+| `db:studio`   | `drizzle-kit studio`                                      | Open Drizzle Studio         |
+| `db:seed`     | `bun run ./scripts/db-seed.ts`                            | Seed the database           |
+| `db:setup`    | `bun run db:remove && bun run db:push && bun run db:seed` | Full database setup         |
+| `db:reset`    | `bun run db:remove && bun run db:push`                    | Reset database              |
+| `db:remove`   | `bun run ./scripts/remove-db.ts`                          | Remove database             |
 
 ---
 
 ## Linting & Formatting
 
-| Script         | Command                                                                          | Description             |
-| -------------- | -------------------------------------------------------------------------------- | ----------------------- |
-| `fmt`          | `oxfmt .`                                                                        | Format code             |
-| `fmt:check`    | `oxfmt --check .`                                                                | Check code formatting   |
-| `lint`         | `oxlint . --format=github`                                                       | Lint code               |
-| `lint:ci`      | `bun run fmt:check && bun run lint`                                              | CI linting pipeline     |
-| `lint:check`   | `bun run fmt:check && bun run lint && bun run fallow:dead && bun run actions-up` | Local linting process   |
-| `lint:fix`     | `oxlint . --fix && oxfmt .`                                                      | Auto-fix linting issues |
-| `typecheck`    | `tsc --noEmit`                                                                   | Type check TypeScript   |
-| `react:doctor` | `react-doctor . -y`                                                              | Run React Doctor        |
-| `fallow`       | `fallow`                                                                         | Check for code issues   |
-| `fallow:dead`  | `fallow dead-code`                                                               | Check for dead code     |
-| `fallow:dupes` | `fallow dupes`                                                                   | Check for duplicate code|
-| `fallow:health`| `fallow health`                                                                  | Check code health       |
-| `fallow:fix`   | `fallow fix --dry-run`                                                           | Auto-fix code issues    |
-| `actions-up`   | `actions-up`                                                                     | Update GitHub Actions   |
+| Script          | Command                                                                          | Description              |
+| --------------- | -------------------------------------------------------------------------------- | ------------------------ |
+| `fmt`           | `oxfmt .`                                                                        | Format code              |
+| `fmt:check`     | `oxfmt --check .`                                                                | Check code formatting    |
+| `lint`          | `oxlint . --format=github`                                                       | Lint code                |
+| `lint:ci`       | `bun run fmt:check && bun run lint`                                              | CI linting pipeline      |
+| `lint:check`    | `bun run fmt:check && bun run lint && bun run fallow:dead && bun run actions-up` | Local linting process    |
+| `lint:fix`      | `oxlint . --fix && oxfmt .`                                                      | Auto-fix linting issues  |
+| `typecheck`     | `tsc --noEmit`                                                                   | Type check TypeScript    |
+| `react:doctor`  | `react-doctor . -y`                                                              | Run React Doctor         |
+| `fallow`        | `fallow`                                                                         | Check for code issues    |
+| `fallow:dead`   | `fallow dead-code`                                                               | Check for dead code      |
+| `fallow:dupes`  | `fallow dupes`                                                                   | Check for duplicate code |
+| `fallow:health` | `fallow health`                                                                  | Check code health        |
+| `fallow:fix`    | `fallow fix --dry-run`                                                           | Auto-fix code issues     |
+| `actions-up`    | `actions-up`                                                                     | Update GitHub Actions    |
 
 ---
 
 ## Build & Release
 
-| Script       | Command                            | Description             |
-| ------------ | ---------------------------------- | ----------------------- |
-| `setup`      | `bun run ./scripts/setup.ts`       | Initial project setup   |
-| `cleanup`    | `bun run ./scripts/cleanup.ts`     | Clean up artifacts      |
-| `release`    | `changeset publish`                | Publish release         |
-| `changeset`  | `changeset`                        | Create a changeset      |
-| `version`    | `changeset version`                | Bump version            |
-| `start`      | `node ./dist/server/server.js`     | Start production server |
-| `security`   | `bun audit --audit-level=critical` | Security audit          |
+| Script      | Command                            | Description             |
+| ----------- | ---------------------------------- | ----------------------- |
+| `setup`     | `bun run ./scripts/setup.ts`       | Initial project setup   |
+| `cleanup`   | `bun run ./scripts/cleanup.ts`     | Clean up artifacts      |
+| `release`   | `changeset publish`                | Publish release         |
+| `changeset` | `changeset`                        | Create a changeset      |
+| `version`   | `changeset version`                | Bump version            |
+| `start`     | `node ./dist/server/server.js`     | Start production server |
+| `security`  | `bun audit --audit-level=critical` | Security audit          |
 
 ---
 
 ## Utilities
 
-| Script             | Command                                       | Description               |
-| ------------------ | --------------------------------------------- | ------------------------- |
-| `proxy:start`      | `bun --run portless proxy start --https`      | Start HTTPS proxy         |
-| `proxy:foreground` | `bun --run portless proxy start --foreground` | Start proxy in foreground |
-| `proxy:stop`       | `bun --run portless proxy stop --https`       | Stop HTTPS proxy          |
-| `postinstall`      | `bunx playwright install`                     | Install Playwright browsers|
-| `prepare`          | `simple-git-hooks`                            | Set up git hooks          |
+| Script             | Command                                       | Description                 |
+| ------------------ | --------------------------------------------- | --------------------------- |
+| `proxy:start`      | `bun --run portless proxy start --https`      | Start HTTPS proxy           |
+| `proxy:foreground` | `bun --run portless proxy start --foreground` | Start proxy in foreground   |
+| `proxy:stop`       | `bun --run portless proxy stop --https`       | Stop HTTPS proxy            |
+| `postinstall`      | `bunx playwright install`                     | Install Playwright browsers |
+| `prepare`          | `simple-git-hooks`                            | Set up git hooks            |
 
 ---
 
 ## Script Utilities
 
-| Script                     | Command                                       | Description                     |
-| -------------------------- | --------------------------------------------- | ------------------------------- |
-| `script:setup`             | `bun run ./scripts/setup.ts`                  | Run setup script                |
-| `script:cleanup`           | `bun run ./scripts/cleanup.ts`                | Run cleanup script              |
-| `script:patch:server`      | `bun run ./scripts/patch-server.mjs`          | Patch server script             |
-| `script:decision:new`      | `bun scripts/new-decision.ts`                 | Create new decision record      |
-| `script:check-db`          | `bun run ./scripts/check-db.ts`               | Check database status           |
-| `script:fix-migrations`    | `bun run ./scripts/fix-migrations.ts`         | Fix database migrations         |
-| `script:opencode-session-clear` | `bun run ./scripts/opencode-session-clear.ts` | Clear Opencode sessions         |
-| `script:release`           | `bun run ./scripts/release.ts`                | Run release script              |
-| `script:sync-tasks`        | `bun run ./scripts/sync-tasks.ts`             | Sync tasks                      |
-| `script:task-config`       | `bun run ./scripts/task-config.ts`            | Configure tasks                 |
+| Script                          | Command                                       | Description                |
+| ------------------------------- | --------------------------------------------- | -------------------------- |
+| `script:setup`                  | `bun run ./scripts/setup.ts`                  | Run setup script           |
+| `script:cleanup`                | `bun run ./scripts/cleanup.ts`                | Run cleanup script         |
+| `script:patch:server`           | `bun run ./scripts/patch-server.mjs`          | Patch server script        |
+| `script:decision:new`           | `bun scripts/new-decision.ts`                 | Create new decision record |
+| `script:check-db`               | `bun run ./scripts/check-db.ts`               | Check database status      |
+| `script:fix-migrations`         | `bun run ./scripts/fix-migrations.ts`         | Fix database migrations    |
+| `script:opencode-session-clear` | `bun run ./scripts/opencode-session-clear.ts` | Clear Opencode sessions    |
+| `script:release`                | `bun run ./scripts/release.ts`                | Run release script         |
+| `script:sync-tasks`             | `bun run ./scripts/sync-tasks.ts`             | Sync tasks                 |
+| `script:task-config`            | `bun run ./scripts/task-config.ts`            | Configure tasks            |
 
 ---
 

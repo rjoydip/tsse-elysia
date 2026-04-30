@@ -12,7 +12,7 @@
  */
 
 import type { Session } from "better-auth/types";
-import { getStorage } from "~/services/cache";
+import { getStorage } from "~/lib/cache";
 import { cacheLogger } from "~/lib/logger";
 import { sessionConfig } from "~/config";
 

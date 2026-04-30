@@ -5,7 +5,7 @@
 import { eq, like } from "drizzle-orm";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "../src/lib/db/core/schema";
+import * as schema from "../src/lib/db/schema";
 import { logger } from "../src/lib/logger";
 
 /**
@@ -64,7 +64,7 @@ export async function cleanupTestUser(email: string): Promise<void> {
 
     logger.log(`[E2E Cleanup] Successfully deleted user: ${email}`);
   } catch (error) {
-    logger.warn(`[E2E Cleanup] Failed to clean up user ${email}`, error);
+    logger.warn(`[E2E Cleanup] Failed to clean up user ${email}, ${error}`);
   }
 }
 
@@ -99,13 +99,13 @@ export async function cleanupAllTestData(): Promise<void> {
         await db.delete(schema.users).where(eq(schema.users.id, user.id));
         logger.log(`[E2E Cleanup] Deleted user: ${user.email}`);
       } catch (error) {
-        logger.warn(`[E2E Cleanup] Failed to delete user ${user.email}`, error);
+        logger.warn(`[E2E Cleanup] Failed to delete user ${user.email}, ${error}`);
       }
     }
 
     logger.log("[E2E Cleanup] All test data cleaned up successfully");
   } catch (error) {
-    logger.error("[E2E Cleanup] Failed to clean up test data:", error);
+    logger.error(`[E2E Cleanup] Failed to clean up test data: ${error}`);
   }
 }
 
@@ -130,6 +130,6 @@ export default async function Teardown() {
     await cleanupAllTestData();
     logger.log("[Teardown] Cleanup completed successfully");
   } catch (error) {
-    logger.error("[Teardown] Cleanup failed", error);
+    logger.error(`[Teardown] Cleanup failed: ${error}`);
   }
 }

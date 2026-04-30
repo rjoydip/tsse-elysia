@@ -24,25 +24,26 @@ bun run dev
 
 ## Commands
 
-| Command                | Description                             |
-| ---------------------- | --------------------------------------- |
-| `bun run setup`        | Run full project setup (recommended)    |
-| `bun run cleanup`      | Clean up build/test artifacts           |
-| `bun run dev`          | Start Vite dev server                   |
-| `bun run build`        | Build for production                    |
-| `bun run start`        | Run production server                   |
-| `bun run lint`         | Run oxlint with GitHub format           |
-| `bun run lint:check`   | Lint + format check (CI mode)           |
-| `bun run lint:fix`     | Auto-fix lint issues and format         |
-| `bun run fmt`          | Format code with oxfmt                  |
-| `bun run fmt:check`    | Check formatting without fixing         |
-| `bun run typecheck`    | TypeScript type checking (tsc --noEmit) |
-| `bun run react:doctor` | React doctor diagnostics                |
-| `bun run changeset`    | Create a changeset                      |
-| `bun run prepare`      | Install git hooks                       |
-| `bun run test:unit`    | Unit tests with Bun                     |
-| `bun run test:e2e`     | E2E tests with Playwright               |
-| `bun run test:load`    | Load tests with k6                      |
+| Command                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `bun run setup`        | Run full project setup (recommended)      |
+| `bun run cleanup`      | Clean up build/test artifacts             |
+| `bun run dev`          | Start Vite dev server                     |
+| `bun run build`        | Build for production                      |
+| `bun run start`        | Run production server                     |
+| `bun run lint`         | Run oxlint with GitHub format             |
+| `bun run lint:ci`      | Lint + format check (CI mode)             |
+| `bun run lint:check`   | Lint + format + fallow check (Local mode) |
+| `bun run lint:fix`     | Auto-fix lint issues and format           |
+| `bun run fmt`          | Format code with oxfmt                    |
+| `bun run fmt:check`    | Check formatting without fixing           |
+| `bun run typecheck`    | TypeScript type checking (tsc --noEmit)   |
+| `bun run react:doctor` | React doctor diagnostics                  |
+| `bun run changeset`    | Create a changeset                        |
+| `bun run prepare`      | Install git hooks                         |
+| `bun run test:unit`    | Unit tests with Bun                       |
+| `bun run test:e2e`     | E2E tests with Playwright                 |
+| `bun run test:load`    | Load tests with k6                        |
 
 ### Setup Script
 

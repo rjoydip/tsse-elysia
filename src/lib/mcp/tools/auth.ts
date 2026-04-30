@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
 import { createErrorResponse, createSuccessResponse } from "./shared-utils";
 import { buildUserResponse, mapSessionToResponse } from "./response-helpers";
+import { requireUserId } from "../shared/auth-utils";
 
 /**
  * Registers authentication-related MCP tools.
@@ -42,10 +43,10 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return createErrorResponse("Authentication required");
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         const user = await db.query.users.findFirst({
           where: eq(users.id, apiKey.userId),
@@ -87,10 +88,10 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return createErrorResponse("Authentication required");
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         const userSessions = await db.query.sessions.findMany({
           where: eq(sessions.userId, apiKey.userId),
@@ -138,10 +139,10 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (args: Record<string, unknown>): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return createErrorResponse("Authentication required");
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         const sessionId = args.sessionId as string;
 

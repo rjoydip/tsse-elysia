@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
 import { createErrorResponse, createSuccessResponse } from "./shared-utils";
 import { buildUserResponse, mapUserToListResponse } from "./response-helpers";
+import { requireAuthentication } from "../shared/auth-utils";
 
 /**
  * Upper bound for `list-users` pagination to prevent oversized responses.
@@ -114,10 +115,10 @@ export function registerUserTools(server: McpServer): void {
     },
     async (args: Record<string, unknown>): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey) {
-          return createErrorResponse("Authentication required");
-        }
+        const authError = requireAuthentication();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         let userList: Array<{
           id: string;

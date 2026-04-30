@@ -47,6 +47,7 @@ const dirsToClean: DirToClean[] = [
   { path: join(rootDir, "dist"), name: "Build output (dist)" },
   { path: join(rootDir, ".tanstack"), name: "TanStack dev artifacts" },
   { path: join(rootDir, "coverage"), name: "Coverage reports" },
+  { path: join(rootDir, ".fallow"), name: "Fallow Cache" },
 ];
 
 if (!KEEP_DB) {

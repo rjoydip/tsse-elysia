@@ -1,21 +1,18 @@
 "$schema" = "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json"
 
 ignorePatterns = [
-  "**/*.generated.ts",
-  "**/*.d.ts",
+  "**/*.{generated,d}.ts",
   "**/dist/**",
-  "**/.artifacts/**",
-  "**/.opencode/**",
-  "**/*.config.{js,ts}",
+  "**/.{artifacts,opencode}/**",
+  "k6.config.js",
 ]
-
 ignoreDependencies = ["ioredis", "portless"]
 dynamicallyLoaded = ["src/**/*.{ts,tsx}"]
 
 [rules]
 "unused-files" = "warn"
 "unused-exports" = "warn"
-"unused-types" = "off"
+"unused-types" = "warn"
 "unresolved-imports" = "error"
 "circular-dependency" = "warn"
 
@@ -24,9 +21,7 @@ mode = "mild"
 minTokens = 50
 minLines = 5
 threshold = 0
-ignore = ["**/*.test.ts", "**/*.spec.ts"]
 
 [health]
 maxCyclomatic = 20
 maxCognitive = 15
-ignore = ["**/*.test.ts", "**/*.spec.ts", "test/**", ".e2e/**", "scripts/**/*.ts"]
