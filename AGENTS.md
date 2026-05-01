@@ -12,7 +12,7 @@ This file contains guidelines for AI coding agents working in this repository.
 Before starting any task, review these critical documents:
 
 - [README.md](./README.md) - Project overview, tech stack, and setup
-- [PLAN.md](./knowledge/PLAN.md) - Current development roadmap and task status
+- [PLANS.md](./knowledge/PLANS.md) - Current development roadmap and task status
 - [CONTRIBUTING.md](./.github/CONTRIBUTING.md) - Contribution guidelines and workflow
 - [CHANGELOG.md](./CHANGELOG.md) - History of changes and releases
 
@@ -246,8 +246,8 @@ All necessary information is in [README.md](./README.md), including:
 
 ## Recommended Workflow
 
-1. For any task, first check [PLAN.md](./knowledge/PLAN.md) to see if it's already planned
-2. For non-trivial tasks, create a plan using PLAN.md template
+1. For any task, first check [PLANS.md](./knowledge/PLANS.md) to see if it's already planned
+2. For non-trivial tasks, create a plan using PLANS.md template
 3. Create/edit code
 4. Run `bun run fmt` to ensure formatting
 5. Run `bun run lint:fix` to auto-fix issues
@@ -255,7 +255,7 @@ All necessary information is in [README.md](./README.md), including:
 7. Run `bun run fallow` to check for dead code, duplicates, and complexity issues
 8. Run `bun test` to verify unit test
 9. Run `bun run test:e2e` to verify E2E test
-10. Once changes are complete, verify and update `PLAN.md` (mark completed tasks/goals)
+10. Once changes are complete, verify and update `PLANS.md` (mark completed tasks/goals)
 11. Commit changes (hooks will verify)
 
 ## Environment Configuration

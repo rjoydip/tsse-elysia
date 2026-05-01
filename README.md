@@ -13,7 +13,7 @@ description: A full-stack TypeScript application using TanStack Start, Elysia, R
 
 A full-stack TypeScript application using TanStack Start, Elysia, React 19, and Bun.
 
-> **Project Roadmap**: See [PLAN.md](./knowledge/PLAN.md) for detailed feature planning and progress tracking.
+> **Project Roadmap**: See [PLANS.md](./knowledge/PLANS.md) for detailed feature planning and progress tracking.
 
 ## Quick Start
 
@@ -493,4 +493,4 @@ Common issues:
 
 For detailed agent coding guidelines, see [AGENTS.md](./AGENTS.md).
 
-For feature planning and progress tracking, see [PLAN.md](./knowledge/PLAN.md).
+For feature planning and progress tracking, see [PLANS.md](./knowledge/PLANS.md).

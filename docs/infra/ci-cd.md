@@ -160,6 +160,7 @@ The following GitHub secrets and variables are required for CI/CD workflows:
 | `GH_TOKEN_CHANGESET` | GitHub token with repo/workflow scope for releases | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
 | `GH_TOKEN`           | GitHub token for API access (PR reviews)           | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
 | `BETTER_AUTH_SECRET` | Secret for Better Auth                             | `your-secret-key-here`                   |
+| `CODECOV_TOKEN`      | Codecov token for code coverage reporting          | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`   |
 
 ### Variables
 
@@ -172,4 +173,5 @@ Required configuration:
 - `GH_TOKEN_CHANGESET` - GitHub token for tagging, releasing, and synchronization
 - `GH_TOKEN` - GitHub token for PR review automation
 - `BETTER_AUTH_SECRET` - Secret for Better Auth authentication
+- `CODECOV_TOKEN` - Codecov token for code coverage reporting
 - `OPENCODE_MODEL` - Model identifier for Opencode AI (required for GitHub Actions workflows)

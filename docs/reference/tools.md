@@ -41,16 +41,17 @@ This document lists all major tools and technologies used in the tsse-elysia pro
 
 ## Database & Storage
 
-| Tool                | Official Link                                                | Documentation                                          |
-| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
-| **Drizzle ORM**     | [orm.drizzle.team](https://orm.drizzle.team)                 | [Drizzle Docs](https://orm.drizzle.team/docs/overview) |
-| **Drizzle Kit**     | [orm.drizzle.team](https://orm.drizzle.team)                 | [Kit Docs](https://orm.drizzle.team/docs/kit-overview) |
-| **Drizzle Seed**    | [orm.drizzle.team](https://orm.drizzle.team)                 | [Seed Docs](https://orm.drizzle.team/docs/seed)        |
-| **LibSQL**          | [turso.tech/libsql](https://turso.tech/libsql)               | [LibSQL Docs](https://docs.turso.tech/libsql)          |
-| **PostgreSQL**      | [postgresql.org](https://postgresql.org)                     | [PG Docs](https://www.postgresql.org/docs/)            |
-| **Redis (ioredis)** | [github.com/redis/ioredis](https://github.com/redis/ioredis) | [ioredis Docs](https://github.com/redis/ioredis)       |
-| **Unstorage**       | [unstorage.unjs.io](https://unstorage.unjs.io)               | [Unstorage Docs](https://unstorage.unjs.io/guide)      |
-| **db0**             | [github.com/unjs/db0](https://github.com/unjs/db0)           | [db0 Docs](https://github.com/unjs/db0)                |
+| Tool                | Official Link                                                | Documentation                                                |
+| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Drizzle ORM**     | [orm.drizzle.team](https://orm.drizzle.team)                 | [Drizzle Docs](https://orm.drizzle.team/docs/overview)       |
+| **Drizzle Kit**     | [orm.drizzle.team](https://orm.drizzle.team)                 | [Kit Docs](https://orm.drizzle.team/docs/kit-overview)       |
+| **Drizzle Seed**    | [orm.drizzle.team](https://orm.drizzle.team)                 | [Seed Docs](https://orm.drizzle.team/docs/seed)              |
+| **LibSQL**          | [turso.tech/libsql](https://turso.tech/libsql)               | [LibSQL Docs](https://docs.turso.tech/libsql)                |
+| **PostgreSQL**      | [postgresql.org](https://postgresql.org)                     | [PG Docs](https://www.postgresql.org/docs/)                  |
+| **Redis (ioredis)** | [github.com/redis/ioredis](https://github.com/redis/ioredis) | [ioredis Docs](https://github.com/redis/ioredis)             |
+| **Unstorage**       | [unstorage.unjs.io](https://unstorage.unjs.io)               | [Unstorage Docs](https://unstorage.unjs.io/guide)            |
+| **db0**             | [github.com/unjs/db0](https://github.com/unjs/db0)           | [db0 Docs](https://github.com/unjs/db0)                      |
+| **better-result**   | [better-result.dev](https://better-result.dev)               | [better-result Docs](https://better-result.dev/introduction) |
 
 ## Logging & Monitoring
 
@@ -111,10 +112,19 @@ This document lists all major tools and technologies used in the tsse-elysia pro
 | **Fdir**                   | [npm.im/fdir](https://npm.im/fdir)                                                       | [Fdir Docs](https://github.com/thecodrr/fdir)                                       |
 | **Std-env**                | [npm.im/std-env](https://npm.im/std-env)                                                 | [Std-env Docs](https://github.com/unjs/std-env)                                     |
 
+## Knowledge Base Tools Documentation
+
+Detailed documentation for tools used in the project can be found in the `knowledge/tools/` directory:
+
+- [better-result](../../knowledge/tools/better-result.md) - Type-safe error handling with Result types
+
+---
+
 ## Deployment & Infrastructure
 
-| Tool               | Official Link                                                        | Documentation                                             |
-| ------------------ | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Docker**         | [docker.com](https://www.docker.com)                                 | [Docker Docs](https://docs.docker.com)                    |
-| **GitHub Actions** | [github.com/features/actions](https://github.com/features/actions)   | [Actions Docs](https://docs.github.com/en/actions)        |
-| **Trivy**          | [aquasecurity.github.io/trivy](https://aquasecurity.github.io/trivy) | [Trivy Docs](https://aquasecurity.github.io/trivy/v0.50/) |
+| Tool               | Official Link                                                        | Documentation                                                |
+| ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Docker**         | [docker.com](https://www.docker.com)                                 | [Docker Docs](https://docs.docker.com)                       |
+| **GitHub Actions** | [github.com/features/actions](https://github.com/features/actions)   | [Actions Docs](https://docs.github.com/en/actions)           |
+| **Trivy**          | [aquasecurity.github.io/trivy](https://aquasecurity.github.io/trivy) | [Trivy Docs](https://aquasecurity.github.io/trivy/v0.50/)    |
+| **better-result**  | [better-result.dev](https://better-result.dev)                       | [better-result Docs](https://better-result.dev/introduction) |

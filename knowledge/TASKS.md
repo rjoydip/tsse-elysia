@@ -35,6 +35,24 @@ description: Execution-focused task tracker (source of truth for active work)
 - [ ] RBAC UI <!-- issue: # -->
 - [ ] Organization management UI <!-- issue: # -->
 
+### Phase 16: Better Result Integration
+
+- [x] Add `better-result` dependency and create `src/lib/result.ts` <!-- issue: # -->
+- [x] Define tagged errors (DatabaseError, NotFoundError, ValidationError, etc.) <!-- issue: # -->
+- [x] Add `appErrorToResult()` utility for backward compatibility <!-- issue: # -->
+- [x] Refactor `mcp/api-keys.repository.ts` to return Results <!-- issue: # -->
+- [x] Refactor `settings/profile.repository.ts` to return Results <!-- issue: # -->
+- [x] Refactor `services/mcp/api-keys.service.ts` to handle Result types <!-- issue: # -->
+- [x] Update `controllers/mcp/keys.controller.ts` with error mapping <!-- issue: # -->
+- [x] Add unit tests for `result.ts` (42 tests) and `errors.ts` (24 tests) <!-- issue: # -->
+- [ ] Refactor remaining repositories (account, display, notifications) to return Results <!-- issue: # -->
+- [ ] Update services to handle Result types from repositories <!-- issue: # -->
+- [ ] Update controllers to consume Result types and map to HTTP responses <!-- issue: # -->
+- [ ] Refactor middlewares (rate-limit) to use Result types <!-- issue: # -->
+- [ ] Update config files (env.ts, db/index.ts) to return Results <!-- issue: # -->
+- [ ] Update plugins (evlog-plugin, websocket) to handle errors with Results <!-- issue: # -->
+- [ ] Deprecate old AppError and clean up unused error handling code <!-- issue: # -->
+
 ---
 
 ## 📦 Completed (Compressed by Phase)
@@ -103,6 +121,13 @@ description: Execution-focused task tracker (source of truth for active work)
 - [x] Extensive unit tests (middlewares, config, UI)
 - [x] E2E coverage (auth, UI, API, OpenAPI)
 - [x] OpenAPI spec + Scalar UI tests
+
+### Phase 11: DB0 Database Refactoring
+
+- [x] Migrate database setup to use DB0 library
+- [x] Configure conditional databases (SQLite memory, SQLite file, PostgreSQL)
+- [x] Update `src/config/db/index.ts` with DB0 abstraction
+- [x] Update tests to use DB0 configurations
 
 ---
 
@@ -175,9 +200,10 @@ A task is complete ONLY if:
 References to detailed plan documents:
 
 - [api-architecture-refactoring-tasks.md](./plans/api-architecture-refactoring-tasks.md)
-- [phase-db0-database-refactoring.md](./plans/phase-db0-database-refactoring.md)
-- [phase-9-mcp-server-plan.md](./plans/phase-9-mcp-server-plan.md)
-- [phase-8-realtime-features.md](./plans/phase-8-realtime-features.md)
-- [phase-7.1-redis-implementation-plan.md](./plans/phase-7.1-redis-implementation-plan.md)
-- [phase-13-contract-testing-implementation-plan.md](./plans/phase-13-contract-testing-implementation-plan.md)
 - [phase-5.2-user-management-dashboard.md](./plans/phase-5.2-user-management-dashboard.md)
+- [phase-7.1-redis-implementation-plan.md](./plans/phase-7.1-redis-implementation-plan.md)
+- [phase-8-realtime-features.md](./plans/phase-8-realtime-features.md)
+- [phase-9-mcp-server-plan.md](./plans/phase-9-mcp-server-plan.md)
+- [phase-11-db0-database-refactoring.md](./plans/phase-11-db0-database-refactoring.md)
+- [phase-13-contract-testing-implementation-plan.md](./plans/phase-13-contract-testing-implementation-plan.md)
+- [phase-16-better-result-integration-plan.md](./plans/phase-16-better-result-integration-plan.md)

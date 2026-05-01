@@ -541,6 +541,43 @@ export const mcpKeysRoutes = new Elysia({ prefix: "/keys" }).get("/", async ({ a
 
 ---
 
+### 016: Better Result Integration for Type-Safe Error Handling
+
+**Status:** In Progress
+
+**Why:**
+
+- Replace try/catch with explicit Result types (Ok/Err)
+- Type-safe error handling across all layers
+- Eliminate unhandled exceptions
+- Align with layered architecture (Repository → Service → Controller → HTTP)
+
+**Implementation:**
+
+- Added `better-result` dependency
+- Created `src/lib/result.ts` with tagged errors (DatabaseError, NotFoundError, ValidationError, etc.)
+- Added `appErrorToResult()` for backward compatibility with existing AppError
+- Refactored repositories to return `Result<T, TaggedError>` using `Result.tryPromise()`
+- Updated services and controllers to handle Result types
+- Added unit tests for result.ts (42 tests) and errors.ts (24 tests)
+
+**Phased Migration:**
+
+1. Phase 1: Add dep, create result.ts ✅
+2. Phase 2: Refactor repositories to return Results (in progress)
+3. Phase 3: Update controllers to handle Result types
+4. Phase 4: Update middlewares, config, plugins
+5. Phase 5: Deprecate old AppError and clean up
+
+**Tradeoffs:**
+
+- Learning curve for developers unfamiliar with Result pattern
+- More verbose function signatures (explicit error types)
+- Requires refactoring across multiple layers
+- Benefits: explicit error types, consistent handling, easier testing
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

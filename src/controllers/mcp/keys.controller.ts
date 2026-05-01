@@ -1,9 +1,11 @@
 /**
  * MCP API keys controller.
  * Handles HTTP-specific logic: validation, request parsing, response formatting.
+ * Uses Result types from services for type-safe error handling.
  */
 
-import { mcpApiKeyService } from "~/services/mcp/api-keys";
+import { NotFoundError, DatabaseError, DuplicateKeyError, ValidationError } from "~/lib/result";
+import type { Result } from "better-result";
 
 /**
  * Validates the create API key request body.
@@ -63,40 +65,156 @@ export async function requireApiKey(
 }
 
 /**
+ * Maps a Result error to an appropriate HTTP response.
+ * Used to convert tagged errors to HTTP status codes.
+ */
+export function mapResultErrorToResponse(error: unknown): Response {
+  if (error instanceof NotFoundError) {
+    return new Response(JSON.stringify({ error: "Not found", resource: error.resource }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (error instanceof DuplicateKeyError) {
+    return new Response(JSON.stringify({ error: "Duplicate entry", field: error.field }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (error instanceof ValidationError) {
+    return new Response(JSON.stringify({ error: "Validation failed", field: error.field }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (error instanceof DatabaseError) {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Fallback
+  return new Response(JSON.stringify({ error: "Internal server error" }), {
+    status: 500,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/**
  * Formats the create API key response (includes the plain key once).
+ * Handles the Result type from the service.
  */
 export function formatCreateKeyResponse(
-  result: Awaited<ReturnType<typeof mcpApiKeyService.createApiKey>>,
+  result: Result<
+    {
+      key: string;
+      record: {
+        id: string;
+        name: string;
+        rateLimit: number;
+        rateLimitDuration: number;
+        createdAt: Date;
+      };
+    },
+    unknown
+  >,
 ): Response {
-  return new Response(
-    JSON.stringify({
-      key: result.key,
-      id: result.record.id,
-      name: result.record.name,
-      rateLimit: result.record.rateLimit,
-      rateLimitDuration: result.record.rateLimitDuration,
-      createdAt: new Date(result.record.createdAt as unknown as string).toISOString(),
-    }),
-    { status: 201, headers: { "Content-Type": "application/json" } },
-  );
+  return result.match({
+    ok: (data) => {
+      return new Response(
+        JSON.stringify({
+          key: data.key,
+          id: data.record.id,
+          name: data.record.name,
+          rateLimit: data.record.rateLimit,
+          rateLimitDuration: data.record.rateLimitDuration,
+          createdAt: new Date(data.record.createdAt as unknown as string).toISOString(),
+        }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    },
+    err: (error) => mapResultErrorToResponse(error),
+  });
 }
 
 /**
  * Formats the list API keys response with rate limit headers.
+ * Handles the Result type from the service.
  */
 export function formatListKeysResponse(
-  keys: Awaited<ReturnType<typeof mcpApiKeyService.listApiKeys>>,
+  keysResult: Result<Array<Record<string, unknown>>, unknown>,
   rateLimitInfo: { limit: number; remaining: number; resetAt: number } | null,
 ): Response {
-  const response = new Response(JSON.stringify({ keys }), {
-    headers: { "Content-Type": "application/json" },
+  return keysResult.match({
+    ok: (keys) => {
+      const response = new Response(JSON.stringify({ keys }), {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (rateLimitInfo) {
+        response.headers.set("X-RateLimit-Limit", String(rateLimitInfo.limit));
+        response.headers.set("X-RateLimit-Remaining", String(rateLimitInfo.remaining));
+        response.headers.set("X-RateLimit-Reset", String(Math.ceil(rateLimitInfo.resetAt / 1000)));
+      }
+
+      return response;
+    },
+    err: (error) => mapResultErrorToResponse(error),
   });
+}
 
-  if (rateLimitInfo) {
-    response.headers.set("X-RateLimit-Limit", String(rateLimitInfo.limit));
-    response.headers.set("X-RateLimit-Remaining", String(rateLimitInfo.remaining));
-    response.headers.set("X-RateLimit-Reset", String(Math.ceil(rateLimitInfo.resetAt / 1000)));
-  }
+/**
+ * Formats the revoke API key response.
+ * Handles the Result type from revokeApiKeyWithReason.
+ */
+export function formatRevokeKeyResponse(
+  result: Result<"revoked" | "not_found" | "forbidden", unknown>,
+): Response {
+  return result.match({
+    ok: (outcome) => {
+      if (outcome === "not_found") {
+        return new Response(JSON.stringify({ error: "Key not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (outcome === "forbidden") {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    err: (error) => mapResultErrorToResponse(error),
+  });
+}
 
-  return response;
+/**
+ * Formats the update API key response.
+ * Handles the Result type from updateApiKey.
+ */
+export function formatUpdateKeyResponse(
+  result: Result<Record<string, unknown> | null, unknown>,
+): Response {
+  return result.match({
+    ok: (updated) => {
+      if (!updated) {
+        return new Response(JSON.stringify({ error: "Key not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify(updated), {
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    err: (error) => mapResultErrorToResponse(error),
+  });
 }

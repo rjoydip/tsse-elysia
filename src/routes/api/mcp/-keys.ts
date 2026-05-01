@@ -15,6 +15,8 @@ import {
   requireApiKey,
   formatCreateKeyResponse,
   formatListKeysResponse,
+  formatRevokeKeyResponse,
+  formatUpdateKeyResponse,
 } from "~/controllers/mcp/keys.controller";
 import { logger } from "~/lib/logger";
 
@@ -145,21 +147,7 @@ export const mcpKeysRoutes = new Elysia({
       if (error) return error;
 
       const outcome = await mcpApiKeyService.revokeApiKeyWithReason(params.id, userId!);
-      if (outcome === "not_found") {
-        return new Response(JSON.stringify({ error: "Key not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      if (outcome === "forbidden") {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return formatRevokeKeyResponse(outcome);
     },
     {
       params: t.Object({ id: t.String() }),
@@ -200,16 +188,7 @@ export const mcpKeysRoutes = new Elysia({
           expiresAt === undefined ? undefined : expiresAt ? new Date(expiresAt as string) : null,
       });
 
-      if (!updated) {
-        return new Response(JSON.stringify({ error: "Key not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify(updated), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return formatUpdateKeyResponse(updated);
     },
     {
       params: t.Object({ id: t.String() }),

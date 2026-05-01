@@ -21,7 +21,7 @@ API routes refactoring to implement a layered architecture (HTTP → Controller 
 | Run lint                            | ✅     | oxlint passes with 0 warnings                             |
 | Run unit tests                      | ✅     | 932 pass, 0 fail                                          |
 | Update README.md                    | ✅     | Added API Architecture section with diagram               |
-| Update PLAN.md                      | ✅     | Added Phase 11, updated task status                       |
+| Update PLANS.md                     | ✅     | Added Phase 11, updated task status                       |
 
 ## Completed Implementation Details
 
