@@ -1,0 +1,30 @@
+name: Run OpenCode AI
+description: Run OpenCode for AI-powered review or triage
+
+inputs:
+  task-type:
+    description: Task type (review or triage)
+    required: true
+  model:
+    description: OpenCode model to use
+    default: ${{ vars.OPENCODE_MODEL || 'opencode/minimax-m2.5-free' }}
+  prompt:
+    description: Custom prompt file path (optional)
+    required: false
+  timeout-minutes:
+    description: Timeout in minutes
+    default: "10"
+
+runs:
+  using: composite
+  steps:
+    - name: Run OpenCode AI
+      uses: anomalyco/opencode/github@557734bd130a68188454bc691e153f9f3731830e # v1.14.31
+      timeout-minutes: ${{ inputs.timeout-minutes }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      with:
+        share: true
+        use_github_token: true
+        model: ${{ inputs.model }}
+        prompt: ${{ inputs.prompt }}

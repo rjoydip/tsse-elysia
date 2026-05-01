@@ -1,0 +1,14 @@
+name: Security Audit
+description: Run security audit with critical level
+
+inputs:
+  audit-level:
+    description: Audit level (critical, high, medium, low)
+    default: "critical"
+
+runs:
+  using: composite
+  steps:
+    - name: Run security audit
+      shell: bash
+      run: bun audit --audit-level=${{ inputs.audit-level }}

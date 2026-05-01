@@ -1,0 +1,21 @@
+name: Run Quality Checks
+description: Run linters and type checking
+
+inputs:
+  lint-cmd:
+    description: Lint command to run
+    default: "lint:ci"
+  typecheck-cmd:
+    description: Typecheck command to run
+    default: "typecheck"
+
+runs:
+  using: composite
+  steps:
+    - name: Run linters
+      shell: bash
+      run: bun run ${{ inputs.lint-cmd }}
+
+    - name: Run type checking
+      shell: bash
+      run: bun run ${{ inputs.typecheck-cmd }}
