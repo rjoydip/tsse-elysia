@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
@@ -111,14 +110,7 @@ jobs:
       - name: Run tests (${{ matrix.runtime }})
         # Use --jobs to limit concurrency if tests are resource-intensive
         # Run with --run to force a cleaner execution
-        run: bun test:coverage --run --coverage-reporter=lcov
-
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-        with:
-          file: ./coverage/lcov.info
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: bun test:coverage --run
 
       - name: Run database reset
         run: bun run db:reset
