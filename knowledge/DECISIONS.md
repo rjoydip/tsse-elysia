@@ -578,6 +578,44 @@ export const mcpKeysRoutes = new Elysia({ prefix: "/keys" }).get("/", async ({ a
 
 ---
 
+### 017: GitHub Actions Workflow Restructuring
+
+**Status:** Accepted
+
+**Why:**
+
+- Optimize CI/CD pipeline by moving resource-intensive coverage to release only
+- Simplify workflow triggers to reduce unnecessary runs
+- Improve developer experience with more flexible task sync options
+
+**Changes:**
+
+1. **CI Workflow (`ci.yml`)**:
+   - Removed `branches: [main]` filter from pull_request (allows PRs from forks)
+   - Removed Codecov upload (coverage not required for every CI run)
+   - Simplified test execution
+
+2. **Fallow Workflow (`fallow.yml`)**:
+   - Removed push trigger to main (only runs on PRs now)
+   - Changed pull_request types to `[opened, synchronize, reopened]`
+
+3. **Release Workflow (`release.yml`)**:
+   - Added coverage reporting with Codecov upload
+   - Runs full test coverage only on release (not on every CI run)
+
+4. **Sync Tasks Workflow (`sync-tasks.yml`)**:
+   - Changed trigger from push to pull_request with paths filter
+   - Added `workflow_dispatch` for manual trigger
+   - Runs when TASKS.md changes in PRs
+
+**Tradeoffs:**
+
+- Coverage not visible on every PR (only on release)
+- Fork PRs now trigger CI (may increase resource usage)
+- Sync tasks requires PR to see changes
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
