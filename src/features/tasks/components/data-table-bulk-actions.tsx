@@ -20,7 +20,7 @@ type DataTableBulkActionsProps<TData> = {
   table: Table<TData>;
 };
 
-export function DataTableBulkActions<TData>({ table }: DataTableBulkActionsProps<TData>) {
+export function TasksDataTableBulkActions<TData>({ table }: DataTableBulkActionsProps<TData>) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const selectedRows = table.getFilteredSelectedRowModel().rows;
 

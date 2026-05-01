@@ -24,7 +24,7 @@ import {
 import { DataTablePagination, DataTableToolbar } from "~/components/data-table";
 import { roles } from "../data/data";
 import { type User } from "../data/schema";
-import { DataTableBulkActions } from "./data-table-bulk-actions";
+import { UserDataTableBulkActions as DataTableBulkActions } from "./data-table-bulk-actions";
 import { usersColumns as columns } from "./users-columns";
 
 type DataTableProps = {

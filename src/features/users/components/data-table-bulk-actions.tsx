@@ -13,7 +13,7 @@ type DataTableBulkActionsProps<TData> = {
   table: Table<TData>;
 };
 
-export function DataTableBulkActions<TData>({ table }: DataTableBulkActionsProps<TData>) {
+export function UserDataTableBulkActions<TData>({ table }: DataTableBulkActionsProps<TData>) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const selectedRows = table.getFilteredSelectedRowModel().rows;
 
@@ -23,7 +23,9 @@ export function DataTableBulkActions<TData>({ table }: DataTableBulkActionsProps
       loading: `${status === "active" ? "Activating" : "Deactivating"} users...`,
       success: () => {
         table.resetRowSelection();
-        return `${status === "active" ? "Activated" : "Deactivated"} ${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""}`;
+        return `${status === "active" ? "Activated" : "Deactivated"} ${
+          selectedUsers.length
+        } user${selectedUsers.length > 1 ? "s" : ""}`;
       },
       error: `Error ${status === "active" ? "activating" : "deactivating"} users`,
     });

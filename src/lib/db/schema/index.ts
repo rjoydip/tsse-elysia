@@ -1,6 +1,6 @@
 /**
- * Database schema re-exports.
- * Provides unified access to all schema modules.
+ * Database schema index.
+ * Aggregates all schema definitions for easy importing.
  */
 
 // Auth schema (users, sessions, accounts, verifications)
@@ -37,7 +37,7 @@ export {
   type ServiceHealth,
 } from "./mcp";
 
-// User Settings schema
+// User settings schema (profile, account, display, notifications)
 export {
   userSettingsProfile,
   userSettingsAccount,

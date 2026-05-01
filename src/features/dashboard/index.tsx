@@ -1,15 +1,14 @@
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { ConfigDrawer } from "~/components/config-drawer";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "~/components/ui/card";
 import { Header } from "~/components/layout/header";
 import { Main } from "~/components/layout/main";
 import { ProfileDropdown } from "~/components/profile-dropdown";
 import { Search } from "~/components/search";
 import { ThemeSwitch } from "~/components/theme-switch";
 import { Analytics } from "./components/analytics";
-import { Overview } from "./components/overview";
 import { RecentSales } from "./components/recent-sales";
+import { Overview } from "./components/overview";
 
 export function Dashboard() {
   return (
@@ -28,9 +27,6 @@ export function Dashboard() {
       <Main>
         <div className="mb-2 flex items-center justify-between space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <div className="flex items-center space-x-2">
-            <Button>Download</Button>
-          </div>
         </div>
         <Tabs orientation="vertical" defaultValue="overview" className="space-y-4">
           <div className="w-full overflow-x-auto pb-2">

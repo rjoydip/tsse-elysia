@@ -3,7 +3,8 @@ import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { eq } from "drizzle-orm";
 import { faker } from "@faker-js/faker";
-import * as schema from "../../src/lib/db/schema";
+import { users } from "../../src/lib/db/schema/auth";
+import { subscriptions, subscriptionPlans } from "../../src/lib/db/schema/subscriptions";
 
 const TEST_DB_PATH = ":memory:";
 
@@ -22,7 +23,7 @@ async function createTestDatabase() {
     await client.execute({ sql, args: [] });
   }
 
-  return drizzle(client, { schema });
+  return drizzle(client, { schema: { users, subscriptionPlans } });
 }
 
 describe("Database Operations", () => {
@@ -39,7 +40,7 @@ describe("Database Operations", () => {
       const name = faker.person.fullName();
       const now = Date.now();
 
-      await db.insert(schema.users).values({
+      await db.insert(users).values({
         id: userId,
         name,
         email,
@@ -48,7 +49,7 @@ describe("Database Operations", () => {
         updatedAt: new Date(now),
       });
 
-      const result = await db.select().from(schema.users);
+      const result = await db.select().from(users);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]?.id).toBeDefined();
@@ -60,7 +61,7 @@ describe("Database Operations", () => {
       const name = faker.person.fullName();
       const now = Date.now();
 
-      await db.insert(schema.users).values({
+      await db.insert(users).values({
         id: userId,
         name,
         email,
@@ -70,7 +71,7 @@ describe("Database Operations", () => {
         subscriptionTier: "free",
       });
 
-      const result = await db.select().from(schema.users);
+      const result = await db.select().from(users);
 
       expect(result[0]?.subscriptionTier).toBe("free");
     });
@@ -81,7 +82,7 @@ describe("Database Operations", () => {
       const name = faker.person.fullName();
       const now = Date.now();
 
-      await db.insert(schema.users).values({
+      await db.insert(users).values({
         id: userId,
         name,
         email,
@@ -91,9 +92,9 @@ describe("Database Operations", () => {
         subscriptionTier: "free",
       });
 
-      await db.delete(schema.users).where(eq(schema.users.id, userId));
+      await db.delete(users).where(eq(users.id, userId));
 
-      const result = await db.select().from(schema.users);
+      const result = await db.select().from(users);
 
       expect(result.length).toBe(0);
     });
@@ -104,7 +105,7 @@ describe("Database Operations", () => {
       const now = Date.now();
 
       const dbAny = db as any;
-      await dbAny.insert(schema.subscriptionPlans).values([
+      await dbAny.insert(subscriptionPlans).values([
         {
           id: "free",
           name: "Free",
@@ -133,7 +134,7 @@ describe("Database Operations", () => {
         },
       ]);
 
-      const result = await db.select().from(schema.subscriptionPlans);
+      const result = await db.select().from(subscriptionPlans);
 
       expect(result.length).toBe(2);
     });
@@ -142,7 +143,7 @@ describe("Database Operations", () => {
       const now = Date.now();
 
       const dbAny = db as any;
-      await dbAny.insert(schema.subscriptionPlans).values({
+      await dbAny.insert(subscriptionPlans).values({
         id: "enterprise",
         name: "Enterprise",
         description: "Enterprise tier",
@@ -158,8 +159,8 @@ describe("Database Operations", () => {
 
       const result = await db
         .select()
-        .from(schema.subscriptionPlans)
-        .where(eq(schema.subscriptionPlans.id, "enterprise"));
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.id, "enterprise"));
 
       expect(result[0]?.name).toBe("Enterprise");
       expect(result[0]?.rateLimit).toBe(10_000);
@@ -173,7 +174,7 @@ describe("Database Operations", () => {
       const subscriptionId = faker.string.uuid();
 
       const dbAny = db as any;
-      await dbAny.insert(schema.users).values({
+      await dbAny.insert(users).values({
         id: userId,
         name: "Test User",
         email: "test@test.com",
@@ -183,7 +184,7 @@ describe("Database Operations", () => {
         subscriptionTier: "contributor",
       });
 
-      await dbAny.insert(schema.subscriptionPlans).values({
+      await dbAny.insert(subscriptionPlans).values({
         id: "contributor",
         name: "Contributor",
         description: "Contributor tier",
@@ -197,7 +198,7 @@ describe("Database Operations", () => {
         updatedAt: new Date(now),
       });
 
-      await dbAny.insert(schema.subscriptions).values({
+      await dbAny.insert(subscriptions).values({
         id: subscriptionId,
         userId,
         planId: "contributor",
@@ -209,10 +210,7 @@ describe("Database Operations", () => {
         updatedAt: new Date(now),
       });
 
-      const result = await db
-        .select()
-        .from(schema.subscriptions)
-        .where(eq(schema.subscriptions.userId, userId));
+      const result = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId));
 
       expect(result[0]?.status).toBe("active");
       expect(result[0]?.planId).toBe("contributor");

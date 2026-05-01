@@ -17,7 +17,10 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["bun-types", "node"],
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/*"],
+      "~/e2e/*": ["./.e2e/*"],
+      "~/test/*": ["./test/*"],
+      "~/scripts/*": ["./scripts/*"]
     }
   },
   "include": [

@@ -5,7 +5,7 @@
  */
 
 import { Link } from "@tanstack/react-router";
-import { APP_NAME, GITHUB_REPO_URL } from "~/config";
+import { APP_VERSION, APP_NAME, GITHUB_REPO_URL } from "~/config";
 import { cn } from "~/lib/utils";
 import { BrandLogo } from "./branding";
 import { useSession } from "~/lib/auth/client";
@@ -99,7 +99,8 @@ export function Footer({ className, showTerms = true, showLogo = false }: Footer
 
           {/* Copyright */}
           <div className="text-center text-xs text-muted-foreground">
-            &copy; {currentYear} {APP_NAME}. All rights reserved.
+            &copy; {currentYear} {APP_NAME}
+            {APP_VERSION && <span className="ml-1">v{APP_VERSION}</span>}. All rights reserved.
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import { Link } from "@tanstack/react-router";
+import { features } from "~/config/features";
 
 const quickStartSteps = [
   {
@@ -20,95 +21,6 @@ const quickStartSteps = [
     title: "Start development server",
     description: "Run the development server",
     code: "bun run dev",
-  },
-];
-
-const features = [
-  {
-    title: "Type-Safe API",
-    description: "End-to-end type safety from database to frontend with full TypeScript support",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary"
-      >
-        <polyline points="16 18 22 12 16 6" />
-        <polyline points="8 6 2 12 8 18" />
-      </svg>
-    ),
-  },
-  {
-    title: "Modern Stack",
-    description: "Built with React 19, TanStack Start, and Elysia for optimal performance",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary"
-      >
-        <polygon points="12 2 2 7 12 12 22 7 12 2" />
-        <polyline points="2 17 12 22 22 17" />
-        <polyline points="2 12 12 17 22 12" />
-      </svg>
-    ),
-  },
-  {
-    title: "Authentication",
-    description: "Secure authentication with Better Auth supporting OAuth and 2FA",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary"
-      >
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
-    ),
-  },
-  {
-    title: "Database",
-    description: "Flexible database support with Drizzle ORM for type-safe queries",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary"
-      >
-        <ellipse cx="12" cy="5" rx="9" ry="3" />
-        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-      </svg>
-    ),
   },
 ];
 

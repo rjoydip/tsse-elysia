@@ -8,6 +8,7 @@ import {
   profileRepository,
   type IProfileRepository,
 } from "~/repositories/settings/profile.repository";
+import { Result } from "~/lib/result";
 import { settingsLogger } from "~/lib/logger";
 
 /**
@@ -32,31 +33,35 @@ export class ProfileService implements IProfileService {
    * Gets a user's profile, creating default if not found.
    */
   async getProfile(userId: string): Promise<ProfileResponse> {
-    const profile = await this.repository.findProfileByUserId(userId);
+    const profileResult = await this.repository.findProfileByUserId(userId);
 
-    if (!profile) {
-      const user = await this.repository.findUserById(userId);
-      await this.repository.createProfile({
-        userId,
-        username: user?.name || "",
-        email: user?.email || "",
-        bio: "",
-        urls: "[]",
-      });
-
+    if (Result.isOk(profileResult) && profileResult.value) {
       return {
-        username: user?.name || "",
-        email: user?.email || "",
-        bio: "",
-        urls: [],
+        username: profileResult.value.username,
+        email: profileResult.value.email,
+        bio: profileResult.value.bio,
+        urls: JSON.parse(profileResult.value.urls || "[]"),
       };
     }
 
+    // Profile not found, create default
+    const userResult = await this.repository.findUserById(userId);
+    const userName = Result.isOk(userResult) ? userResult.value?.name || "" : "";
+    const userEmail = Result.isOk(userResult) ? userResult.value?.email || "" : "";
+
+    await this.repository.createProfile({
+      userId,
+      username: userName,
+      email: userEmail,
+      bio: "",
+      urls: "[]",
+    });
+
     return {
-      username: profile.username,
-      email: profile.email,
-      bio: profile.bio,
-      urls: JSON.parse(profile.urls || "[]"),
+      username: userName,
+      email: userEmail,
+      bio: "",
+      urls: [],
     };
   }
 
@@ -65,10 +70,10 @@ export class ProfileService implements IProfileService {
    */
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<ProfileResponse> {
     const { username, bio, urls } = input;
-    const existing = await this.repository.findProfileByUserId(userId);
+    const existingResult = await this.repository.findProfileByUserId(userId);
     const now = new Date();
 
-    if (existing) {
+    if (Result.isOk(existingResult) && existingResult.value) {
       await this.repository.updateProfile(userId, {
         username,
         bio: bio || "",
@@ -77,23 +82,34 @@ export class ProfileService implements IProfileService {
       });
       settingsLogger.debug("Profile updated", { userId });
     } else {
-      const user = await this.repository.findUserById(userId);
+      const userResult = await this.repository.findUserById(userId);
+      const userEmail = Result.isOk(userResult) ? userResult.value?.email || "" : "";
       await this.repository.createProfile({
         userId,
         username,
-        email: user?.email || "",
+        email: userEmail,
         bio: bio || "",
         urls: JSON.stringify(urls || []),
       });
       settingsLogger.debug("Profile created", { userId });
     }
 
-    const updated = await this.repository.findProfileByUserId(userId);
+    const updatedResult = await this.repository.findProfileByUserId(userId);
+    if (Result.isOk(updatedResult) && updatedResult.value) {
+      return {
+        username: updatedResult.value.username,
+        email: updatedResult.value.email,
+        bio: updatedResult.value.bio,
+        urls: JSON.parse(updatedResult.value.urls || "[]"),
+      };
+    }
+
+    // Fallback
     return {
-      username: updated!.username,
-      email: updated!.email,
-      bio: updated!.bio,
-      urls: JSON.parse(updated!.urls || "[]"),
+      username,
+      email: "",
+      bio: bio || "",
+      urls: urls || [],
     };
   }
 }

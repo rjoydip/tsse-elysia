@@ -8,6 +8,7 @@ import {
   accountRepository,
   type IAccountRepository,
 } from "~/repositories/settings/account.repository";
+import { Result } from "~/lib/result";
 import { settingsLogger } from "~/lib/logger";
 
 /**
@@ -32,21 +33,24 @@ export class AccountService implements IAccountService {
    * Gets a user's account settings, returning defaults if not found.
    */
   async getAccount(userId: string): Promise<AccountResponse> {
-    const account = await this.repository.findAccountByUserId(userId);
+    const accountResult = await this.repository.findAccountByUserId(userId);
 
-    if (!account) {
-      const user = await this.repository.findUserById(userId);
+    if (Result.isOk(accountResult) && accountResult.value) {
       return {
-        name: user?.name || "",
-        dob: null,
-        language: "en",
+        name: accountResult.value.name,
+        dob: accountResult.value.dob ? new Date(accountResult.value.dob).toISOString() : null,
+        language: accountResult.value.language,
       };
     }
 
+    // Account not found, return defaults
+    const userResult = await this.repository.findUserById(userId);
+    const userName = Result.isOk(userResult) ? userResult.value?.name || "" : "";
+
     return {
-      name: account.name,
-      dob: account.dob ? new Date(account.dob).toISOString() : null,
-      language: account.language,
+      name: userName,
+      dob: null,
+      language: "en",
     };
   }
 
@@ -55,10 +59,12 @@ export class AccountService implements IAccountService {
    */
   async updateAccount(userId: string, input: UpdateAccountInput): Promise<AccountResponse> {
     const { name, dob, language } = input;
-    const existing = await this.repository.findAccountByUserId(userId);
     const now = new Date();
 
-    if (existing) {
+    const existingResult = await this.repository.findAccountByUserId(userId);
+
+    if (Result.isOk(existingResult) && existingResult.value) {
+      // Account exists, update it
       await this.repository.updateAccount(userId, {
         name: name || "",
         dob: dob ? new Date(dob) : null,
@@ -67,6 +73,7 @@ export class AccountService implements IAccountService {
       });
       settingsLogger.debug("Account updated", { userId });
     } else {
+      // Account doesn't exist, create it
       await this.repository.createAccount({
         userId,
         name: name || "",

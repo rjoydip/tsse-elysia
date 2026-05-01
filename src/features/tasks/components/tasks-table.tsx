@@ -25,7 +25,7 @@ import {
 import { DataTablePagination, DataTableToolbar } from "~/components/data-table";
 import { priorities, statuses } from "../data/data";
 import { type Task } from "../data/schema";
-import { DataTableBulkActions } from "./data-table-bulk-actions";
+import { TasksDataTableBulkActions } from "./data-table-bulk-actions";
 import { tasksColumns as columns } from "./tasks-columns";
 
 const route = getRouteApi("/_authenticated/dashboard/tasks/");
@@ -178,7 +178,7 @@ export function TasksTable({ data }: DataTableProps) {
         </Table>
       </div>
       <DataTablePagination table={table} className="mt-auto" />
-      <DataTableBulkActions table={table} />
+      <TasksDataTableBulkActions table={table} />
     </div>
   );
 }

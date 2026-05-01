@@ -7,12 +7,13 @@ description: A full-stack TypeScript application using TanStack Start, Elysia, R
 
 [![React Doctor](https://www.react.doctor/share/badge?p=tsse-elysia&s=98&w=3&f=3)](https://www.react.doctor/share?p=tsse-elysia&s=98&w=3&f=3)
 [![License](https://img.shields.io/github/license/rjoydip/tsse-elysia)](https://github.com/rjoydip/tsse-elysia/blob/main/LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/Bun-1.2+-green)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-blue)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.3+-green)](https://bun.sh)
+[![Fallow Health](https://raw.githubusercontent.com/rjoydip/tsse-elysia/badges/health-badge.svg)](https://docs.fallow.tools/)
 
 A full-stack TypeScript application using TanStack Start, Elysia, React 19, and Bun.
 
-> **Project Roadmap**: See [PLAN.md](./knowledge/PLAN.md) for detailed feature planning and progress tracking.
+> **Project Roadmap**: See [PLANS.md](./knowledge/PLANS.md) for detailed feature planning and progress tracking.
 
 ## Quick Start
 
@@ -23,25 +24,26 @@ bun run dev
 
 ## Commands
 
-| Command                | Description                             |
-| ---------------------- | --------------------------------------- |
-| `bun run setup`        | Run full project setup (recommended)    |
-| `bun run cleanup`      | Clean up build/test artifacts           |
-| `bun run dev`          | Start Vite dev server                   |
-| `bun run build`        | Build for production                    |
-| `bun run start`        | Run production server                   |
-| `bun run lint`         | Run oxlint with GitHub format           |
-| `bun run lint:ci`      | Lint + format check (CI mode)           |
-| `bun run lint:fix`     | Auto-fix lint issues and format         |
-| `bun run fmt`          | Format code with oxfmt                  |
-| `bun run fmt:check`    | Check formatting without fixing         |
-| `bun run typecheck`    | TypeScript type checking (tsc --noEmit) |
-| `bun run react:doctor` | React doctor diagnostics                |
-| `bun run changeset`    | Create a changeset                      |
-| `bun run prepare`      | Install git hooks                       |
-| `bun run test:unit`    | Unit tests with Bun                     |
-| `bun run test:e2e`     | E2E tests with Playwright               |
-| `bun run test:load`    | Load tests with k6                      |
+| Command                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `bun run setup`        | Run full project setup (recommended)      |
+| `bun run cleanup`      | Clean up build/test artifacts             |
+| `bun run dev`          | Start Vite dev server                     |
+| `bun run build`        | Build for production                      |
+| `bun run start`        | Run production server                     |
+| `bun run lint`         | Run oxlint with GitHub format             |
+| `bun run lint:ci`      | Lint + format check (CI mode)             |
+| `bun run lint:check`   | Lint + format + fallow check (Local mode) |
+| `bun run lint:fix`     | Auto-fix lint issues and format           |
+| `bun run fmt`          | Format code with oxfmt                    |
+| `bun run fmt:check`    | Check formatting without fixing           |
+| `bun run typecheck`    | TypeScript type checking (tsc --noEmit)   |
+| `bun run react:doctor` | React doctor diagnostics                  |
+| `bun run changeset`    | Create a changeset                        |
+| `bun run prepare`      | Install git hooks                         |
+| `bun run test:unit`    | Unit tests with Bun                       |
+| `bun run test:e2e`     | E2E tests with Playwright                 |
+| `bun run test:load`    | Load tests with k6                        |
 
 ### Setup Script
 
@@ -126,42 +128,42 @@ The API follows a layered architecture pattern (HTTP → Controller → Service 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     HTTP Layer (routes/)                    │
-│  - Elysia route definitions                         │
-│  - Request/Response handling                        │
-│  - OpenAPI documentation                        │
-│  - Delegates to controllers                      │
-└──────────────────────┬──────────────────────────────┘
+│  - Elysia route definitions                                 │
+│  - Request/Response handling                                │
+│  - OpenAPI documentation                                    │
+│  - Delegates to controllers                                 │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                Controller Layer (controllers/)              │
-│  - Session validation                          │
-│  - Request parsing and validation                │
-│  - Response formatting                        │
-│  - HTTP-specific logic                        │
-└──────────────────────┬──────────────────────────────┘
+│  - Session validation                                       │
+│  - Request parsing and validation                           │
+│  - Response formatting                                      │
+│  - HTTP-specific logic                                      │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                 Service Layer (services/)                   │
-│  - Business logic                              │
-│  - Data transformation                         │
-│  - Validation rules                           │
-│  - Orchestrates repositories                   │
-└──────────────────────┬──────────────────────────────┘
+│  - Business logic                                           │
+│  - Data transformation                                      │
+│  - Validation rules                                         │
+│  - Orchestrates repositories                                │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Repository Layer (repositories/)              │
-│  - ORM operations (Drizzle)                     │
-│  - Database queries                          │
-│  - Data access abstraction                    │
-│  - Interface-based design                     │
-└──────────────────────┬──────────────────────────────┘
+│              Repository Layer (repositories/)               │
+│  - ORM operations (Drizzle)                                 │
+│  - Database queries                                         │
+│  - Data access abstraction                                  │
+│  - Interface-based design                                   │
+└──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     Database (SQLite/PostgreSQL)              │
+│                     Database (SQLite/PostgreSQL)            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -192,217 +194,129 @@ Request → routes/api/settings/-profile.ts (HTTP)
 
 ```bash
 src/
-├── config/             # Central configuration (logger, rate-limit, cors, helmet)
-│   ├── index.ts       # Main config exports
-│   ├── evlog.ts       # Evlog configuration
-│   └── docs.ts        # Documentation config (docMap, globKeyToDocPath, getSplatPath, buildDocMap)
+├── assets/             # Static assets and icons
+│   ├── auth-banner-dark.png
+│   ├── auth-banner-light.png
+│   ├── brand-icons/    # Brand icons (Facebook, GitHub, Gmail)
+│   ├── custom/        # Custom icons (layout, sidebar, theme)
+│   ├── shared/        # Shared icon base component
+│   └── logo.tsx
 ├── components/         # React components
-│   ├── ui/            # shadcn/ui components
+│   ├── ui/            # shadcn/ui components (30+ components)
 │   │   ├── accordion.tsx
-│   │   ├── avatar.tsx
-│   │   ├── badge.tsx
-│   │   ├── breadcrumb.tsx
+│   │   ├── alert-dialog.tsx
 │   │   ├── button.tsx
 │   │   ├── card.tsx
-│   │   ├── collapsible.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── input.tsx
-│   │   ├── label.tsx
-│   │   ├── select.tsx
-│   │   ├── separator.tsx
-│   │   ├── sheet.tsx
-│   │   ├── skeleton.tsx
-│   │   ├── sonner.tsx
-│   │   ├── switch.tsx
 │   │   ├── table.tsx
-│   │   ├── tabs.tsx
 │   │   ├── tooltip.tsx
-│   │   └── markdown.tsx # Markdown renderer with Shiki
+│   │   └── error-display.tsx # Reusable error display
 │   ├── data-table/    # TanStack Table components
-│   │   ├── index.ts         # Exports
-│   │   ├── pagination.tsx   # Pagination controls
-│   │   ├── column-header.tsx # Sortable column headers
-│   │   ├── toolbar.tsx      # Table toolbar with filters
-│   │   ├── bulk-actions.tsx # Bulk operation toolbar
-│   │   └── view-options.tsx  # Column visibility toggle
-│   ├── auth/          # Auth components
-│   │   ├── form/       # Auth form components
-│   │   │   ├── login.tsx
-│   │   │   ├── register.tsx
-│   │   │   └── forgot-password.tsx
-│   │   ├── auth-guard.tsx   # Route protection component
-│   │   ├── branding.tsx     # Branding component
-│   │   └── footer.tsx       # Common footer
-│   ├── docs/           # Documentation components
-│   │   └── sidebar.tsx  # Docs sidebar
-│   ├── layout/        # Layout components
+│   │   ├── index.ts
+│   │   ├── pagination.tsx
+│   │   ├── column-header.tsx
+│   │   ├── toolbar.tsx
+│   │   └── view-options.tsx
+│   ├── auth/          # Auth components (simplified)
+│   │   └── auth-guard.tsx
+│   ├── docs/         # Documentation components
+│   │   ├── sidebar.tsx
+│   │   ├── markdown.tsx
+│   │   └── code-highlight.tsx
+│   ├── layout/       # Layout components
 │   │   ├── app-sidebar.tsx
 │   │   ├── header.tsx
-│   │   └── main.tsx
-│   ├── profile/        # Profile components
-│   │   └── profile-page.tsx
-│   ├── settings/      # Settings components
-│   │   ├── account-settings.tsx
-│   │   ├── email-change-form.tsx
-│   │   ├── password-change-form.tsx
-│   │   ├── preferences-settings.tsx
-│   │   ├── session-settings.tsx
-│   │   └── settings-page.tsx
-│   ├── header.tsx     # Common header
-│   ├── footer.tsx     # Common footer
-│   ├── branding.tsx   # Branding component
-│   ├── code-highlight.tsx # Code highlighting component
-│   └── theme/         # Theme components
-│       ├── provider.tsx
-│       ├── toggle.tsx
-│       └── context.tsx
+│   │   ├── landing/  # Landing page components
+│   │   └── types.ts
+│   ├── settings/    # Settings components
+│   ├── profile/     # Profile components
+│   ├── theme/       # Theme components
+│   └── shared/      # Shared components (multi-delete-dialog, etc.)
+├── config/             # Central configuration
+│   ├── index.ts       # Main config exports
+│   ├── auth.ts       # Better Auth configuration
+│   ├── db/           # Database config (heartbeat, index)
+│   ├── docs.ts       # Documentation config
+│   ├── env.ts        # Environment validation
+│   ├── evlog.ts      # Evlog configuration
+│   └── features.tsx  # Shared features config
+├── context/           # React context providers
+│   ├── direction-provider.tsx
+│   ├── font-provider.tsx
+│   ├── layout-provider.tsx
+│   ├── search-provider.tsx
+│   └── theme-provider.tsx
 ├── controllers/       # Controller layer (HTTP-specific logic)
 │   ├── mcp/          # MCP controllers
-│   │   └── keys.controller.ts
 │   ├── settings/     # Settings controllers
-│   │   └── controller.ts
 │   └── index.ts
-├── features/          # Feature modules with data, components, and pages
-│   ├── dashboard/     # Dashboard feature
-│   │   ├── index.tsx            # Dashboard page
+├── features/          # Feature modules (components, pages, data)
+│   ├── apps/         # Apps feature
+│   ├── auth/         # Auth feature (sign-in, sign-up, OTP, forgot-password)
+│   │   ├── shared/   # Shared auth components (email-field, social-sign-in)
 │   │   └── components/
-│   │       ├── overview.tsx     # Stats overview
-│   │       ├── recent-sales.tsx # Recent sales
-│   │       └── analytics.tsx    # Analytics charts
-│   ├── users/        # User management feature
-│   │   ├── index.tsx            # Users page
-│   │   ├── data/
-│   │   │   ├── schema.ts        # Zod schema types
-│   │   │   └── users.ts         # Mock data
-│   │   └── components/
-│   │       ├── users-table.tsx
-│   │       ├── users-columns.tsx
-│   │       ├── users-dialogs.tsx
-│   │       └── ...
+│   ├── chats/        # Chats feature
+│   ├── dashboard/    # Dashboard feature
+│   ├── errors/       # Error pages (401, 403, 404, 500, 503)
+│   ├── landing/       # Landing pages (blog, changelog, docs, status)
+│   ├── settings/      # Settings feature (account, appearance, profile, notifications)
 │   ├── tasks/        # Task management feature
-│   │   ├── index.tsx            # Tasks page
-│   │   ├── data/
-│   │   │   ├── schema.ts        # Zod schema types
-│   │   │   └── tasks.ts         # Mock data
-│   │   └── components/
-│   │       ├── tasks-table.tsx
-│   │       ├── tasks-columns.tsx
-│   │       ├── tasks-dialogs.tsx
-│   │       └── ...
-│   └── ...
-├── env.ts             # Isomorphic env fetching with type-safe validation
+│   └── users/        # User management feature
+├── hooks/             # Custom React hooks
+│   ├── use-dialog-state.tsx
+│   ├── use-mobile.tsx
+│   ├── use-scroll-direction.tsx
+│   └── use-table-url-state.ts
 ├── lib/               # Library code
 │   ├── auth/          # Authentication (Better Auth)
 │   │   ├── index.ts   # Server auth instance
-│   │   └── client.ts  # Client auth hooks and methods
+│   │   ├── client.ts  # Client auth hooks
+│   │   └── dashboard/ # Dashboard auth utilities
 │   ├── cache/         # Cache layer (Unstorage-backed)
-│   │   └── index.ts   # Cache with multi-backend support
 │   ├── db/            # Database (Drizzle + SQLite/PostgreSQL)
-│   │   ├── index.ts
-│   │   ├── schema.ts
-│   │   └── heartbeat.ts
-│   ├── redis/         # Storage & Pub/Sub (Unstorage-backed)
-│   │   ├── index.ts   # Unstorage with Redis/Postgres/LRU backends
-│   │   └── pubsub.ts  # Pub/Sub using Unstorage event system
-│   └── logger.ts      # Structured logger built on Evlog
+│   │   ├── schema/   # DB schemas (auth, mcp, subscriptions, user-settings)
+│   │   └── schema.ts
+│   ├── mcp/          # MCP (Model Context Protocol)
+│   │   ├── tools/    # MCP tools (auth, users, organizations, shared-utils)
+│   │   ├── shared/   # Shared MCP utilities (auth-utils, response-helpers)
+│   │   └── server.ts
+│   ├── stores/        # TanStack Stores
+│   └── dashboard/    # Dashboard utilities (CSRF, rate-limit, sanitizer)
+├── middlewares/       # Middleware implementations
+│   ├── cors.ts
+│   ├── helmet.ts
+│   ├── rate-limit.ts
+│   └── index.ts
+├── plugins/           # Vite/Plugin configurations
+│   ├── evlog-plugin.ts
+│   ├── monitoring.ts
+│   └── websocket.ts
 ├── repositories/       # Repository layer (ORM operations)
 │   ├── mcp/          # MCP repositories
-│   │   └── api-keys.repository.ts
 │   ├── settings/     # Settings repositories
-│   │   ├── profile.repository.ts
-│   │   ├── account.repository.ts
-│   │   ├── display.repository.ts
-│   │   └── notifications.repository.ts
 │   └── index.ts
 ├── services/          # Service layer (business logic)
-│   ├── settings/      # User settings CRUD operations
-│   │   ├── types.ts        # Shared type definitions
-│   │   ├── profile.ts       # Profile service
-│   │   ├── account.ts       # Account service
-│   │   ├── display.ts       # Display preferences service
-│   │   ├── notifications.ts  # Notification settings service
-│   │   └── index.ts
-│   ├── llmo/         # LLM optimization services
-│   │   ├── blog.ts          # Blog data + schema.org transform
-│   │   ├── docs.ts          # Docs static data
-│   │   ├── changelog.ts     # Changelog data + schema.org transform
-│   │   ├── faq.ts          # FAQ data + filtering
-│   │   ├── transform.ts     # Server info & capabilities
-│   │   ├── llms.ts          # LLMS.txt content generation
-│   │   └── index.ts
-│   ├── mcp/          # MCP services
-│   │   ├── rate-limiter.ts  # Health rate limiting
-│   │   ├── tools.ts         # MCP tool catalog
-│   │   └── index.ts
-│   └── status/        # Status services
-│       ├── history.ts      # Historical status fetching
-│       └── index.ts
-├── middlewares/       # Middleware implementations
-│   ├── cors.ts        # CORS headers
-│   ├── helmet.ts      # Security headers
-│   ├── index.ts       # Export barrel
-│   └── rate-limit.ts  # Rate limiting
+│   ├── settings/      # Settings services (profile, account, display, notifications)
+│   ├── llmo/         # LLM optimization services (blog, docs, changelog, FAQ)
+│   ├── mcp/          # MCP services (api-keys, tools, rate-limiter)
+│   └── status/       # Status services (history)
+├── routes/            # File-based routing (TanStack Start)
+│   ├── (auth)/       # Auth routes (sign-in, sign-up, OTP, forgot-password, verify-email)
+│   ├── (errors)/     # Error pages (401, 403, 404, 500, 503)
+│   ├── (landing)/    # Landing routes (blog, changelog, docs, status, privacy, terms)
+│   ├── _authenticated/ # Protected routes (dashboard, tasks, users, chats, settings)
+│   ├── api/          # API routes (HTTP Layer)
+│   │   ├── auth/     # Auth API routes
+│   │   ├── mcp/     # MCP API routes
+│   │   ├── root/     # Core API routes (cache, database, llmo, realtime, status)
+│   │   └── settings/ # Settings API routes
+│   ├── __root.tsx    # Root route
+│   └── index.tsx     # Home route
+├── server.ts          # TanStack Start server entry
 ├── router.tsx         # TanStack Router configuration
 ├── routeTree.gen.ts   # Auto-generated route tree
-├── routes/            # File-based routing (TanStack Start)
-│   ├── __root.tsx     # Root route
-│   ├── index.tsx      # Home route
-│   ├── account/       # Account routes
-│   │   ├── login.tsx  # Login page (/account/login)
-│   │   ├── register.tsx # Register page (/account/register)
-│   │   ├── forgot-password.tsx # Forgot password page (/account/forgot-password)
-│   │   └── verify-email.tsx # Email verification (/account/verify-email)
-│   ├── profile.tsx     # Profile page (/profile)
-│   ├── settings.tsx    # Settings page (/settings)
-│   ├── docs.tsx        # Documentation layout with sidebar
-│   ├── docs.$.tsx      # Documentation catch-all route
-│   ├── blog.tsx        # Blog routes
-│   ├── changelog.tsx   # Changelog routes
-│   ├── status.tsx      # Health monitoring dashboard
-│   ├── (auth)/         # Auth routes (sign-in, sign-up, OTP)
-│   │   ├── sign-in.tsx
-│   │   ├── sign-up.tsx
-│   │   └── otp.tsx
-│   ├── (errors)/       # Error pages (401, 403, 404, 500, 503)
-│   ├── _authenticated/ # Protected routes (wrapped with AuthGuard)
-│   │   ├── route.tsx   # Auth layout wrapper
-│   │   ├── dashboard/  # Dashboard routes
-│   │   ├── tasks/      # Tasks routes
-│   │   ├── users/      # Users routes
-│   │   ├── chats/      # Chats routes
-│   │   ├── apps/       # Apps routes
-│   │   ├── help-center/
-│   │   ├── errors/
-│   │   └── settings/   # Settings sub-routes
-│   └── api/            # API routes (HTTP Layer)
-│       ├── $.ts       # API catch-all route
-│       ├── auth/      # Auth routes (Better Auth)
-│       │   ├── -core.ts
-│       │   └── -service.ts
-│       ├── mcp/       # MCP routes
-│       │   ├── -core.ts
-│       │   └── -keys.ts
-│       ├── root/      # Core API routes
-│       │   ├── -core.ts
-│       │   ├── -cache.ts
-│       │   ├── -database.ts
-│       │   ├── -llmo.ts
-│       │   ├── -realtime.ts
-│       │   └── -status.ts
-│       └── settings/  # Settings routes
-│           ├── -core.ts
-│           ├── -account.ts
-│           ├── -profile.ts
-│           ├── -display.ts
-│           └── -notifications.ts
-├── server.ts          # TanStack Start server entry
 ├── types/             # TypeScript type definitions
-│   └── subscription.ts
-├── utils.ts           # Utility functions
-└── styles/
-    └── app.css        # Global styles
-vite.config.ts         # Vite configuration
-tsconfig.json          # TypeScript configuration
+└── styles/           # Global styles
+    └── app.css       # Tailwind CSS v4 imports
 ```
 
 ## Test Structure
@@ -579,4 +493,4 @@ Common issues:
 
 For detailed agent coding guidelines, see [AGENTS.md](./AGENTS.md).
 
-For feature planning and progress tracking, see [PLAN.md](./knowledge/PLAN.md).
+For feature planning and progress tracking, see [PLANS.md](./knowledge/PLANS.md).

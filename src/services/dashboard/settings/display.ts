@@ -8,6 +8,7 @@ import {
   displayRepository,
   type IDisplayRepository,
 } from "~/repositories/settings/display.repository";
+import { Result } from "~/lib/result";
 import { settingsLogger } from "~/lib/logger";
 
 /**
@@ -32,16 +33,17 @@ export class DisplayService implements IDisplayService {
    * Gets a user's display settings, returning defaults if not found.
    */
   async getDisplay(userId: string): Promise<DisplayResponse> {
-    const display = await this.repository.findDisplayByUserId(userId);
+    const displayResult = await this.repository.findDisplayByUserId(userId);
 
-    if (!display) {
+    if (Result.isOk(displayResult) && displayResult.value) {
       return {
-        items: ["recents", "home"],
+        items: JSON.parse(displayResult.value.items || '["recents","home"]'),
       };
     }
 
+    // Display not found, return defaults
     return {
-      items: JSON.parse(display.items || '["recents","home"]'),
+      items: ["recents", "home"],
     };
   }
 
@@ -50,14 +52,16 @@ export class DisplayService implements IDisplayService {
    */
   async updateDisplay(userId: string, input: UpdateDisplayInput): Promise<DisplayResponse> {
     const { items } = input;
-    const existing = await this.repository.findDisplayByUserId(userId);
+    const existingResult = await this.repository.findDisplayByUserId(userId);
     const now = new Date();
     const itemsJson = JSON.stringify(items || ["recents", "home"]);
 
-    if (existing) {
+    if (Result.isOk(existingResult) && existingResult.value) {
+      // Display exists, update it
       await this.repository.updateDisplay(userId, { items: itemsJson, updatedAt: now });
       settingsLogger.debug("Display updated", { userId });
     } else {
+      // Display doesn't exist, create it
       await this.repository.createDisplay({
         userId,
         items: itemsJson,

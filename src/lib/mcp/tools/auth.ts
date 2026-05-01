@@ -8,9 +8,12 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types";
 import { z } from "zod";
 import { db } from "~/config/db";
-import { users, sessions } from "~/lib/db/schema";
+import { sessions } from "~/lib/db/schema/auth";
 import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
+import { createErrorResponse, createSuccessResponse } from "./shared-utils";
+import { mapSessionToResponse, fetchUserAndBuildResponse } from "../shared/response-helpers";
+import { requireUserId } from "../shared/auth-utils";
 
 /**
  * Registers authentication-related MCP tools.
@@ -40,60 +43,16 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
 
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, apiKey.userId),
-        });
+        const apiKey = getCurrentApiKey()!;
 
-        if (!user) {
-          return {
-            content: [{ type: "text", text: "User not found" }],
-            isError: true,
-          };
-        }
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                emailVerified: user.emailVerified,
-                image: user.image,
-                createdAt: user.createdAt.toISOString(),
-                subscriptionTier: user.subscriptionTier,
-              }),
-            },
-          ],
-          structuredContent: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            image: user.image,
-            createdAt: user.createdAt.toISOString(),
-            subscriptionTier: user.subscriptionTier,
-          },
-        };
+        return fetchUserAndBuildResponse(apiKey.userId);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );
@@ -121,55 +80,27 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         const userSessions = await db.query.sessions.findMany({
           where: eq(sessions.userId, apiKey.userId),
         });
 
-        const sessionList = (
-          userSessions as Array<{
-            id: string;
-            expiresAt: Date;
-            createdAt: Date;
-            ipAddress: string | null;
-            userAgent: string | null;
-          }>
-        ).map((s) => {
-          return {
-            id: s.id,
-            expiresAt: s.expiresAt.toISOString(),
-            createdAt: s.createdAt.toISOString(),
-            ipAddress: s.ipAddress ?? undefined,
-            userAgent: s.userAgent ?? undefined,
-          };
-        });
+        const sessionList = userSessions.map((s: typeof sessions.$inferSelect) =>
+          mapSessionToResponse(s),
+        );
 
         return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(sessionList),
-            },
-          ],
+          content: [{ type: "text", text: JSON.stringify(sessionList) }],
           structuredContent: { sessions: sessionList },
         };
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );
@@ -200,13 +131,10 @@ export function registerAuthTools(server: McpServer): void {
     },
     async (args: Record<string, unknown>): Promise<CallToolResult> => {
       try {
-        const apiKey = getCurrentApiKey();
-        if (!apiKey?.userId) {
-          return {
-            content: [{ type: "text", text: "Authentication required" }],
-            isError: true,
-          };
-        }
+        const authError = requireUserId();
+        if (authError) return authError;
+
+        const apiKey = getCurrentApiKey()!;
 
         const sessionId = args.sessionId as string;
 
@@ -216,34 +144,20 @@ export function registerAuthTools(server: McpServer): void {
         });
 
         if (!session || session.userId !== apiKey.userId) {
-          return {
-            content: [{ type: "text", text: "Session not found" }],
-            isError: true,
-          };
+          return createErrorResponse("Session not found");
         }
 
         // Delete the session
         await db.delete(sessions).where(eq(sessions.id, sessionId));
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ success: true, message: "Session revoked successfully" }),
-            },
-          ],
-          structuredContent: { success: true, message: "Session revoked successfully" },
-        };
+        return createSuccessResponse({
+          success: true,
+          message: "Session revoked successfully",
+        });
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-            },
-          ],
-          isError: true,
-        };
+        return createErrorResponse(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     },
   );

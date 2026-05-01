@@ -5,16 +5,6 @@
 
 import { changelogData, getLatestVersion } from "~/features/landing/data/changelog/data";
 
-export interface ChangelogEntry {
-  version: string;
-  title: string;
-  releasedAt: string;
-  items: Array<{
-    description: string;
-    releasedAt?: string;
-  }>;
-}
-
 export interface ChangelogResponse {
   "@context": "https://schema.org";
   "@type": "Article" | "ItemList";

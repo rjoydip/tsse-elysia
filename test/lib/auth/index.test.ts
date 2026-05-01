@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { faker } from "@faker-js/faker";
-import * as schema from "../../../src/lib/db/schema";
+import { accounts, users, sessions, verifications } from "../../../src/lib/db/schema/auth";
 
 const TEST_DB_PATH = ":memory:";
 
@@ -24,7 +24,9 @@ async function createTestDatabase() {
     await client.execute({ sql, args: [] });
   }
 
-  return drizzle(client, { schema });
+  return drizzle(client, {
+    schema: { users, sessions, accounts, verifications },
+  });
 }
 
 describe("Authentication", () => {
@@ -37,10 +39,10 @@ describe("Authentication", () => {
       database: drizzleAdapter(db, {
         provider: "sqlite",
         schema: {
-          user: schema.users,
-          session: schema.sessions,
-          account: schema.accounts,
-          verification: schema.verifications,
+          user: users,
+          session: sessions,
+          account: accounts,
+          verification: verifications,
         },
       }),
       secret: "test-secret-123456789012345678901234567890",

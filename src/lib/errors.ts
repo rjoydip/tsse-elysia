@@ -1,6 +1,10 @@
 /**
  * Custom error class for application errors.
  * Provides consistent error handling across the app.
+ *
+ * @deprecated Use tagged errors from `src/lib/result.ts` (e.g., `DatabaseError`, `NotFoundError`, `ValidationError`)
+ * along with `Result<T, E>` types from `better-result` for type-safe error handling.
+ * Use `appErrorToResult` from `src/lib/result.ts` for backward compatibility.
  */
 
 export class AppError extends Error {
@@ -36,7 +40,17 @@ export function isResponseError(error: unknown): boolean {
 
   if (typeof error === "object" && error !== null) {
     const err = error as Record<string, unknown>;
-    return "status" in err && typeof err.status === "number";
+    if ("status" in err && typeof err.status === "number") {
+      return err.status >= 400;
+    }
+    if ("response" in err && typeof err.response === "object" && err.response !== null) {
+      const response = err.response as Record<string, unknown>;
+      return (
+        "status" in response &&
+        typeof response.status === "number" &&
+        (response.status as number) >= 400
+      );
+    }
   }
 
   return false;

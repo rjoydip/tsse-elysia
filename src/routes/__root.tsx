@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { A11yer } from "a11yer";
 import { StrictMode } from "react";
 import { NavigationProgress } from "~/components/navigation-progress";
+import { CommandMenu } from "~/components/command-menu";
 import { GeneralError } from "~/features/errors/general-error";
 import { NotFoundError } from "~/features/errors/not-found-error";
 import { Toaster } from "~/components/ui/sonner";
@@ -14,7 +15,7 @@ import { FontProvider } from "~/context/font-provider";
 import { ThemeProvider } from "~/context/theme-provider";
 import { useAuthSync } from "~/lib/auth/sync";
 import { useAuthInit } from "~/lib/stores/auth";
-import { queryClient } from "~/router";
+import { queryClient } from "~/lib/query-client";
 import appCss from "~/styles/app.css?url";
 import { SearchProvider } from "~/context/search-provider";
 import { GITHUB_REPO_URL } from "~/config";
@@ -86,6 +87,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <FontProvider>
             <DirectionProvider>
               <SearchProvider>
+                <CommandMenu />
                 <A11yer>
                   <html lang="en">
                     <head>

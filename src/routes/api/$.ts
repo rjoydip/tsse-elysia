@@ -78,6 +78,7 @@ export const apiRoutes = createApiRoutes();
  * Request handler wrapper for TanStack Start integration.
  * Adapts Elysia handler to TanStack Start's server handler interface.
  */
+// fallow-ignore-next-line
 export const handle = ({ request }: { request: Request }) => apiRoutes.fetch(request);
 
 /**
@@ -111,6 +112,7 @@ export const Route = createFileRoute("/api/$")({
  * const api = getAPI()
  * const result = await api.health.get()
  */
+// fallow-ignore-next-line
 export const getAPI = createIsomorphicFn()
   // Server: Use in-process Elysia handler (no HTTP overhead)
   .server(() => treaty(apiRoutes).api)

@@ -8,6 +8,7 @@ import {
   notificationsRepository,
   type INotificationsRepository,
 } from "~/repositories/settings/notifications.repository";
+import { Result } from "~/lib/result";
 import { settingsLogger } from "~/lib/logger";
 
 /**
@@ -35,26 +36,27 @@ export class NotificationsService implements INotificationsService {
    * Gets a user's notification settings, returning defaults if not found.
    */
   async getNotifications(userId: string): Promise<NotificationsResponse> {
-    const notifications = await this.repository.findNotificationsByUserId(userId);
+    const notificationsResult = await this.repository.findNotificationsByUserId(userId);
 
-    if (!notifications) {
+    if (Result.isOk(notificationsResult) && notificationsResult.value) {
       return {
-        type: "all",
-        mobile: false,
-        communication_emails: false,
-        social_emails: true,
-        marketing_emails: false,
-        security_emails: true,
+        type: notificationsResult.value.type,
+        mobile: notificationsResult.value.mobile,
+        communication_emails: notificationsResult.value.communicationEmails,
+        social_emails: notificationsResult.value.socialEmails,
+        marketing_emails: notificationsResult.value.marketingEmails,
+        security_emails: notificationsResult.value.securityEmails,
       };
     }
 
+    // Notifications not found, return defaults
     return {
-      type: notifications.type,
-      mobile: notifications.mobile,
-      communication_emails: notifications.communicationEmails,
-      social_emails: notifications.socialEmails,
-      marketing_emails: notifications.marketingEmails,
-      security_emails: notifications.securityEmails,
+      type: "all",
+      mobile: false,
+      communication_emails: false,
+      social_emails: true,
+      marketing_emails: false,
+      security_emails: true,
     };
   }
 
@@ -67,10 +69,12 @@ export class NotificationsService implements INotificationsService {
   ): Promise<NotificationsResponse> {
     const { type, mobile, communication_emails, social_emails, marketing_emails, security_emails } =
       input;
-    const existing = await this.repository.findNotificationsByUserId(userId);
     const now = new Date();
 
-    if (existing) {
+    const existingResult = await this.repository.findNotificationsByUserId(userId);
+
+    if (Result.isOk(existingResult) && existingResult.value) {
+      // Notifications exist, update them
       await this.repository.updateNotifications(userId, {
         type,
         mobile,
@@ -82,6 +86,7 @@ export class NotificationsService implements INotificationsService {
       });
       settingsLogger.debug("Notifications updated", { userId });
     } else {
+      // Notifications don't exist, create them
       await this.repository.createNotifications({
         userId,
         type,

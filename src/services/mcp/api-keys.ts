@@ -1,27 +1,30 @@
 /**
  * MCP API keys service.
  * Contains business logic for API key management, uses repository for DB operations.
+ * All methods return Result types for type-safe error handling.
  */
 
 import { randomBytes, createHash } from "crypto";
-import type { McpApiKey } from "~/lib/db/schema";
+import type { McpApiKey } from "~/lib/db/schema/mcp";
 import {
   mcpApiKeyRepository,
   type IMcpApiKeyRepository,
 } from "~/repositories/mcp/api-keys.repository";
 import { logger } from "~/lib/logger";
 import { resetRateLimit } from "~/lib/mcp/rate-limit";
+import { Result, DatabaseError, NotFoundError, DuplicateKeyError } from "~/lib/result";
 
 const KEY_LENGTH = 32;
 const KEY_PREFIX = "mcp_";
 
 /**
  * Service interface for MCP API key operations.
+ * All methods return Result types with explicit error types.
  */
 export interface IMcpApiKeyService {
   generateApiKey(): string;
   hashKey(key: string): string;
-  validateApiKey(plainKey: string): Promise<McpApiKey | null>;
+  validateApiKey(plainKey: string): Promise<Result<McpApiKey, DatabaseError | NotFoundError>>;
   createApiKey(options: {
     name: string;
     userId: string;
@@ -30,14 +33,20 @@ export interface IMcpApiKeyService {
     rateLimit?: number;
     rateLimitDuration?: number;
     expiresAt?: Date;
-  }): Promise<{ key: string; record: McpApiKey }>;
-  revokeApiKey(keyId: string, userId: string): Promise<boolean>;
+  }): Promise<Result<{ key: string; record: McpApiKey }, DatabaseError | DuplicateKeyError>>;
+  revokeApiKey(
+    keyId: string,
+    userId: string,
+  ): Promise<Result<boolean, DatabaseError | NotFoundError>>;
   revokeApiKeyWithReason(
     keyId: string,
     userId: string,
-  ): Promise<"revoked" | "not_found" | "forbidden">;
-  listApiKeys(userId: string): Promise<Omit<McpApiKey, "keyHash">[]>;
-  getApiKeyById(keyId: string, userId: string): Promise<Omit<McpApiKey, "keyHash"> | null>;
+  ): Promise<Result<"revoked" | "not_found" | "forbidden", DatabaseError | NotFoundError>>;
+  listApiKeys(userId: string): Promise<Result<Omit<McpApiKey, "keyHash">[], DatabaseError>>;
+  getApiKeyById(
+    keyId: string,
+    userId: string,
+  ): Promise<Result<Omit<McpApiKey, "keyHash"> | null, DatabaseError | NotFoundError>>;
   updateApiKey(
     keyId: string,
     userId: string,
@@ -48,11 +57,12 @@ export interface IMcpApiKeyService {
       rateLimitDuration?: number;
       expiresAt?: Date | null;
     },
-  ): Promise<Omit<McpApiKey, "keyHash"> | null>;
+  ): Promise<Result<Omit<McpApiKey, "keyHash"> | null, DatabaseError | NotFoundError>>;
 }
 
 /**
  * MCP API keys service implementation.
+ * Uses Result types for explicit error handling.
  */
 export class McpApiKeyService implements IMcpApiKeyService {
   private repository: IMcpApiKeyRepository;
@@ -79,12 +89,20 @@ export class McpApiKeyService implements IMcpApiKeyService {
   /**
    * Validates an API key and updates last used timestamp.
    */
-  async validateApiKey(plainKey: string): Promise<McpApiKey | null> {
+  async validateApiKey(
+    plainKey: string,
+  ): Promise<Result<McpApiKey, DatabaseError | NotFoundError>> {
     const keyHash = this.hashKey(plainKey);
     const result = await this.repository.findValidKeyByHash(keyHash);
-    if (result) {
-      await this.repository.updateLastUsedAt(result.id);
+
+    if (Result.isOk(result)) {
+      // Update last used timestamp (fire and forget, don't fail validation if this fails)
+      this.repository.updateLastUsedAt(result.value.id).catch((err: Error) => {
+        logger.error("Failed to update last used timestamp", err);
+      });
+      return result;
     }
+
     return result;
   }
 
@@ -99,11 +117,11 @@ export class McpApiKeyService implements IMcpApiKeyService {
     rateLimit?: number;
     rateLimitDuration?: number;
     expiresAt?: Date;
-  }): Promise<{ key: string; record: McpApiKey }> {
+  }): Promise<Result<{ key: string; record: McpApiKey }, DatabaseError | DuplicateKeyError>> {
     const plainKey = this.generateApiKey();
     const keyHash = this.hashKey(plainKey);
 
-    const record = await this.repository.insertKey({
+    const insertResult = await this.repository.insertKey({
       name: options.name,
       keyHash,
       userId: options.userId,
@@ -114,20 +132,30 @@ export class McpApiKeyService implements IMcpApiKeyService {
       expiresAt: options.expiresAt ?? null,
     });
 
-    logger.info(`Created MCP API key: ${record.id} for user: ${options.userId}`);
-    return { key: plainKey, record };
+    return insertResult.andThen((record) => {
+      logger.info(`Created MCP API key: ${record.id} for user: ${options.userId}`);
+      return Result.ok({ key: plainKey, record });
+    });
   }
 
   /**
    * Revokes (deletes) an API key.
    */
-  async revokeApiKey(keyId: string, userId: string): Promise<boolean> {
-    const deleted = await this.repository.deleteKeyByIdAndUserId(keyId, userId);
-    if (!deleted) return false;
+  async revokeApiKey(
+    keyId: string,
+    userId: string,
+  ): Promise<Result<boolean, DatabaseError | NotFoundError>> {
+    const deleteResult = await this.repository.deleteKeyByIdAndUserId(keyId, userId);
 
-    await resetRateLimit(keyId);
-    logger.info(`Revoked MCP API key: ${keyId} by user: ${userId}`);
-    return true;
+    return deleteResult.andThen((deleted) => {
+      if (!deleted) return Result.ok(false);
+
+      resetRateLimit(keyId).catch((err: Error) => {
+        logger.error("Failed to reset rate limit", err);
+      });
+      logger.info(`Revoked MCP API key: ${keyId} by user: ${userId}`);
+      return Result.ok(true);
+    });
   }
 
   /**
@@ -136,32 +164,57 @@ export class McpApiKeyService implements IMcpApiKeyService {
   async revokeApiKeyWithReason(
     keyId: string,
     userId: string,
-  ): Promise<"revoked" | "not_found" | "forbidden"> {
-    const owner = await this.repository.findKeyByIdAndUserId(keyId, userId);
-    if (!owner) return "not_found";
-    if (owner.userId !== userId) return "forbidden";
+  ): Promise<Result<"revoked" | "not_found" | "forbidden", DatabaseError | NotFoundError>> {
+    const ownerResult = await this.repository.findKeyByIdAndUserId(keyId, userId);
 
-    await this.revokeApiKey(keyId, userId);
-    return "revoked";
+    if (Result.isError(ownerResult)) {
+      if (ownerResult.error instanceof NotFoundError) {
+        return Result.ok("not_found" as const);
+      }
+      return ownerResult; // Propagate DatabaseError
+    }
+
+    // Check ownership
+    if (ownerResult.value.userId !== userId) {
+      return Result.ok("forbidden" as const);
+    }
+
+    const revokeResult = await this.revokeApiKey(keyId, userId);
+    if (Result.isError(revokeResult)) {
+      return revokeResult; // DatabaseError
+    }
+
+    return Result.ok("revoked" as const);
   }
 
   /**
    * Lists all API keys for a user (without key hashes).
    */
-  async listApiKeys(userId: string): Promise<Omit<McpApiKey, "keyHash">[]> {
-    const keys = await this.repository.findKeysByUserId(userId);
-    return keys.map(({ keyHash: _k, ...rest }) => rest);
+  async listApiKeys(userId: string): Promise<Result<Omit<McpApiKey, "keyHash">[], DatabaseError>> {
+    const keysResult = await this.repository.findKeysByUserId(userId);
+
+    return keysResult.andThen((keys: unknown) => {
+      const typedKeys = keys as McpApiKey[];
+      const sanitized = typedKeys.map(({ keyHash: _k, ...rest }) => rest);
+      return Result.ok(sanitized);
+    });
   }
 
   /**
    * Gets a key by ID (without hash).
    */
-  async getApiKeyById(keyId: string, userId: string): Promise<Omit<McpApiKey, "keyHash"> | null> {
-    const key = await this.repository.findKeysByUserId(userId);
-    const found = key.find((k) => k.id === keyId);
-    if (!found) return null;
-    const { keyHash: _k, ...rest } = found;
-    return rest;
+  async getApiKeyById(
+    keyId: string,
+    userId: string,
+  ): Promise<Result<Omit<McpApiKey, "keyHash"> | null, DatabaseError | NotFoundError>> {
+    const keysResult = await this.repository.findKeysByUserId(userId);
+
+    return keysResult.andThen((keys) => {
+      const found = keys.find((k) => k.id === keyId);
+      if (!found) return Result.ok(null);
+      const { keyHash: _k, ...rest } = found;
+      return Result.ok(rest);
+    });
   }
 
   /**
@@ -177,9 +230,12 @@ export class McpApiKeyService implements IMcpApiKeyService {
       rateLimitDuration?: number;
       expiresAt?: Date | null;
     },
-  ): Promise<Omit<McpApiKey, "keyHash"> | null> {
-    const existing = await this.getApiKeyById(keyId, userId);
-    if (!existing) return null;
+  ): Promise<Result<Omit<McpApiKey, "keyHash"> | null, DatabaseError | NotFoundError>> {
+    // Check if key exists and belongs to user
+    const existingResult = await this.getApiKeyById(keyId, userId);
+    if (Result.isError(existingResult) || existingResult.value === null) {
+      return existingResult;
+    }
 
     const repoUpdates: Parameters<IMcpApiKeyRepository["updateKeyByIdAndUserId"]>[2] = {
       updatedAt: new Date(),
@@ -191,11 +247,17 @@ export class McpApiKeyService implements IMcpApiKeyService {
       repoUpdates.rateLimitDuration = updates.rateLimitDuration;
     if (updates.expiresAt !== undefined) repoUpdates.expiresAt = updates.expiresAt;
 
-    const updated = await this.repository.updateKeyByIdAndUserId(keyId, userId, repoUpdates);
-    if (!updated) return null;
+    const updateResult = await this.repository.updateKeyByIdAndUserId(keyId, userId, repoUpdates);
+    if (Result.isError(updateResult)) {
+      return updateResult;
+    }
 
-    const { keyHash: _k, ...rest } = updated;
-    return rest;
+    if (!updateResult.value) {
+      return Result.ok(null);
+    }
+
+    const { keyHash: _k, ...rest } = updateResult.value;
+    return Result.ok(rest);
   }
 }
 

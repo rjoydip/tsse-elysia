@@ -14,15 +14,8 @@ import { toast } from "sonner";
 import { sendPasswordReset } from "~/lib/auth/client";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "~/components/ui/form";
+import { EmailField } from "~/features/auth/shared/components/email-field";
+import { Form } from "~/components/ui/form";
 
 const formSchema = z.object({
   email: z.email({
@@ -63,19 +56,7 @@ export function ForgotPasswordForm({ className, ...props }: React.HTMLAttributes
         className={cn("grid gap-2", className)}
         {...props}
       >
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="name@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <EmailField form={form} fieldName="email" />
         <Button className="mt-2" disabled={isLoading}>
           Continue
           {isLoading ? <Loader2 className="animate-spin" /> : <ArrowRight />}

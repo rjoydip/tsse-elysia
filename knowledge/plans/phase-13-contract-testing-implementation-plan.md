@@ -26,14 +26,14 @@ This plan outlines the steps to introduce contract testing using Pact to ensure 
 
 ### [Planning & Documentation]
 
-#### [MODIFY] [PLAN.md](file:///c:/Users/rjoydip/codebase/tsse-elysia/knowledge/PLAN.md)
+#### [MODIFY] [PLANS.md](file:///c:/Users/rjoydip/codebase/tsse-elysia/knowledge/PLANS.md)
 
 - Add Phase 13: Contract Testing.
 - Update goals and tasks to include Pact integration.
 
 #### [NEW] [roadmap.md](file:///c:/Users/rjoydip/codebase/tsse-elysia/docs/guides/roadmap.md)
 
-- Create a high-level roadmap based on the updated `PLAN.md`.
+- Create a high-level roadmap based on the updated `PLANS.md`.
 - Include visual progress indicators (e.g., status badges or emoji).
 
 ## Open Questions
@@ -51,5 +51,5 @@ This plan outlines the steps to introduce contract testing using Pact to ensure 
 
 ### Manual Verification
 
-- Verify that `PLAN.md` is updated correctly.
+- Verify that `PLANS.md` is updated correctly.
 - Check that `docs/guides/roadmap.md` is readable and accurate.

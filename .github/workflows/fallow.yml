@@ -1,0 +1,64 @@
+name: Fallow Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fallow:
+    name: Fallow Code Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen
+
+      - name: Run Fallow analysis
+        uses: fallow-rs/fallow@bf49e80ef0f4892d18b621ff5ec5f652b1c0a8da # v2.58.0
+        with:
+          format: sarif
+          comment: true
+          annotations: true
+          fail-on-issues: false
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        with:
+          sarif_file: fallow-results.sarif
+          category: fallow-analysis-${{ github.run_id }}
+
+      - name: Generate health badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: npx fallow health --format badge > health-badge.svg
+
+      - name: Publish badge to badges branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: badges
+          keep_files: true
+          include_files: health-badge.svg

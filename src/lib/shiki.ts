@@ -15,23 +15,20 @@ async function createHighlighter() {
     import("@shikijs/themes/github-dark"),
   ]);
 
-  const [ts, js, json, bash, tsx, css, html, md, yaml, rust, sql] = await Promise.all([
+  const [ts, js, json, tsx, css, html, md, yaml] = await Promise.all([
     import("@shikijs/langs/typescript"),
     import("@shikijs/langs/javascript"),
     import("@shikijs/langs/json"),
-    import("@shikijs/langs/bash"),
     import("@shikijs/langs/tsx"),
     import("@shikijs/langs/css"),
     import("@shikijs/langs/html"),
     import("@shikijs/langs/markdown"),
     import("@shikijs/langs/yaml"),
-    import("@shikijs/langs/rust"),
-    import("@shikijs/langs/sql"),
   ]);
 
   return await createHighlighterCore({
     themes: [githubLight, githubDark],
-    langs: [ts, js, json, bash, tsx, css, html, md, yaml, rust, sql],
+    langs: [ts, js, json, tsx, css, html, md, yaml],
     engine: createJavaScriptRegexEngine(),
   });
 }

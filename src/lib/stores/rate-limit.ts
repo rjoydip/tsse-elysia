@@ -5,7 +5,7 @@
  * @module rate-limit/store
  */
 
-import { getStorage } from "~/services/cache";
+import { getStorage } from "~/lib/cache";
 import { cacheLogger } from "~/lib/logger";
 import { rateLimitConfig } from "~/config";
 
