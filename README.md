@@ -39,7 +39,8 @@ bun run dev
 | `bun run fmt:check`    | Check formatting without fixing           |
 | `bun run typecheck`    | TypeScript type checking (tsc --noEmit)   |
 | `bun run react:doctor` | React doctor diagnostics                  |
-| `bun run changeset`    | Create a changeset                        |
+| `bun run changelog`    | Generate changelog with changelogen       |
+| `bun run version`      | Bump version with changelogen             |
 | `bun run prepare`      | Install git hooks                         |
 | `bun run test:unit`    | Unit tests with Bun                       |
 | `bun run test:e2e`     | E2E tests with Playwright                 |
@@ -471,12 +472,13 @@ test/                  # Unit tests (Bun)
 ## Git Workflow
 
 - Pre-commit hooks run: `lint`, `typecheck`, `react:doctor`
-- Use changesets for version management:
+- Use changelogen for version management (conventional commits):
 
   ```bash
-  bun run changeset   # Create changeset
-  bun run version     # Update versions
-  bun run release     # Publish to npm
+  # Make conventional commits (feat:, fix:, etc.)
+  bun changelogen              # Generate changelog
+  bun changelogen --bump       # Bump version
+  bun changelogen gh release   # Create GitHub release
   ```
 
 ## Troubleshooting

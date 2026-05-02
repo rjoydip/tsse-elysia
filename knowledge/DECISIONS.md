@@ -644,13 +644,12 @@ Created 11 reusable actions under `.github/actions/`:
 | `docker-build-scan`   | Build Docker + Trivy scan + Post results |
 | `run-opencode`        | Run OpenCode AI for review/triage        |
 | `commit-changes`      | Commit and push changes                  |
-| `validate-changesets` | Check for changesets                     |
 | `check-changed-files` | Detect changed files in PR               |
 
 **Workflows Refactored:**
 
 1. **ci.yml**: Reduced from 191 lines to ~75 lines using reusable actions
-2. **release.yml**: Uses configure-git, commit-changes, validate-changesets
+2. **release.yml**: Uses configure-git, commit-changes, changelogen + changelogithub
 3. **sync-tasks.yml**: Uses commit-changes for updating TASKS.md
 4. **autofix.yml**: Uses setup-environment + commit-changes
 5. **pr-review.yml**: Uses run-opencode + disable-submodules

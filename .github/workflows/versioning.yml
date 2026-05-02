@@ -107,7 +107,8 @@ jobs:
 
       - name: Update package.json (PR only)
         run: |
-          bun --bun npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          VERSION=${{ steps.version.outputs.version }}
+          node -e "const pkg=require('./package.json');pkg.version='$VERSION';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n')"
 
       - name: Set PR Version Comment
         run: |

@@ -47,14 +47,12 @@ jobs:
           category: fallow-analysis-${{ github.run_id }}
 
       - name: Generate health badge
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: npx fallow health --format badge > health-badge.svg
 
       - name: Publish badge to badges branch
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
           publish_dir: .
           publish_branch: badges
           keep_files: true

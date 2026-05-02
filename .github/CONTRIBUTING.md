@@ -5,19 +5,17 @@ description: Guidelines for contributing to TSS Elysia
 
 ## Contributing to TSS Elysia
 
-Thank you for your interest in contributing! This project uses [Changesets](https://github.com/changesets/changesets) for managing versioning and changelogs.
+Thank you for your interest in contributing! This project uses [Changelogen](https://github.com/unjs/changelogen) for managing versioning and changelogs using conventional commits.
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Making Changes](#making-changes)
-- [Changesets Workflow](#changesets-workflow)
-- [Changesets Deep Dive](#changesets-deep-dive)
+- [Release Workflow](#release-workflow)
 - [Commit Guidelines](#commit-guidelines)
 - [Testing](#testing)
 - [Code Quality](#code-quality)
 - [Release Process](#release-process)
-- [Common Scenarios](#common-scenarios)
 - [Troubleshooting](#troubleshooting)
 
 ## Quick Start
@@ -50,25 +48,14 @@ bun run dev
    - Add tests
    - Update documentation
 
-3. **Add a changeset** (required for releases)
-
-   ```bash
-   bun changeset add
-   ```
-
-   Follow the prompts:
-   - Select the `tsse-elysia` package
-   - Choose bump type: `patch`, `minor`, or `major`
-   - Write a description of what changed
-
-4. **Commit your changes**
+3. **Commit your changes with conventional commits**
 
    ```bash
    git add .
    git commit -m "feat: add new feature"
    ```
 
-5. **Push and create a PR**
+4. **Push and create a PR**
 
    ```bash
    git push origin feat/your-feature-name
@@ -113,164 +100,51 @@ git add .opencode
 git commit -m "chore: update opencode devkit"
 ```
 
-### Troubleshooting
-
-If submodule initialization fails:
-
-```bash
-# Reinitialize submodules
-git submodule deinit --all
-git submodule update --init --recursive
-```
-
 ---
 
-## Changesets Workflow
+## Release Workflow
 
 ### How It Works
 
 ```bash
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CHANGESETS WORKFLOW                          │
+│                    CHANGELOGEN WORKFLOW                          │
 └─────────────────────────────────────────────────────────────────┘
 
   1. DEVELOPER                2. GITHUB CI                  3. RELEASE
-     creates PR                      runs                        creates
+     makes PR                      runs                        creates
 
   ┌──────────┐              ┌──────────────┐            ┌─────────────┐
   │ Write    │              │ Detect       │            │ Version     │
-  │ Code +   │──────────────│ Changesets   │────────────│ Bumped      │
-  │ Changeset│              │ in PR        │            │             │
-  │ File     │              │              │            │ CHANGELOG   │
+  │ Conventional│─────────────│ Commits      │────────────│ Bumped      │
+  │ Commit   │              │              │            │             │
+  │          │              │              │            │ CHANGELOG   │
   │          │              │ Run Tests    │            │ Updated     │
   │          │              │              │            │             │
   │          │              │              │            │ GitHub      │
-  │          │              │              │            │ Release     │
+  │          │              │ Tag +       │            │ Release    │
+  │          │              │ Release     │            │ Created    │
   └──────────┘              └──────────────┘            └─────────────┘
 ```
 
-### Changeset File Structure
+### Conventional Commits
 
-Each changeset is a markdown file in `.changeset/` with:
+Changelogen uses conventional commit messages to determine version bumps:
 
-```markdown
----
-"tsse-elysia": minor
----
-
-Your description of the changes.
-```
-
-### Bump Types
-
-| Type    | When to Use                    | Example Version |
-| ------- | ------------------------------ | --------------- |
-| `patch` | Bug fixes, small changes       | 1.0.0 → 1.0.1   |
-| `minor` | New features (backward compat) | 1.0.0 → 1.1.0   |
-| `major` | Breaking changes               | 1.0.0 → 2.0.0   |
+| Commit Type                    | Version Bump | Example         |
+| ------------------------------ | ------------ | --------------- |
+| `feat:`                        | `minor`      | 1.0.0 → 1.1.0   |
+| `fix:`                         | `patch`      | 1.0.0 → 1.0.1   |
+| `feat!:` or `BREAKING CHANGE:` | `major`      | 1.0.0 → 2.0.0   |
+| Other types                    | none         | No version bump |
 
 ### Files Affected
 
-| File              | Before           | After                  |
-| ----------------- | ---------------- | ---------------------- |
-| `.changeset/*.md` | Contains changes | Deleted after release  |
-| `CHANGELOG.md`    | Unchanged        | Updated with new entry |
-| `package.json`    | Version: 0.0.0   | Version: 0.1.0         |
-| Git tags          | None             | `v0.1.0` created       |
-
----
-
-## Changesets Deep Dive
-
-### Step-by-Step Process
-
-#### Step 1: Add a Changeset
-
-```bash
-bun changeset add
-```
-
-Interactive prompts:
-
-```bash
-🦋 Select the package(s) you want to include in this changeset
-    ❯ ● tsse-elysia (press <space> to select)
-
-🦋 What kind of change is this?
-    ❯ ○ patch - fix: bug fixes
-      ○ minor - feat: new features
-      ○ major - BREAKING CHANGE
-
-🦋 Write a short description of the change (this will be added to CHANGELOG.md)
-> Added pagination to user endpoints
-```
-
-Creates file: `.changeset/funny-flowers-speak.md`
-
-```markdown
----
-"tsse-elysia": minor
----
-
-Added pagination to user endpoints
-```
-
-#### Step 2: Commit Everything
-
-```bash
-git add .
-git commit -m "feat: add user pagination"
-```
-
-#### Step 3: Push and Create PR
-
-```bash
-git push origin feat/user-pagination
-# Create PR via GitHub UI
-```
-
-#### Step 4: CI Runs
-
-For details on CI/CD pipelines, see [CI/CD Documentation](docs/infra/ci-cd.md).
-
-#### Step 5: Changesets Magic
-
-```bash
-# What changeset version does internally:
-
-1. Reads all .changeset/*.md files
-2. Calculates version bump from all changesets
-3. Updates package.json version
-4. Updates CHANGELOG.md with entries
-5. Creates git commit with version bump
-6. Creates git tag
-7. Deletes .changeset/*.md files
-```
-
-### What Gets Published
-
-When `changeset publish` runs:
-
-1. **GitHub Release** created with:
-   - Version tag (e.g., `v0.1.0`)
-   - Release notes from CHANGELOG.md
-   - Built binaries
-
-2. **CHANGELOG.md** updated:
-
-   ```markdown
-   ## [0.1.0] - 2024-01-15
-
-   ### Features
-
-   - Added pagination to user endpoints
-   ```
-
-3. **package.json** version updated:
-
-   ```json
-   { "version": "0.1.0" }
-   ```
+| File           | Before         | After                  |
+| -------------- | -------------- | ---------------------- |
+| `CHANGELOG.md` | Unchanged      | Updated with new entry |
+| `package.json` | Version: 0.0.0 | Version: 0.1.0         |
+| Git tags       | None           | `v0.1.0` created       |
 
 ---
 
@@ -278,16 +152,16 @@ When `changeset publish` runs:
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-| Type       | Description                             | Changeset |
-| ---------- | --------------------------------------- | --------- |
-| `feat`     | New feature                             | `minor`   |
-| `fix`      | Bug fix                                 | `patch`   |
-| `docs`     | Documentation changes                   | -         |
-| `style`    | Code style (formatting, no logic)       | -         |
-| `refactor` | Code change that neither fixes nor adds | -         |
-| `test`     | Adding or updating tests                | -         |
-| `chore`    | Maintenance tasks                       | -         |
-| `ci`       | CI/CD changes                           | -         |
+| Type       | Description                             | Version Bump |
+| ---------- | --------------------------------------- | ------------ |
+| `feat`     | New feature                             | `minor`      |
+| `fix`      | Bug fix                                 | `patch`      |
+| `docs`     | Documentation changes                   | -            |
+| `style`    | Code style (formatting, no logic)       | -            |
+| `refactor` | Code change that neither fixes nor adds | -            |
+| `test`     | Adding or updating tests                | -            |
+| `chore`    | Maintenance tasks                       | -            |
+| `ci`       | CI/CD changes                           | -            |
 
 ### Commit Message Examples
 
@@ -344,10 +218,10 @@ Certain workflows require GitHub secrets to be configured in the repository sett
 
 ### Required Secrets
 
-| Secret               | Workflow(s)                     | Description                                            |
-| -------------------- | ------------------------------- | ------------------------------------------------------ |
-| `GH_TOKEN_CHANGESET` | `release.yml`, `sync-tasks.yml` | GitHub token with repo scope for changesets publishing |
-| `GH_TOKEN`           | `pr-review.yml`                 | GitHub token for PR review automation                  |
+| Secret     | Workflow(s)     | Description                               |
+| ---------- | --------------- | ----------------------------------------- |
+| `GH_TOKEN` | `release.yml`   | GitHub token with repo scope for releases |
+| `GH_TOKEN` | `pr-review.yml` | GitHub token for PR review automation     |
 
 ### Setting Up Secrets
 
@@ -357,7 +231,7 @@ Certain workflows require GitHub secrets to be configured in the repository sett
 
 ### Token Permissions
 
-The `GH_TOKEN_CHANGESET` token is used for tagging, releasing, and synchronizing tasks. It requires:
+The `GH_TOKEN` token is used for tagging and releasing. It requires:
 
 - `repo` scope (for repository access and pushing tags)
 - `workflow` scope (for managing GitHub Actions workflows and creating releases)
@@ -403,127 +277,41 @@ bun run typecheck         # TypeScript check
 
 For detailed CI/CD and release documentation, see [CI/CD Documentation](docs/infra/ci-cd.md).
 
----
-
-## Common Scenarios
-
-### Scenario 1: Multiple Changes in One PR
-
-If you have multiple changes, add multiple changeset entries:
+### Manual Release
 
 ```bash
-# Add first change
-bun changeset add
-# > select patch, "Fixed login bug"
+# Full release with all validations
+bun run script:release
 
-# Add second change
-bun changeset add
-# > select minor, "Added new API endpoint"
+# Preview without making changes
+bun run script:release --dry-run
+
+# Skip quality checks (not recommended)
+bun run script:release --skip-tests
 ```
 
-Result: Combined into single release with combined changelog.
-
-### Scenario 2: No Release Needed
-
-If your changes don't need a release (e.g., docs only):
+### Changelogen Commands
 
 ```bash
-# Commit without changeset
-git add .
-git commit -m "docs: update README"
+# Generate changelog
+bun changelogen
 
-# Push - no release will be created
-git push
-```
+# Bump version
+bun changelogen --bump
 
-### Scenario 3: Skip CI for Small Changes
-
-```bash
-git commit -m "docs: fix typo [skip ci]"
-```
-
-### Scenario 4: Forgot to Add Changeset
-
-```bash
-# Add it now
-bun changeset add --empty
-
-# Or edit the empty changeset manually
-# .changeset/empty.md will be created
-```
-
-### Scenario 5: Want to Test Version Bump Locally
-
-```bash
-# Preview what would happen
-bun changeset version --dry-run
-
-# Actually run it
-bun changeset version
-
-# Check the changes
-git diff
-
-# If satisfied, push
-git push
-
-# If not, reset
-git reset --hard HEAD~1
-```
-
-### Scenario 6: Breaking Change
-
-```bash
-bun changeset add
-# Select "major"
-
-# Write description mentioning breaking change
-# > BREAKING: Removed deprecated /api/old endpoint
-```
-
-This creates:
-
-```markdown
----
-"tsse-elysia": major
----
-
-BREAKING: Removed deprecated /api/old endpoint
+# Create GitHub release
+bun changelogen gh release
 ```
 
 ---
 
 ## Troubleshooting
 
-### "No changesets found"
-
-```txt
-🦋 error No changesets found. Run `changeset add` to create one.
-```
-
-**Solution:** You need to add a changeset with `bun changeset add`
-
-### "Some packages have been changed but no changesets were found"
-
-```txt
-🦋 Some packages have been changed but no changesets were found.
-```
-
-**Solution:**
-
-```bash
-# Option 1: Add changeset
-bun changeset add
-
-# Option 2: Mark as no release needed
-bun changeset add --empty
-```
-
-### Changeset Not Creating Release
+### No Release Created
 
 Check:
 
-1. Changeset file exists in `.changeset/`
+1. Conventional commits exist (since last tag)
 2. PR was merged to `main` (not another branch)
 3. GitHub Actions `release.yml` workflow is enabled
 
@@ -539,7 +327,7 @@ git pull origin main
 cat package.json | grep version
 ```
 
-### Want to Undo Changeset Version
+### Want to Undo Version Bump
 
 ```bash
 # Reset to before version bump

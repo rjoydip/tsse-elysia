@@ -72,9 +72,6 @@ skills-lock.json
 # TanStack
 .tanstack
 
-# Changesets
-.changeset
-
 # Misc
 *.tmp
 .cache

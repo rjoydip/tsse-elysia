@@ -9,14 +9,14 @@ This document covers the continuous integration and deployment pipelines for thi
 
 ## GitHub Actions Workflows
 
-| Workflow           | Trigger          | Purpose                         |
-| ------------------ | ---------------- | ------------------------------- |
-| `ci.yml`           | PR/Push to main  | Quality checks, tests, builds   |
-| `autofix.yml`      | PR opened/synced | Auto-fix lint issues            |
-| `release.yml`      | Push to main     | Create releases with changesets |
-| `nightly.yml`      | Daily/manual     | Dev builds                      |
-| `issue-triage.yml` | Issues opened    | AI-powered issue triage         |
-| `pr-review.yml`    | PR opened/synced | AI-powered PR review            |
+| Workflow           | Trigger          | Purpose                          |
+| ------------------ | ---------------- | -------------------------------- |
+| `ci.yml`           | PR/Push to main  | Quality checks, tests, builds    |
+| `autofix.yml`      | PR opened/synced | Auto-fix lint issues             |
+| `release.yml`      | Push to main     | Create releases with changelogen |
+| `nightly.yml`      | Daily/manual     | Dev builds                       |
+| `issue-triage.yml` | Issues opened    | AI-powered issue triage          |
+| `pr-review.yml`    | PR opened/synced | AI-powered PR review             |
 
 ## Quality Gates
 
@@ -54,15 +54,15 @@ Steps executed:
 
 Releases are **automatically** created when:
 
-1. A PR with a changeset is merged to `main`
+1. Conventional commits (feat:, fix:, etc.) exist since last tag
 2. The GitHub Actions workflow runs
 3. All quality checks pass (lint, typecheck, tests)
 4. Security audit passes
 5. Docker image scan (Trivy) passes
 6. Build completes successfully
-7. Version is bumped and changelog is updated
+7. Version is bumped with changelogen and changelog is updated
 8. **Git tag is created** (e.g., `v1.2.0`)
-9. A GitHub Release is created with release notes
+9. A GitHub Release is created with release notes via changelogithub
 
 ### Release Workflow Steps
 
@@ -71,29 +71,31 @@ Releases are **automatically** created when:
 │                    RELEASE WORKFLOW                              │
 └─────────────────────────────────────────────────────────────────┘
 
- 1. VALIDATION         2. QUALITY          3. BUILD
-    ├─ Working tree      ├─ Lint            ├─ Run db:setup
-    └─ Changesets       ├─ Typecheck       ├─ Build Docker image
-                       ├─ Tests           ├─ Trivy Security Scan
-                       ├─ Security audit  └─ Build app
-                       └─ Trivy Scan
+  1. VALIDATION         2. QUALITY          3. BUILD
+     ├─ Working tree      ├─ Lint            ├─ Run db:setup
+     └─ Conventional    ├─ Typecheck       ├─ Build Docker image
+        Commits         ├─ Tests           ├─ Trivy Security Scan
+                        ├─ Security audit  └─ Build app
+                        └─ Trivy Scan
 ```
 
-4.  VERSION BUMP 5. GIT TAG 6. GITHUB RELEASE
-    ├─ Run changeset ├─ Create tag ├─ Create release
-    │ version │ vX.Y.Z └─ Add release notes
-    ├─ Update CHANGELOG
-    └─ Update package.json
+4. VERSION BUMP 5. GIT TAG 6. GITHUB RELEASE
+   ├─ Run changelogen ├─ Create tag ├─ Create release (changelogithub)
+   │ --bump │ vX.Y.Z └─ Add release notes
+   ├─ Update CHANGELOG
+   └─ Update package.json
 
 ````
 
 ### Version Bump Types
 
-| Type    | When to Use                       | Example Version |
-| ------- | --------------------------------- | --------------- |
-| `patch` | Bug fixes, small changes          | 1.0.0 → 1.0.1   |
-| `minor` | New features, backward compatible | 1.0.0 → 1.1.0   |
-| `major` | Breaking changes                  | 1.0.0 → 2.0.0   |
+Changelogen auto-detects version from conventional commits:
+
+| Commit Type              | Version Bump | Example Version |
+| ------------------------ | ------------- | --------------- |
+| `fix:`                   | `patch`       | 1.0.0 → 1.0.1   |
+| `feat:`                  | `minor`       | 1.0.0 → 1.1.0   |
+| `feat!:` or `BREAKING CHANGE:` | `major`   | 1.0.0 → 2.0.0   |
 
 ### Automated Tag Creation
 
@@ -120,27 +122,35 @@ Using the release script:
 
 ```bash
 # Full release (recommended)
-bun run release
+bun run script:release
 
 # Dry run (preview changes)
-bun run release --dry-run
+bun run script:release --dry-run
 
 # Skip quality checks (not recommended)
-bun run release --skip-tests
+bun run script:release --skip-tests
 
 # Skip git tagging
-bun run release --skip-tag
+bun run script:release --skip-tag
 
 # Skip push to remote
-bun run release --skip-push
+bun run script:release --skip-push
 ````
+
+Changelogen commands:
+
+```bash
+bun changelogen              # Generate changelog
+bun changelogen --bump       # Bump version
+bun changelogen gh release   # Create GitHub release
+```
 
 ### Release Validation
 
 Before releasing, the workflow validates:
 
 1. Working tree is clean (no uncommitted changes)
-2. Changesets exist (nothing to release if not)
+2. Conventional commits exist (nothing to release if not)
 3. Linting passes
 4. TypeScript type checking passes
 5. Unit tests pass
@@ -157,8 +167,7 @@ The following GitHub secrets and variables are required for CI/CD workflows:
 
 | Secrets              | Description                                        | Example Value                            |
 | -------------------- | -------------------------------------------------- | ---------------------------------------- |
-| `GH_TOKEN_CHANGESET` | GitHub token with repo/workflow scope for releases | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
-| `GH_TOKEN`           | GitHub token for API access (PR reviews)           | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `GH_TOKEN`           | GitHub token with repo/workflow scope for releases | `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
 | `BETTER_AUTH_SECRET` | Secret for Better Auth                             | `your-secret-key-here`                   |
 | `CODECOV_TOKEN`      | Codecov token for code coverage reporting          | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`   |
 
@@ -170,8 +179,7 @@ The following GitHub secrets and variables are required for CI/CD workflows:
 
 Required configuration:
 
-- `GH_TOKEN_CHANGESET` - GitHub token for tagging, releasing, and synchronization
-- `GH_TOKEN` - GitHub token for PR review automation
+- `GH_TOKEN` - GitHub token for tagging, releasing
 - `BETTER_AUTH_SECRET` - Secret for Better Auth authentication
 - `CODECOV_TOKEN` - Codecov token for code coverage reporting
 - `OPENCODE_MODEL` - Model identifier for Opencode AI (required for GitHub Actions workflows)
