@@ -32,7 +32,7 @@ jobs:
         run: bun install --frozen
 
       - name: Run Fallow analysis
-        uses: fallow-rs/fallow@bf49e80ef0f4892d18b621ff5ec5f652b1c0a8da # v2.58.0
+        uses: fallow-rs/fallow@2dc9812581490b2769f01f84c10369a19b937b28 # v2.61.0
         with:
           format: sarif
           comment: true
@@ -41,7 +41,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           sarif_file: fallow-results.sarif
           category: fallow-analysis-${{ github.run_id }}

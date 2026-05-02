@@ -22,6 +22,8 @@ jobs:
     name: Quality Checks
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-quality-checks
@@ -30,6 +32,8 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-security-audit
@@ -46,6 +50,8 @@ jobs:
             artifact_name: server-bun
             artifact_path: dist
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/setup-database
@@ -87,6 +93,9 @@ jobs:
             sleep 2
           done
 
+      - name: Run E2E tests
+        run: bun test:e2e
+
       - name: Stop preview server
         if: always()
         run: pkill -f "bun run preview" || true
@@ -112,6 +121,8 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - uses: ./.github/actions/docker-build-scan
         with:
           image-tag: tsse-elysia:${{ github.sha }}

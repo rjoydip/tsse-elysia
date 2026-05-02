@@ -4,7 +4,7 @@ description: Configure Git user and remote URL with token
 inputs:
   token:
     description: GitHub token for remote URL
-    default: ${{ secrets.GITHUB_TOKEN }}
+    default: ""
   user-email:
     description: Git user email
     default: "github-actions[bot]@users.noreply.github.com"
