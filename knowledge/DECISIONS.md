@@ -698,12 +698,13 @@ Created `versioning.yml` workflow with three modes:
    - Uses PR number for deterministic suffix (no collision)
 
 2. **Main Merge** (`push` to `main`):
-   - Triggers release.yml workflow
+   - release.yml runs independently on push to main (not triggered by versioning.yml)
    - Auto-detects bump type from commits:
      - `BREAKING CHANGE:` → major bump
      - `feat:` → minor bump
      - Otherwise → patch bump
    - Creates annotated tag + GitHub release
+   - versioning.yml provides informational version calculation only
 
 3. **Manual Bump** (`workflow_dispatch`):
    - Accepts `version_bump` input (patch/minor/major)
@@ -723,6 +724,8 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 - PR pre-releases don't create releases (by design - correct behavior)
 - Excludes pre-release tags from base version calculation (intentional)
 - Hotfix merges to main convert to patch bump (not hotfix.N)
+- version.yml calculates version for PR preview; release.yml runs independently on main push
+- Both workflows use changelogen/commit analysis independently (intentional - release.yml owns actual release)
 
 ---
 

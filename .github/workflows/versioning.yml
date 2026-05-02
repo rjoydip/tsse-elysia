@@ -81,7 +81,7 @@ jobs:
         id: version
         run: |
           # Get base version from latest stable tag (exclude pre-releases)
-          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE 'rc|hotfix' || echo "0.0.0")
+          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' || echo "0.0.0")
 
           # Parse semver
           MAJOR=$(echo $BASE_VERSION | cut -d. -f1)
@@ -106,6 +106,7 @@ jobs:
           echo "Calculated version: $VERSION"
 
       - name: Update package.json (PR only)
+        # Update version for display purposes in PR - no git tag created
         run: |
           VERSION=${{ steps.version.outputs.version }}
           node -e "const pkg=require('./package.json');pkg.version='$VERSION';require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n')"
@@ -116,7 +117,7 @@ jobs:
           echo "This version is for display purposes only - no release will be created until merge."
 
   # ---------------------------------------------------------------------------
-  # Main Branch Stable Release (Triggers release.yml)
+  # Main Branch Stable Release (release.yml runs on push to main)
   # ---------------------------------------------------------------------------
   main_release:
     name: Main Release
@@ -141,7 +142,7 @@ jobs:
       - name: Check for Changes
         id: changes
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE 'rc|hotfix' || echo "")
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' || echo "")
           if [[ -z "$LAST_TAG" ]]; then
             # No tags exist, check if we have commits
             COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "0")
@@ -175,7 +176,7 @@ jobs:
           fi
 
           # Analyze commits for automatic bump
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE 'rc|hotfix' || echo "v0.0.0")
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' || echo "v0.0.0")
           COMMITS=$(git log ${LAST_TAG}..HEAD --oneline 2>/dev/null || echo "")
 
           # Check for BREAKING CHANGE in commit messages
@@ -196,7 +197,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         run: |
           # Get base version from latest stable tag
-          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE 'rc|hotfix' | sed 's/^v//' || echo "0.0.0")
+          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' | sed 's/^v//' || echo "0.0.0")
           BUMP_TYPE=${{ steps.bump_type.outputs.type }}
 
           # Parse and bump version
@@ -224,7 +225,7 @@ jobs:
       - name: Trigger Release Workflow
         if: steps.changes.outputs.has_changes == 'true'
         run: |
-          echo "::notice::Changes detected - triggering release.yml"
+          echo "::notice::Changes detected - release.yml will run on push to main"
           echo "Version: ${{ steps.version.outputs.version }}, Bump: ${{ steps.bump_type.outputs.type }}"
 
   # ---------------------------------------------------------------------------
@@ -252,7 +253,7 @@ jobs:
       - name: Calculate Manual Version
         id: version
         run: |
-          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE 'rc|hotfix' | sed 's/^v//' || echo "0.0.0")
+          BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' | sed 's/^v//' || echo "0.0.0")
           BUMP_TYPE=${{ github.event.inputs.version_bump }}
 
           # Parse and bump manually
