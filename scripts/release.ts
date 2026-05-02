@@ -8,12 +8,12 @@
  *
  * Usage:
  *   bun run scripts/release.ts              # Full release
- *   bun run scripts/release.ts --dry-run     # Preview changes
+ *   bun run scripts/release.ts --dry-run   # Preview changes
  *   bun run scripts/release.ts --skip-tests  # Skip validation
  *   bun run scripts/release.ts --skip-tag    # Skip git tagging
  */
 
-import { existsSync, readdirSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { scriptLogger as logger } from "../src/lib/logger";
@@ -27,14 +27,14 @@ const SKIP_TAG = process.argv.includes("--skip-tag");
 const SKIP_PUSH = process.argv.includes("--skip-push");
 
 /**
- * Executes a shell command and returns the result.
+ * Executes a shell command and returns the exit code.
  */
-async function exec(command: string, args: string[], options?: { cwd?: string }) {
-  const process_ = Bun.spawn([command, ...args], {
+async function exec(command: string, args: string[], options?: { cwd?: string }): Promise<number> {
+  const proc = Bun.spawn([command, ...args], {
     cwd: options?.cwd ?? rootDir,
   });
-  await process_.exited;
-  return process_.exitCode;
+  await proc.exited;
+  return proc.exitCode ?? -1;
 }
 
 /**
@@ -46,13 +46,35 @@ function getCurrentVersion(): string {
 }
 
 /**
- * Checks if there are changesets to release.
+ * Checks if there are commits to release.
  */
-function hasChangesets(): boolean {
-  const changesetDir = join(rootDir, ".changeset");
-  if (!existsSync(changesetDir)) return false;
-  const files = readdirSync(changesetDir);
-  return files.filter((f) => f.endsWith(".md")).length > 0;
+async function hasChanges(): Promise<boolean> {
+  const tagProc = Bun.spawn(["git", "describe", "--tags", "--abbrev=0"], {
+    cwd: rootDir,
+  });
+  await tagProc.exited;
+  const hasTag = tagProc.exitCode === 0;
+
+  if (!hasTag) {
+    const logProc = Bun.spawn(["git", "log", "--oneline", "-1"], {
+      cwd: rootDir,
+    });
+    await logProc.exited;
+    return logProc.exitCode === 0;
+  }
+
+  // Get last tag
+  const tagOutput = await new Response(tagProc.stdout).text();
+  const lastTag = tagOutput.trim();
+  if (!lastTag) return false;
+
+  // Check commits since last tag
+  const logProc = Bun.spawn(["git", "log", "--oneline", `${lastTag}..HEAD`], {
+    cwd: rootDir,
+  });
+  await logProc.exited;
+  const logOutput = await new Response(logProc.stdout).text();
+  return logOutput.trim().length > 0;
 }
 
 /**
@@ -122,12 +144,13 @@ async function runBuild(): Promise<boolean> {
 }
 
 /**
- * Creates version bump with changesets.
+ * Creates version bump with changelogen.
  */
 async function versionBump(): Promise<string | null> {
-  logger.step(4, "Running version bump...");
+  logger.step(4, "Running version bump with changelogen...");
 
-  const code = await exec("bun", ["run", "changeset", "version"]);
+  const args = DRY_RUN ? ["--bump", "--dry-run"] : ["--bump"];
+  const code = await exec("bun", ["changelogen", ...args]);
   if (code !== 0) {
     logger.error("Version bump failed");
     return null;
@@ -171,30 +194,17 @@ async function createTag(version: string): Promise<boolean> {
 }
 
 /**
- * Creates GitHub release using gh CLI.
+ * Creates GitHub release using changelogithub.
  */
-async function createGitHubRelease(version: string): Promise<boolean> {
+async function createGitHubRelease(): Promise<boolean> {
   logger.step(6, "Creating GitHub release...");
 
-  const title = `Release v${version}`;
-  const body = await getReleaseNotes();
-
   if (DRY_RUN) {
-    logger.info(`[DRY RUN] Would create release: ${title}`);
-    logger.info(`Body:\n${body}`);
+    logger.info("[DRY RUN] Would create GitHub release with changelogithub");
     return true;
   }
 
-  const code = await exec("gh", [
-    "release",
-    "create",
-    `v${version}`,
-    "--title",
-    title,
-    "--notes",
-    body,
-    "--latest",
-  ]);
+  const code = await exec("bun", ["changelogen", "gh", "release"]);
 
   if (code !== 0) {
     logger.error("GitHub release creation failed");
@@ -203,23 +213,6 @@ async function createGitHubRelease(version: string): Promise<boolean> {
 
   logger.success("GitHub release created");
   return true;
-}
-
-/**
- * Gets release notes from changelog.
- */
-async function getReleaseNotes(): Promise<string> {
-  const changelogPath = join(rootDir, "CHANGELOG.md");
-  if (!existsSync(changelogPath)) {
-    return "See CHANGELOG.md for details.";
-  }
-
-  const content = readFileSync(changelogPath, "utf-8");
-  const match = content.match(/##\s+\[?([\d.]+)\]?\s+-\s+([\d-]+)\n([\s\S]*?)(?=##\s|$)/);
-  if (match) {
-    return match[3].trim();
-  }
-  return "See CHANGELOG.md for details.";
 }
 
 // =============================================================================
@@ -234,11 +227,11 @@ if (DRY_RUN) {
 
 const currentVersion = getCurrentVersion();
 logger.info(`Current version: ${currentVersion}`);
-logger.info(`Has changesets: ${hasChangesets() ? "Yes" : "No"}`);
+logger.info(`Has changes: ${(await hasChanges()) ? "Yes" : "No"}`);
 
-if (!hasChangesets()) {
-  logger.error("No changesets found. Nothing to release.");
-  logger.info("Run 'bun changeset add' to create a changeset.\n");
+if (!(await hasChanges())) {
+  logger.error("No changes found. Nothing to release.");
+  logger.info("Make conventional commits (feat:, fix:, etc.) to create a release.\n");
   process.exit(1);
 }
 
@@ -269,7 +262,7 @@ if (!(await createTag(newVersion))) {
 }
 
 // Create GitHub release
-if (!(await createGitHubRelease(newVersion))) {
+if (!(await createGitHubRelease())) {
   process.exit(1);
 }
 

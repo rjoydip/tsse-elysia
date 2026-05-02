@@ -643,13 +643,12 @@ Created 11 reusable actions under `.github/actions/`:
 | `docker-build-scan`   | Build Docker + Trivy scan + Post results |
 | `run-opencode`        | Run OpenCode AI for review/triage        |
 | `commit-changes`      | Commit and push changes                  |
-| `validate-changesets` | Check for changesets                     |
 | `check-changed-files` | Detect changed files in PR               |
 
 **Workflows Refactored:**
 
 1. **ci.yml**: Reduced from 191 lines to ~75 lines using reusable actions
-2. **release.yml**: Uses configure-git, commit-changes, validate-changesets
+2. **release.yml**: Uses configure-git, commit-changes, changelogen + changelogithub
 3. **sync-tasks.yml**: Uses commit-changes for updating TASKS.md
 4. **autofix.yml**: Uses setup-environment + commit-changes
 5. **pr-review.yml**: Uses run-opencode + disable-submodules
@@ -677,10 +676,6 @@ jobs:
 ---
 
 ### 019: Repository Dependency Injection for Testability
-
-**Status:** Accepted
-
-**Why:**
 
 - Enable inline mocking in unit tests without database connections
 - Support dependency injection pattern for better testability
@@ -730,6 +725,62 @@ jobs:
 - ⚠️ Slightly more verbose constructor
 - ⚠️ Need to maintain mock structure in tests
 - ⚠️ Learning curve for developers unfamiliar with pattern
+
+---
+
+### 020: Semantic Versioning with PR Pre-release Support
+
+**Status:** Accepted
+
+**Why:**
+
+- Support concurrent PRs without version collision
+- Provide version preview during PR review (no release creation)
+- Enable hotfix branch workflow with proper versioning
+- Allow manual version bumps for minor/major releases
+
+**Implementation:**
+
+Created `versioning.yml` workflow with three modes:
+
+1. **PR Pre-release** (`pull_request` trigger):
+   - Calculates version: `X.Y.Z-rc.<PR#>` or `X.Y.Z-hotfix.<N>` for hotfix branches
+   - Updates `package.json` for display purposes
+   - **No release created** (only version calculation)
+   - Uses PR number for deterministic suffix (no collision)
+
+2. **Main Merge** (`push` to `main`):
+   - release.yml runs independently on push to main (not triggered by versioning.yml)
+   - Auto-detects bump type from commits:
+     - `BREAKING CHANGE:` → major bump
+     - `feat:` → minor bump
+     - Otherwise → patch bump
+   - Creates annotated tag + GitHub release
+   - versioning.yml provides informational version calculation only
+
+3. **Manual Bump** (`workflow_dispatch`):
+   - Accepts `version_bump` input (patch/minor/major)
+   - Overrides auto-detection
+
+**Version Derivation:**
+
+```bash
+# Get base version (excludes pre-releases)
+git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
+# → v1.2.3
+```
+
+**Tradeoffs:**
+
+- Additional workflow to maintain
+- PR pre-releases don't create releases (by design - correct behavior)
+- Excludes pre-release tags from base version calculation (intentional)
+- Hotfix merges to main convert to patch bump (not hotfix.N)
+- versioning.yml calculates version for PR preview only; release.yml owns actual release
+- Both workflows use changelogen/commit analysis independently (intentional separation)
+  - release.yml is the SOURCE OF TRUTH for actual releases
+  - versioning.yml provides informational display during PR review
+  - Different analysis methods are acceptable since versioning.yml doesn't create releases
 
 ---
 

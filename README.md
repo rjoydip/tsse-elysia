@@ -9,7 +9,11 @@ description: A full-stack TypeScript application using TanStack Start, Elysia, R
 [![License](https://img.shields.io/github/license/rjoydip/tsse-elysia)](https://github.com/rjoydip/tsse-elysia/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-blue)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.3+-green)](https://bun.sh)
-[![Fallow Health](https://raw.githubusercontent.com/rjoydip/tsse-elysia/badges/health-badge.svg)](https://docs.fallow.tools/)
+[![Fallow Health](.artifacts/fallow-badge.svg)](https://docs.fallow.tools/)
+![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
+![Drizzle](https://img.shields.io/badge/Drizzle-C5F74F?logo=drizzle&logoColor=000)
+[![codecov](https://codecov.io/gh/rjoydip/tsse-elysia/graph/badge.svg?token=OLT5ONIBWJ)](https://codecov.io/gh/rjoydip/tsse-elysia)
+[![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 
 A full-stack TypeScript application using TanStack Start, Elysia, React 19, and Bun.
 
@@ -39,7 +43,8 @@ bun run dev
 | `bun run fmt:check`    | Check formatting without fixing           |
 | `bun run typecheck`    | TypeScript type checking (tsc --noEmit)   |
 | `bun run react:doctor` | React doctor diagnostics                  |
-| `bun run changeset`    | Create a changeset                        |
+| `bun run changelog`    | Generate changelog with changelogen       |
+| `bun run version`      | Bump version with changelogen             |
 | `bun run prepare`      | Install git hooks                         |
 | `bun run test:unit`    | Unit tests with Bun                       |
 | `bun run test:e2e`     | E2E tests with Playwright                 |
@@ -506,12 +511,13 @@ test/                  # Unit tests (Bun)
 ## Git Workflow
 
 - Pre-commit hooks run: `lint`, `typecheck`, `react:doctor`
-- Use changesets for version management:
+- Use changelogen for version management (conventional commits):
 
   ```bash
-  bun run changeset   # Create changeset
-  bun run version     # Update versions
-  bun run release     # Publish to npm
+  # Make conventional commits (feat:, fix:, etc.)
+  bun changelogen              # Generate changelog
+  bun changelogen --bump       # Bump version
+  bun changelogen gh release   # Create GitHub release
   ```
 
 ## Troubleshooting

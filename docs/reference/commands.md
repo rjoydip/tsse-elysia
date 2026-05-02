@@ -87,9 +87,9 @@ This document lists all available npm scripts in `package.json`.
 | ----------- | ---------------------------------- | ----------------------- |
 | `setup`     | `bun run ./scripts/setup.ts`       | Initial project setup   |
 | `cleanup`   | `bun run ./scripts/cleanup.ts`     | Clean up artifacts      |
-| `release`   | `changeset publish`                | Publish release         |
-| `changeset` | `changeset`                        | Create a changeset      |
-| `version`   | `changeset version`                | Bump version            |
+| `release`   | `changelogen --bump`               | Version bump + release  |
+| `changelog` | `changelogen`                      | Generate changelog      |
+| `version`   | `changelogen --bump`               | Bump version            |
 | `start`     | `node ./dist/server/server.js`     | Start production server |
 | `security`  | `bun audit --audit-level=critical` | Security audit          |
 

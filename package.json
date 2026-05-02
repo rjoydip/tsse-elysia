@@ -1,12 +1,11 @@
 {
   "name": "tsse-elysia",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "setup": "bun run script:setup",
     "cleanup": "bun run script:cleanup",
-    "release": "changeset publish",
     "postinstall": "bunx playwright install",
     "prepare": "simple-git-hooks",
     "build": "bun --bun vite build",
@@ -46,9 +45,9 @@
     "routes:generate": "tsr generate",
     "typecheck": "tsc --noEmit",
     "react:doctor": "react-doctor . -y",
-    "changeset": "changeset",
     "actions-up": "actions-up",
-    "version": "changeset version",
+    "version": "changelogen --bump",
+    "changelog": "changelogen",
     "fallow": "fallow",
     "fallow:dead": "fallow dead-code",
     "fallow:dupes": "fallow dupes",
@@ -141,8 +140,6 @@
     "zod": "^4.4.2"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
-    "@changesets/cli": "^2.31.0",
     "@faker-js/faker": "^10.4.0",
     "@libsql/client": "^0.17.3",
     "@playwright/test": "^1.59.1",
@@ -160,6 +157,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "actions-up": "^1.14.1",
     "broz": "^1.0.1",
+    "changelogen": "^0.6.2",
     "drizzle-kit": "^0.31.10",
     "drizzle-seed": "^0.3.1",
     "fallow": "^2.62.0",
@@ -179,7 +177,7 @@
     "typescript": "^6.0.2"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun run lint:check && bun run typecheck && bun run react:doctor"
+    "pre-commit": "bun run lint:check && bun run typecheck && bun run react:doctor && bun run actions-up && bunx fallow health --format badge > .artifacts/fallow-badge.svg"
   },
   "reactDoctor": {
     "lint": false,
