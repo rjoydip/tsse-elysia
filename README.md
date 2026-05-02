@@ -9,7 +9,11 @@ description: A full-stack TypeScript application using TanStack Start, Elysia, R
 [![License](https://img.shields.io/github/license/rjoydip/tsse-elysia)](https://github.com/rjoydip/tsse-elysia/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0+-blue)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.3+-green)](https://bun.sh)
-[![Fallow Health](https://raw.githubusercontent.com/rjoydip/tsse-elysia/badges/health-badge.svg)](https://docs.fallow.tools/)
+[![Fallow Health](.artifacts/fallow-badge.svg)](https://docs.fallow.tools/)
+![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
+![Drizzle](https://img.shields.io/badge/Drizzle-C5F74F?logo=drizzle&logoColor=000)
+[![codecov](https://codecov.io/gh/rjoydip/tsse-elysia/graph/badge.svg?token=OLT5ONIBWJ)](https://codecov.io/gh/rjoydip/tsse-elysia)
+[![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 
 A full-stack TypeScript application using TanStack Start, Elysia, React 19, and Bun.
 

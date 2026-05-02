@@ -45,18 +45,3 @@ jobs:
         with:
           sarif_file: fallow-results.sarif
           category: fallow-analysis-${{ github.run_id }}
-
-      - name: Create artifacts directory
-        run: mkdir -p .artifacts
-
-      - name: Generate health badge
-        run: bunx fallow health --format badge > .artifacts/health-badge.svg
-
-      - name: Publish badge to badges branch
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          publish_dir: .artifacts
-          publish_branch: badges
-          keep_files: true
-          include_files: health-badge.svg

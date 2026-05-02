@@ -178,7 +178,7 @@
     "typescript": "^6.0.2"
   },
   "simple-git-hooks": {
-    "pre-commit": "bun run lint:check && bun run typecheck && bun run react:doctor"
+    "pre-commit": "bun run lint:check && bun run typecheck && bun run react:doctor && bun run actions-up && bunx fallow health --format badge > .artifacts/fallow-badge.svg"
   },
   "reactDoctor": {
     "lint": false,
