@@ -3,7 +3,7 @@ title: Changelog
 description: All notable changes to this project
 ---
 
-# Changelog
+## Changelog
 
 All notable changes to this project will be documented in this file.
 
