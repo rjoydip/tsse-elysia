@@ -724,8 +724,11 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 - PR pre-releases don't create releases (by design - correct behavior)
 - Excludes pre-release tags from base version calculation (intentional)
 - Hotfix merges to main convert to patch bump (not hotfix.N)
-- version.yml calculates version for PR preview; release.yml runs independently on main push
-- Both workflows use changelogen/commit analysis independently (intentional - release.yml owns actual release)
+- versioning.yml calculates version for PR preview only; release.yml owns actual release
+- Both workflows use changelogen/commit analysis independently (intentional separation)
+  - release.yml is the SOURCE OF TRUTH for actual releases
+  - versioning.yml provides informational display during PR review
+  - Different analysis methods are acceptable since versioning.yml doesn't create releases
 
 ---
 

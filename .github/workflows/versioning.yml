@@ -3,15 +3,21 @@ name: Versioning
 # =============================================================================
 # Versioning Workflow
 # =============================================================================
-# Handles:
-#   - PR pre-release version calculation (on push to PR)
-#   - Main branch stable release (on merge)
-#   - Manual version bump (workflow_dispatch)
+# Purpose:
+#   - Calculate and display version numbers for PRs (informational only)
+#   - Provide version preview during PR review
+#   - Manual version bumps via workflow_dispatch
+#
+# Important:
+#   - This workflow does NOT create releases or tags
+#   - release.yml is the SOURCE OF TRUTH for actual releases
+#   - Both workflows analyze commits independently (intentional)
+#   - versioning.yml provides informational display only
 #
 # Key behaviors:
-#   - PR pushes calculate version but DO NOT create releases
-#   - Main merge triggers full release workflow (via release.yml)
-#   - Hotfix branches get special pre-release handling
+#   - PR pushes: calculate version, update package.json (NO release)
+#   - Main merge: release.yml runs independently on push to main
+#   - Hotfix branches: special pre-release versioning
 # =============================================================================
 
 on:

@@ -42,6 +42,13 @@ The `versioning.yml` workflow handles automatic version management for PRs and r
 ### Main Branch Merge
 
 - On push to main, release.yml workflow runs independently
+- **release.yml is the source of truth** for actual releases
+- versioning.yml provides informational version display only
+- Auto-detects bump type from commits:
+  - `BREAKING CHANGE:` → major bump
+  - `feat:` → minor bump
+  - Otherwise → patch bump
+- Manual bump via `workflow_dispatch` (patch/minor/major)
 - Auto-detects bump type from commits:
   - `BREAKING CHANGE:` → major bump
   - `feat:` → minor bump
