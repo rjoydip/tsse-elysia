@@ -81,6 +81,7 @@ jobs:
         id: version
         run: |
           # Get base version from latest stable tag (exclude pre-releases)
+          # Falls back to 0.0.0 if no tags exist - first release will start from this base
           BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' || echo "0.0.0")
 
           # Parse semver
@@ -196,7 +197,7 @@ jobs:
         id: version
         if: steps.changes.outputs.has_changes == 'true'
         run: |
-          # Get base version from latest stable tag
+          # Get base version from latest stable tag (falls back to 0.0.0 if no tags)
           BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' | sed 's/^v//' || echo "0.0.0")
           BUMP_TYPE=${{ steps.bump_type.outputs.type }}
 
@@ -222,10 +223,12 @@ jobs:
           echo "::notice::No changes since last release - skipping release"
           echo "To create a release, make conventional commits (feat:, fix:, etc.)"
 
-      - name: Trigger Release Workflow
+      - name: Informational Notice
         if: steps.changes.outputs.has_changes == 'true'
         run: |
-          echo "::notice::Changes detected - release.yml will run on push to main"
+          # Note: release.yml runs independently on push to main (not triggered by this workflow)
+          # This is an informational notice only - no actual dispatch is performed
+          echo "::notice::Changes detected - release.yml runs on push to main"
           echo "Version: ${{ steps.version.outputs.version }}, Bump: ${{ steps.bump_type.outputs.type }}"
 
   # ---------------------------------------------------------------------------
@@ -253,6 +256,7 @@ jobs:
       - name: Calculate Manual Version
         id: version
         run: |
+          # Falls back to 0.0.0 if no tags exist (first release)
           BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | grep -vE '-(rc|hotfix)\.[0-9]+$' | sed 's/^v//' || echo "0.0.0")
           BUMP_TYPE=${{ github.event.inputs.version_bump }}
 
