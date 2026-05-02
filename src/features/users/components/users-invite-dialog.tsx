@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { MailPlus, Send } from "lucide-react";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { Button } from "~/components/ui/button";
@@ -34,24 +33,23 @@ const formSchema = z.object({
   desc: z.string().optional(),
 });
 
-type UserInviteForm = z.infer<typeof formSchema>;
-
 type UserInviteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
 export function UsersInviteDialog({ open, onOpenChange }: UserInviteDialogProps) {
-  const form = useForm<UserInviteForm>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
     defaultValues: { email: "", role: "", desc: "" },
+    validators: {
+      onChange: formSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      form.reset();
+      showSubmittedData(value);
+      onOpenChange(false);
+    },
   });
-
-  const onSubmit = (values: UserInviteForm) => {
-    form.reset();
-    showSubmittedData(values);
-    onOpenChange(false);
-  };
 
   return (
     <Dialog
@@ -71,30 +69,34 @@ export function UsersInviteDialog({ open, onOpenChange }: UserInviteDialogProps)
             define their access level.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form id="user-invite-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Form form={form}>
+          <div id="user-invite-form" className="space-y-4">
             <FormField
-              control={form.control}
               name="email"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="eg: john.doe@gmail.com" {...field} />
+                    <Input
+                      type="email"
+                      placeholder="eg: john.doe@gmail.com"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              control={form.control}
               name="role"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
                   <SelectDropdown
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => field.onChange(value)}
                     isControlled
                     placeholder="Select a role"
                     items={roles.map(({ label, value }) => ({
@@ -107,31 +109,36 @@ export function UsersInviteDialog({ open, onOpenChange }: UserInviteDialogProps)
               )}
             />
             <FormField
-              control={form.control}
               name="desc"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="">
                   <FormLabel>Description (optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       className="resize-none"
                       placeholder="Add a personal note to your invitation (optional)"
-                      {...field}
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </form>
+          </div>
         </Form>
         <DialogFooter className="gap-y-2">
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" form="user-invite-form">
-            Invite <Send />
-          </Button>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" form="user-invite-form" disabled={isSubmitting}>
+                Invite <Send />
+              </Button>
+            )}
+          </form.Subscribe>
         </DialogFooter>
       </DialogContent>
     </Dialog>

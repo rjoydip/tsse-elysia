@@ -1,7 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
+import { useStore } from "@tanstack/react-store";
 import { z } from "zod";
 import { useSession } from "~/lib/auth/client";
 import { showSubmittedData } from "~/components/show-submitted-data";
@@ -19,7 +19,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { settingsActions } from "~/lib/stores/dashboard/settings";
-import { type ProfileData } from ".";
+import type { ProfileData } from ".";
 
 /**
  * Interface for profile data sent to API (email excluded - managed via auth)
@@ -71,8 +71,6 @@ const profileFormSchema = z.object({
     .optional(),
 });
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
-
 /**
  * Profile form component for editing user profile information
  * Handles form validation, submission, and integration with settings store
@@ -92,59 +90,66 @@ export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
     [initialProfile, session],
   );
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+  const form = useForm({
     defaultValues: profileData,
-    mode: "onChange",
-  });
+    validators: {
+      onChange: profileFormSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      const profileData = {
+        username: value.username,
+        bio: value.bio,
+        urls: value.urls || [],
+      };
 
-  const { fields, append } = useFieldArray({
-    name: "urls",
-    control: form.control,
-  });
-
-  /**
-   * Handles form submission
-   * Updates settings store and submits data via API
-   * @param {ProfileFormValues} data - Form data to submit
-   */
-  const handleSubmit = form.handleSubmit(async (data) => {
-    const profileData = {
-      username: data.username,
-      bio: data.bio,
-      urls: data.urls || [],
-    };
-
-    // Update profile in settings store (includes email from form for display)
-    updateProfile({
-      ...profileData,
-      email: data.email,
-    });
-
-    try {
-      // Submit the update (email excluded - read-only, managed via auth)
-      await submitProfile(profileData as ApiProfileData);
-      showSubmittedData(data);
-    } catch (err) {
-      // Handle error with user feedback
-      console.error("Failed to update profile:", err);
-      form.setError("root", {
-        message: "Failed to update profile. Please try again.",
+      // Update profile in settings store (includes email from form for display)
+      updateProfile({
+        ...profileData,
+        email: value.email,
       });
-    }
+
+      try {
+        // Submit the update (email excluded - read-only, managed via auth)
+        await submitProfile(profileData as ApiProfileData);
+        showSubmittedData(value);
+      } catch (err) {
+        // Handle error with user feedback
+        console.error("Failed to update profile:", err);
+      }
+    },
   });
+
+  // Manage URLs array using useStore for reactive updates
+  const urls = useStore(form.baseStore, (state) => state.values.urls || []);
+
+  const appendUrl = () => {
+    const currentUrls = form.state.values.urls || [];
+    form.setFieldValue("urls", [...currentUrls, { value: "" }]);
+  };
+
+  const removeUrl = (index: number) => {
+    const currentUrls = form.state.values.urls || [];
+    form.setFieldValue(
+      "urls",
+      currentUrls.filter((_, i) => i !== index),
+    );
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <Form form={form}>
+      <div className="space-y-8">
         <FormField
-          control={form.control}
           name="username"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="username" {...field} value={field.value ?? ""} />
+                <Input
+                  placeholder="username"
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
               </FormControl>
               <FormDescription>
                 This is your public display name. It can be your real name or a pseudonym.
@@ -154,19 +159,19 @@ export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
           )}
         />
         <FormField
-          control={form.control}
           name="email"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input
-                  {...field}
                   value={field.value ?? ""}
                   type="email"
                   placeholder="Enter your email address"
                   readOnly={!!field.value}
                   disabled={!!field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
                 />
               </FormControl>
               <FormDescription>
@@ -184,17 +189,17 @@ export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
           )}
         />
         <FormField
-          control={form.control}
           name="bio"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Bio</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Tell us a little bit about yourself"
                   className="resize-none"
-                  {...field}
                   value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
                 />
               </FormControl>
               <FormDescription>
@@ -205,39 +210,50 @@ export function ProfileForm({ initialProfile, isLoading }: ProfileFormProps) {
           )}
         />
         <div>
-          {fields.map((field, index) => (
+          {urls.map((_, index) => (
             <FormField
-              control={form.control}
-              key={field.id}
-              name={`urls.${index}.value`}
-              render={({ field }) => (
+              key={index}
+              name={`urls[${index}].value`}
+              children={({ field }) => (
                 <FormItem>
                   <FormLabel className={cn(index !== 0 && "sr-only")}>URLs</FormLabel>
                   <FormDescription className={cn(index !== 0 && "sr-only")}>
                     Add links to your website, blog, or social media profiles.
                   </FormDescription>
-                  <FormControl className={cn(index !== 0 && "mt-1.5")}>
-                    <Input {...field} value={field.value ?? ""} />
-                  </FormControl>
+                  <div className="flex gap-2">
+                    <FormControl className={cn(index !== 0 && "mt-1.5")}>
+                      <Input
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeUrl(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
           ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => append({ value: "" })}
-          >
+          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={appendUrl}>
             Add URL
           </Button>
         </div>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Update profile"}
-        </Button>
-      </form>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button type="submit" disabled={isLoading || isSubmitting}>
+              {isSubmitting ? "Updating..." : "Update profile"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </Form>
   );
 }

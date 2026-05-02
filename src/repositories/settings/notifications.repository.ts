@@ -5,10 +5,11 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db } from "~/config/db";
+import { db as defaultDb } from "~/config/db";
 import { nanoid } from "nanoid";
 import { userSettingsNotifications } from "~/lib/db/schema/user-settings";
 import { Result, DatabaseError, NotFoundError } from "~/lib/result";
+import type { DbType } from "~/config/db";
 
 /**
  * Repository interface for notifications settings database operations.
@@ -48,6 +49,16 @@ export interface INotificationsRepository {
  * Uses Result types for explicit error handling.
  */
 export class NotificationsRepository implements INotificationsRepository {
+  private db: DbType;
+
+  /**
+   * Creates a new NotificationsRepository instance.
+   * @param db - Optional database instance (defaults to the global db)
+   */
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;
+  }
+
   /**
    * Finds notification settings by user ID.
    */
@@ -56,7 +67,7 @@ export class NotificationsRepository implements INotificationsRepository {
   ): Promise<Result<typeof userSettingsNotifications.$inferSelect, DatabaseError | NotFoundError>> {
     const result = await Result.tryPromise({
       try: () =>
-        db
+        this.db
           .select()
           .from(userSettingsNotifications)
           .where(eq(userSettingsNotifications.userId, userId))
@@ -65,7 +76,12 @@ export class NotificationsRepository implements INotificationsRepository {
         new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
     });
 
-    if (Result.isOk(result) && (result.value as any[]).length === 0) {
+    if (Result.isError(result)) {
+      return result;
+    }
+
+    const records = result.value as any[];
+    if (records.length === 0) {
       return Result.err(new NotFoundError({ resource: "Notifications", id: userId }));
     }
 
@@ -91,7 +107,7 @@ export class NotificationsRepository implements INotificationsRepository {
   }): Promise<Result<void, DatabaseError>> {
     return Result.tryPromise({
       try: () =>
-        db.insert(userSettingsNotifications).values({
+        this.db.insert(userSettingsNotifications).values({
           id: nanoid(),
           userId: data.userId,
           type: data.type,
@@ -131,7 +147,7 @@ export class NotificationsRepository implements INotificationsRepository {
 
     return Result.tryPromise({
       try: () =>
-        db
+        this.db
           .update(userSettingsNotifications)
           .set({
             type: data.type,

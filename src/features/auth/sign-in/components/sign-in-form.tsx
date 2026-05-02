@@ -1,13 +1,12 @@
 /**
  * Sign In Form Component
- * Uses react-hook-form for state management with Zod validation.
+ * Uses TanStack Form for state management with Zod validation.
  * Integrates with auth client for actual authentication.
  */
 
 import { useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
@@ -43,16 +42,48 @@ interface SignInFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string;
 }
 
-export function SignInForm({ className, redirectTo, ...props }: SignInFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export function SignInForm({ className, redirectTo }: SignInFormProps) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const navigate = useNavigate();
   const enabledProviders = getEnabledSocialProviders(env);
   useSession();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { email: "", password: "" },
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    validators: {
+      onChange: formSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      setLoadingProvider("email");
+      try {
+        const result = await signInWithEmail(value.email, await encodePassword(value.password));
+        if (result.error) {
+          toast.error(extractAuthErrorMessage(result.error));
+          return;
+        }
+
+        if (result.data?.user) {
+          const user = result.data.user;
+          authActions.setUser({
+            accountNo: user.id || "ACC001",
+            email: user.email,
+            role: ["user"],
+            exp: Date.now() + 24 * 60 * 60 * 1000,
+          });
+          authActions.setAccessToken("auth-access-token");
+          toast.success("Signed in successfully");
+          const targetPath = redirectTo || "/dashboard";
+          navigate({ to: targetPath, replace: true });
+        }
+      } catch (error) {
+        toast.error(extractAuthErrorMessage(error));
+      } finally {
+        setLoadingProvider(null);
+      }
+    },
   });
 
   const handleSocialSignIn = createHandleSocialSignIn({
@@ -61,55 +92,22 @@ export function SignInForm({ className, redirectTo, ...props }: SignInFormProps)
     BASE_URL,
   });
 
-  async function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    setLoadingProvider("email");
-
-    try {
-      const result = await signInWithEmail(data.email, await encodePassword(data.password));
-      if (result.error) {
-        toast.error(extractAuthErrorMessage(result.error));
-        return;
-      }
-
-      if (result.data?.user) {
-        const user = result.data.user;
-        authActions.setUser({
-          accountNo: user.id || "ACC001",
-          email: user.email,
-          role: ["user"],
-          exp: Date.now() + 24 * 60 * 60 * 1000,
-        });
-        authActions.setAccessToken("auth-access-token");
-        toast.success("Signed in successfully");
-        navigate({ to: targetPath, replace: true });
-      }
-    } catch (error) {
-      toast.error(extractAuthErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-      setLoadingProvider(null);
-    }
-  }
-
-  const targetPath = redirectTo || "/dashboard";
-
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className={cn("grid gap-3", className)}
-        {...props}
-      >
-        <EmailField form={form} fieldName="email" />
+    <Form form={form}>
+      <div className={cn("grid gap-3", className)}>
+        <EmailField fieldName="email" />
         <FormField
-          control={form.control}
           name="password"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem className="relative">
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <PasswordInput placeholder="********" {...field} />
+                <PasswordInput
+                  placeholder="********"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
               </FormControl>
               <FormMessage />
               <Link
@@ -121,11 +119,19 @@ export function SignInForm({ className, redirectTo, ...props }: SignInFormProps)
             </FormItem>
           )}
         />
-        <Button className="mt-2" disabled={isLoading} type="submit">
-          {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <LogIn />}
-          Sign in
-        </Button>
-      </form>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button
+              className="mt-2"
+              disabled={isSubmitting || loadingProvider !== null}
+              type="submit"
+            >
+              {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <LogIn />}
+              Sign in
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
 
       {enabledProviders.length > 0 && (
         <>

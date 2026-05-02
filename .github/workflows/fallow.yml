@@ -32,7 +32,7 @@ jobs:
         run: bun install --frozen
 
       - name: Run Fallow analysis
-        uses: fallow-rs/fallow@2dc9812581490b2769f01f84c10369a19b937b28 # v2.61.0
+        uses: fallow-rs/fallow@95178aacd5fec8ebaff3f59e14d4fe2a4d1f1971 # v2.62.0
         with:
           format: sarif
           comment: true

@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { Button } from "~/components/ui/button";
 import {
@@ -37,26 +36,25 @@ type TaskImportDialogProps = {
 };
 
 export function TasksImportDialog({ open, onOpenChange }: TaskImportDialogProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { file: undefined },
+  const form = useForm({
+    defaultValues: { file: undefined as unknown as FileList },
+    validators: {
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const file = value.file;
+
+      if (file && file[0]) {
+        const fileDetails = {
+          name: file[0].name,
+          size: file[0].size,
+          type: file[0].type,
+        };
+        showSubmittedData(fileDetails, "You have imported the following file:");
+      }
+      onOpenChange(false);
+    },
   });
-
-  const fileRef = form.register("file");
-
-  const onSubmit = () => {
-    const file = form.getValues("file");
-
-    if (file && file[0]) {
-      const fileDetails = {
-        name: file[0].name,
-        size: file[0].size,
-        type: file[0].type,
-      };
-      showSubmittedData(fileDetails, "You have imported the following file:");
-    }
-    onOpenChange(false);
-  };
 
   return (
     <Dialog
@@ -71,30 +69,37 @@ export function TasksImportDialog({ open, onOpenChange }: TaskImportDialogProps)
           <DialogTitle>Import Tasks</DialogTitle>
           <DialogDescription>Import tasks quickly from a CSV file.</DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form id="task-import-form" onSubmit={form.handleSubmit(onSubmit)}>
+        <Form form={form}>
+          <div id="task-import-form">
             <FormField
-              control={form.control}
               name="file"
-              render={() => (
+              children={({ field }) => (
                 <FormItem className="my-2">
                   <FormLabel>File</FormLabel>
                   <FormControl>
-                    <Input type="file" {...fileRef} className="h-8 py-0" />
+                    <Input
+                      type="file"
+                      onChange={(e) => field.onChange(e.target.files)}
+                      className="h-8 py-0"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </form>
+          </div>
         </Form>
         <DialogFooter className="gap-2">
           <DialogClose asChild>
             <Button variant="outline">Close</Button>
           </DialogClose>
-          <Button type="submit" form="task-import-form">
-            Import
-          </Button>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" form="task-import-form" disabled={isSubmitting}>
+                Import
+              </Button>
+            )}
+          </form.Subscribe>
         </DialogFooter>
       </DialogContent>
     </Dialog>

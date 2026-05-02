@@ -5,11 +5,12 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db } from "~/config/db";
+import { db as defaultDb } from "~/config/db";
 import { nanoid } from "nanoid";
 import { users } from "~/lib/db/schema/auth";
 import { userSettingsAccount } from "~/lib/db/schema/user-settings";
 import { Result, DatabaseError, NotFoundError } from "~/lib/result";
+import type { DbType } from "~/config/db";
 
 /**
  * Repository interface for account settings database operations.
@@ -46,6 +47,16 @@ export interface IAccountRepository {
  * Uses Result types for explicit error handling.
  */
 export class AccountRepository implements IAccountRepository {
+  private db: DbType;
+
+  /**
+   * Creates a new AccountRepository instance.
+   * @param db - Optional database instance (defaults to the global db)
+   */
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;
+  }
+
   /**
    * Finds an account by user ID.
    */
@@ -54,7 +65,7 @@ export class AccountRepository implements IAccountRepository {
   ): Promise<Result<typeof userSettingsAccount.$inferSelect, DatabaseError | NotFoundError>> {
     const result = await Result.tryPromise({
       try: () =>
-        db
+        this.db
           .select()
           .from(userSettingsAccount)
           .where(eq(userSettingsAccount.userId, userId))
@@ -63,14 +74,19 @@ export class AccountRepository implements IAccountRepository {
         new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
     });
 
-    if (Result.isOk(result) && (result.value as any[]).length === 0) {
+    if (Result.isError(result)) {
+      return result;
+    }
+
+    const records = result.value as any[];
+    if (records.length === 0) {
       return Result.err(new NotFoundError({ resource: "Account", id: userId }));
     }
 
-    return result.andThen((records: unknown) => {
-      const record = (records as any[])[0];
-      return Result.ok(record);
-    }) as Result<typeof userSettingsAccount.$inferSelect, DatabaseError | NotFoundError>;
+    return Result.ok(records[0]) as Result<
+      typeof userSettingsAccount.$inferSelect,
+      DatabaseError | NotFoundError
+    >;
   }
 
   /**
@@ -86,7 +102,7 @@ export class AccountRepository implements IAccountRepository {
   }): Promise<Result<void, DatabaseError>> {
     return Result.tryPromise({
       try: () =>
-        db.insert(userSettingsAccount).values({
+        this.db.insert(userSettingsAccount).values({
           id: nanoid(),
           userId: data.userId,
           name: data.name,
@@ -120,7 +136,7 @@ export class AccountRepository implements IAccountRepository {
 
     return Result.tryPromise({
       try: () =>
-        db
+        this.db
           .update(userSettingsAccount)
           .set({
             name: data.name,
@@ -141,7 +157,8 @@ export class AccountRepository implements IAccountRepository {
     userId: string,
   ): Promise<Result<{ name: string | null }, DatabaseError | NotFoundError>> {
     const result = await Result.tryPromise({
-      try: () => db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1),
+      try: () =>
+        this.db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1),
       catch: (error) =>
         new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
     });

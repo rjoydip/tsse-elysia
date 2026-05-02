@@ -19,16 +19,14 @@ This document lists all major tools and technologies used in the tsse-elysia pro
 
 ## State Management & Data Handling
 
-| Tool                    | Official Link                                                    | Documentation                                                                          |
-| ----------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **TanStack Router**     | [tanstack.com/router](https://tanstack.com/router)               | [Router Docs](https://tanstack.com/router/latest/docs)                                 |
-| **TanStack Query**      | [tanstack.com/query](https://tanstack.com/query)                 | [Query Docs](https://tanstack.com/query/latest/docs)                                   |
-| **TanStack Form**       | [tanstack.com/form](https://tanstack.com/form)                   | [Form Docs](https://tanstack.com/form/latest/docs)                                     |
-| **TanStack Table**      | [tanstack.com/table](https://tanstack.com/table)                 | [Table Docs](https://tanstack.com/table/latest/docs)                                   |
-| **TanStack Store**      | [tanstack.com/store](https://tanstack.com/store)                 | [Store Docs](https://tanstack.com/store/latest/docs)                                   |
-| **React Hook Form**     | [react-hook-form.com](https://react-hook-form.com)               | [RHF Docs](https://react-hook-form.com/docs)                                           |
-| **Zod v4**              | [zod.dev](https://zod.dev)                                       | [Zod Docs](https://zod.dev/introduction)                                               |
-| **@hookform/resolvers** | [npm.im/@hookform/resolvers](https://npm.im/@hookform/resolvers) | [Resolvers Docs](https://www.react-hook-form.com/get-started/form-provider/#resolvers) |
+| Tool                | Official Link                                      | Documentation                                          |
+| ------------------- | -------------------------------------------------- | ------------------------------------------------------ |
+| **TanStack Router** | [tanstack.com/router](https://tanstack.com/router) | [Router Docs](https://tanstack.com/router/latest/docs) |
+| **TanStack Query**  | [tanstack.com/query](https://tanstack.com/query)   | [Query Docs](https://tanstack.com/query/latest/docs)   |
+| **Tanstack Form**   | [tanstack.com/form](https://tanstack.com/form)     | [Form Docs](https://tanstack.com/form/latest/docs)     |
+| **TanStack Table**  | [tanstack.com/table](https://tanstack.com/table)   | [Table Docs](https://tanstack.com/table/latest/docs)   |
+| **TanStack Store**  | [tanstack.com/store](https://tanstack.com/store)   | [Store Docs](https://tanstack.com/store/latest/docs)   |
+| **Zod v4**          | [zod.dev](https://zod.dev)                         | [Zod Docs](https://zod.dev/introduction)               |
 
 ## Authentication & Security
 

@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
 import { useSession } from "~/lib/auth/client";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -45,6 +44,15 @@ const languages = [
 ] as const;
 
 /**
+ * Type for account form values inferred from schema.
+ */
+type AccountFormValues = {
+  name: string;
+  dob: Date | undefined;
+  language: string;
+};
+
+/**
  * Schema for validating account form data.
  */
 const accountFormSchema = z.object({
@@ -69,8 +77,6 @@ const accountFormSchema = z.object({
 /**
  * Type for account form values inferred from schema.
  */
-type AccountFormValues = z.infer<typeof accountFormSchema>;
-
 /**
  * Account form component for editing user account settings.
  * Handles name, date of birth, and language preferences.
@@ -86,8 +92,20 @@ export function AccountForm({
   const { data: session } = useSession();
   const { updateAccount, submitAccount } = settingsActions;
 
-  const form = useForm<AccountFormValues>({
-    resolver: zodResolver(accountFormSchema),
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      dob: undefined,
+      language: "en",
+    },
+    validators: {
+      onChange: accountFormSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      updateAccount(value as any);
+      submitAccount(value as any);
+      showSubmittedData(value);
+    },
   });
 
   // Update form values when initialAccount changes
@@ -105,30 +123,26 @@ export function AccountForm({
       language: accountData.language || "en",
     };
 
-    form.reset(userDefaultValues);
-  }, [initialAccount, session, form]);
-
-  /**
-   * Handles form submission.
-   * @param {AccountFormValues} data - Form data to submit
-   */
-  function onSubmit(data: AccountFormValues) {
-    updateAccount(data);
-    submitAccount(data);
-    showSubmittedData(data);
-  }
+    form.setFieldValue("name" as any, userDefaultValues.name || "");
+    form.setFieldValue("dob" as any, userDefaultValues.dob);
+    form.setFieldValue("language" as any, userDefaultValues.language || "en");
+  }, [initialAccount, session]);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <Form form={form}>
+      <div className="space-y-8">
         <FormField
-          control={form.control}
           name="name"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your name" {...field} />
+                <Input
+                  placeholder="Your name"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
               </FormControl>
               <FormDescription>
                 This is the name that will be displayed on your profile and in emails.
@@ -138,21 +152,19 @@ export function AccountForm({
           )}
         />
         <FormField
-          control={form.control}
           name="dob"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date of birth</FormLabel>
-              <DatePicker selected={field.value} onSelect={field.onChange} />
+              <DatePicker selected={field.value} onSelect={(date) => field.onChange(date)} />
               <FormDescription>Your date of birth is used to calculate your age.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
-          control={form.control}
           name="language"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Language</FormLabel>
               <Popover>
@@ -184,7 +196,7 @@ export function AccountForm({
                             value={language.label}
                             key={language.value}
                             onSelect={() => {
-                              form.setValue("language", language.value);
+                              field.onChange(language.value);
                             }}
                           >
                             <CheckIcon
@@ -208,10 +220,14 @@ export function AccountForm({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Update account"}
-        </Button>
-      </form>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button type="submit" disabled={isLoading || isSubmitting}>
+              {isSubmitting ? "Updating..." : "Update account"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </Form>
   );
 }

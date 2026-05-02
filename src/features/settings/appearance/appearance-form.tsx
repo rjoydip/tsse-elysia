@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm } from "@tanstack/react-form";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { fonts } from "~/config";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { cn } from "~/lib/utils";
@@ -19,12 +18,18 @@ import {
 } from "~/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 
+/**
+ * Type for appearance form values.
+ */
+type AppearanceFormValues = {
+  theme: "light" | "dark";
+  font: string;
+};
+
 const appearanceFormSchema = z.object({
   theme: z.enum(["light", "dark"]),
   font: z.enum(fonts),
 });
-
-type AppearanceFormValues = z.infer<typeof appearanceFormSchema>;
 
 export function AppearanceForm() {
   const { font, setFont } = useFont();
@@ -36,25 +41,25 @@ export function AppearanceForm() {
     font,
   };
 
-  const form = useForm<AppearanceFormValues>({
-    resolver: zodResolver(appearanceFormSchema),
+  const form = useForm({
     defaultValues,
+    validators: {
+      onChange: appearanceFormSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      if (value.font != font) setFont(value.font as any);
+      if (value.theme != theme) setTheme(value.theme as any);
+
+      showSubmittedData(value);
+    },
   });
 
-  function onSubmit(data: AppearanceFormValues) {
-    if (data.font != font) setFont(data.font);
-    if (data.theme != theme) setTheme(data.theme);
-
-    showSubmittedData(data);
-  }
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <Form form={form}>
+      <div className="space-y-8">
         <FormField
-          control={form.control}
           name="font"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Font</FormLabel>
               <div className="relative w-max">
@@ -62,10 +67,12 @@ export function AppearanceForm() {
                   <select
                     className={cn(
                       buttonVariants({ variant: "outline" }),
-                      "w-50 appearance-none font-normal capitalize",
+                      "w-50 appearance-none font-normal",
                       "dark:bg-background dark:hover:bg-background",
                     )}
-                    {...field}
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
                   >
                     {fonts.map((font) => (
                       <option key={font} value={font}>
@@ -84,16 +91,15 @@ export function AppearanceForm() {
           )}
         />
         <FormField
-          control={form.control}
           name="theme"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem>
               <FormLabel>Theme</FormLabel>
               <FormDescription>Select the theme for the dashboard.</FormDescription>
               <FormMessage />
               <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
+                onValueChange={(value) => field.onChange(value)}
                 className="grid max-w-md grid-cols-2 gap-8 pt-2"
               >
                 <FormItem>
@@ -149,8 +155,14 @@ export function AppearanceForm() {
           )}
         />
 
-        <Button type="submit">Update preferences</Button>
-      </form>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button type="submit" disabled={isSubmitting}>
+              Update preferences
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </Form>
   );
 }
