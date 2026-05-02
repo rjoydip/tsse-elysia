@@ -1,0 +1,46 @@
+name: Commit Changes
+description: Commit and push changes to repository
+
+inputs:
+  files:
+    description: Files to commit (glob pattern or space-separated list)
+    required: true
+  commit-message:
+    description: Commit message
+    required: true
+  branch:
+    description: Target branch
+    default: "main"
+  push:
+    description: Whether to push changes
+    default: "true"
+
+outputs:
+  committed:
+    description: Whether any files were committed
+    value: ${{ steps.commit.outputs.committed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check for changes
+      id: check
+      shell: bash
+      run: |
+        if [[ -n $(git status --porcelain ${{ inputs.files }}) ]]; then
+          echo "committed=true" >> $GITHUB_OUTPUT
+        else
+          echo "committed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Stage and commit changes
+      if: steps.check.outputs.committed == 'true'
+      shell: bash
+      run: |
+        git add ${{ inputs.files }}
+        git commit -m "${{ inputs.commit-message }}"
+
+    - name: Push changes
+      if: steps.check.outputs.committed == 'true' && inputs.push == 'true'
+      shell: bash
+      run: git push origin ${{ inputs.branch }}

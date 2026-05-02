@@ -1,0 +1,20 @@
+name: Validate Changesets
+description: Check for changesets and validate release readiness
+
+outputs:
+  has-changesets:
+    description: Whether changesets exist
+    value: ${{ steps.check.outputs.has-changesets }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check for changesets
+      id: check
+      shell: bash
+      run: |
+        if [ -d ".changeset" ] && [ "$(ls -A .changeset)" ]; then
+          echo "has-changesets=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-changesets=false" >> $GITHUB_OUTPUT
+        fi

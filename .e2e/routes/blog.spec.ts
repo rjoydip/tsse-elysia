@@ -3,11 +3,11 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { navigateAndWait } from "../utils";
 
 test.describe("Blog Page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/blog");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/blog", { waitForIdle: true });
   });
 
   test("should render the blog page heading", async ({ page }) => {
@@ -49,20 +49,17 @@ test.describe("Blog Page", () => {
 
 test.describe("Blog Page Layout", () => {
   test("should render header on blog page", async ({ page }) => {
-    await page.goto("/blog");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/blog", { waitForIdle: true });
     await expect(page.locator("header").first()).toBeVisible();
   });
 
   test("should render footer on blog page", async ({ page }) => {
-    await page.goto("/blog");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/blog", { waitForIdle: true });
     await expect(page.locator("footer.py-4").filter({ hasText: "TSS" }).first()).toBeVisible();
   });
 
   test("should have header nav links", async ({ page }) => {
-    await page.goto("/blog");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/blog", { waitForIdle: true });
     await expect(page.locator("header nav a[href*='docs']").first()).toBeVisible({
       timeout: 10000,
     });

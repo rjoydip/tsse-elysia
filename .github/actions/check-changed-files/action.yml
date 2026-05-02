@@ -1,0 +1,36 @@
+name: Check Changed Files
+description: Detect changed files in PR compared to base
+
+inputs:
+  base-ref:
+    description: Base ref to compare against
+    default: ${{ github.event.pull_request.base.sha }}
+  head-ref:
+    description: Head ref to compare
+    default: ${{ github.sha }}
+
+outputs:
+  changed-files:
+    description: List of changed files (newline separated)
+    value: ${{ steps.changed.outputs.changed-files }}
+  has-changed:
+    description: Whether any files changed
+    value: ${{ steps.changed.outputs.has-changed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get changed files
+      id: changed
+      shell: bash
+      run: |
+        CHANGED_FILES=$(git diff --name-only ${{ inputs.base-ref }}...${{ inputs.head-ref }} 2>/dev/null || echo "")
+        echo "changed-files<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "has-changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-changed=false" >> $GITHUB_OUTPUT
+        fi

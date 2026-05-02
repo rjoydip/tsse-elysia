@@ -11,67 +11,26 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DATABASE_TYPE: "sqlite"
-  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-  E2E_HOST: "0.0.0.0"
-  E2E_PORT: "4173"
-
 jobs:
   quality:
     name: Quality Checks
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: package.json
+      - uses: ./.github/actions/setup-environment
 
-      - name: Cache bun dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-deps-
-
-      - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
-
-      - name: Run Linters
-        run: bun run lint:ci
-
-      - name: Run type checking
-        run: bun run typecheck
+      - uses: ./.github/actions/run-quality-checks
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: package.json
+      - uses: ./.github/actions/setup-environment
 
-      - name: Cache bun dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-deps-
-
-      - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
-
-      - name: Run security audit
-        run: bun audit --audit-level=critical
+      - uses: ./.github/actions/run-security-audit
 
   test:
     name: Tests & Build (${{ matrix.runtime }})
@@ -85,70 +44,19 @@ jobs:
             artifact_name: server-bun
             artifact_path: dist
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/setup-database
         with:
-          bun-version-file: package.json
-
-      - name: Cache bun dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-deps-
-
-      - name: Install dependencies
-        run: bun install ${{ github.actor == 'dependabot[bot]' && '' || '--frozen' }} --ignore-scripts
-
-      - name: Run database setup
-        run: bun run db:setup
+          operation: setup
 
       - name: Run tests (${{ matrix.runtime }})
-        # Use --jobs to limit concurrency if tests are resource-intensive
-        # Run with --run to force a cleaner execution
         run: bun test:coverage --run
-
-      - name: Run database reset
-        run: bun run db:reset
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
 
       - name: Build (${{ matrix.runtime }})
         run: bun run ${{ matrix.build_cmd }}
-
-      - name: Resolve host IP
-        run: |
-          HOST_IP=$(ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
-          echo "E2E_HOST=$HOST_IP" >> $GITHUB_ENV
-          echo "E2E_BASE_URL=http://$HOST_IP:$E2E_PORT" >> $GITHUB_ENV
-          echo "BETTER_AUTH_URL=http://$HOST_IP:$E2E_PORT/api/auth" >> $GITHUB_ENV
-          echo "Resolved host IP: $HOST_IP"
-
-      - name: Start preview server
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-        run: |
-          bun run preview --port $E2E_PORT --host $E2E_HOST &
-          for i in $(seq 1 30); do
-            if curl -sf http://$E2E_HOST:$E2E_PORT > /dev/null 2>&1; then
-              echo "Server http://$E2E_HOST:$E2E_PORT is ready"
-              break
-            fi
-            echo "Waiting for server... ($i)"
-            sleep 2
-          done
-
-      # - name: Run E2E tests
-      #   run: bun run test:e2e --project=chromium
-
-      - name: Stop preview server
-        if: always()
-        run: pkill -f "bun run preview" || true
 
       - name: Upload ${{ matrix.artifact_name }} artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -157,9 +65,10 @@ jobs:
           path: ${{ matrix.artifact_path }}
           retention-days: 1
 
-      - name: Cleanup database
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: remove
         if: always()
-        run: bun run db:remove
 
   docker-scan:
     name: Docker Security Scan
@@ -170,123 +79,9 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-
-      - name: Build Docker image
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+      - uses: ./.github/actions/docker-build-scan
         with:
-          context: .
-          file: docker/Dockerfile
-          load: true
-          tags: tsse-elysia:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: "tsse-elysia:${{ github.sha }}"
-          format: "json"
-          severity: "CRITICAL,HIGH"
-          ignore-unfixed: false
-          scan-ref: "app"
-          trivy-config: .trivy/trivy.yml
-          scanners: vuln,secret,misconfig,license
-          vuln-type: "os,library"
-          output: "trivy-vuln.json"
-
-      - name: Run Trivy malware scanner
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: "tsse-elysia:${{ github.sha }}"
-          format: "json"
-          scanner: "malware"
-          scan-ref: "app"
-          trivy-config: .trivy/trivy.yml
-          output: "trivy-malware.json"
-
-      - name: Post scan results to PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          script: |
-            const fs = require('fs');
-
-            function parseTrivyJson(path, type) {
-              if (!fs.existsSync(path)) return null;
-              try {
-                const data = JSON.parse(fs.readFileSync(path, 'utf8'));
-
-                // Log vulnerabilities as a table
-                if (data.Results) {
-                  const vulns = data.Results.flatMap(r =>
-                    (r.Vulnerabilities || []).map(v => ({
-                      package: r.PackageName || r.Target,
-                      severity: v.Severity,
-                      id: v.VulnerabilityID,
-                      title: v.Title
-                    }))
-                  );
-                  console.table(vulns);
-                }
-
-                if (type === 'vuln') {
-                  let total = 0, critical = 0, high = 0;
-                  if (data.Results && Array.isArray(data.Results)) {
-                    data.Results.forEach(r => {
-                      if (r.Vulnerabilities && Array.isArray(r.Vulnerabilities)) {
-                        r.Vulnerabilities.forEach(v => {
-                          total++;
-                          if (v.Severity === 'CRITICAL') critical++;
-                          if (v.Severity === 'HIGH') high++;
-                        });
-                      }
-                    });
-                  }
-                  return { total, critical, high };
-                } else if (type === 'malware') {
-                  let found = false;
-                  if (data.Metadata && data.Metadata.DetectedAt) found = true;
-                  if (data.Results && data.Results.some(r => r.Misconfigurations?.length > 0)) found = true;
-                  return { total: found ? 1 : 0 };
-                }
-              } catch (e) {
-                console.error(`Failed to parse ${path}:`, e.message);
-              }
-              return null;
-            }
-
-            const vuln = parseTrivyJson('trivy-vuln.json', 'vuln');
-            const malware = parseTrivyJson('trivy-malware.json', 'malware');
-
-            const vulnTotal = vuln?.total ?? 0;
-            const vulnCritical = vuln?.critical ?? 0;
-            const vulnHigh = vuln?.high ?? 0;
-            const malwareTotal = malware?.total ?? 0;
-
-            const vulnStatus = vulnTotal > 0 ? '⚠️ Issues found' : '✅ Clean';
-            const malwareStatus = malwareTotal > 0 ? '⚠️ Malware detected' : '✅ Clean';
-
-            const body = `# 🐳 Docker Security Scan Results
-
-            | Scan Type     | Status           | Total           | Critical        | High        |
-            | ------------- | ---------------- | --------------- | --------------- | ----------- |
-            | Vulnerability | ${vulnStatus}    | ${vulnTotal}    | ${vulnCritical} | ${vulnHigh} |
-            | Malware       | ${malwareStatus} | ${malwareTotal} | -               | -           |
-
-            ${vulnTotal > 0 || malwareTotal > 0 ? '**Action required:** Review the issues above before merging.' : '**All checks passed!** Your image passed the security scan.'}
-            `;
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: body
-            });
-
-            console.log(`Posted comment: ${vulnTotal} vulns, ${malwareTotal} malware`);
+          image-tag: tsse-elysia:${{ github.sha }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}

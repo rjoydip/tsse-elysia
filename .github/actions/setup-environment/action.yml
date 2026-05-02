@@ -1,0 +1,55 @@
+name: Setup Environment
+description: Checkout, setup Bun, cache dependencies, and install packages
+
+inputs:
+  frozen-lockfile:
+    description: Use --frozen-lockfile flag
+    default: "true"
+  ignore-scripts:
+    description: Skip post-install scripts
+    default: "true"
+  bun-version-file:
+    description: Path to bun version file
+    default: "package.json"
+  fetch-depth:
+    description: Number of commits to fetch
+    default: "1"
+
+outputs:
+  cache-hit:
+    description: Whether bun dependency cache was hit
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      with:
+        bun-version-file: ${{ inputs.bun-version-file }}
+
+    - name: Cache bun dependencies
+      id: cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-deps-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-deps-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+          bun install --ignore-scripts
+        else
+          if [ "${{ inputs.frozen-lockfile }}" = "true" ]; then
+            bun install --frozen-lockfile --ignore-scripts
+          else
+            bun install --ignore-scripts
+          fi
+        fi
+
+        if [ "${{ inputs.ignore-scripts }}" = "false" ]; then
+          bun install --ignore-scripts=false
+        fi

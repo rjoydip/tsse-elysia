@@ -5,11 +5,11 @@
 
 import { test, expect } from "@playwright/test";
 import { E2E_BASE_URL } from "../../config";
+import { navigateAndWait } from "../../utils";
 
 test.describe("Sign-Up Page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${E2E_BASE_URL}/sign-up`);
-    await page.waitForLoadState("domcontentloaded");
+    await navigateAndWait(page, `${E2E_BASE_URL}/sign-up`);
   });
 
   test.describe("Page Load", () => {

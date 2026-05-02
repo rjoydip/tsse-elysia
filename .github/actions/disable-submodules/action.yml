@@ -1,0 +1,12 @@
+name: Disable Submodules
+description: Disable git submodule recursion globally
+
+runs:
+  using: composite
+  steps:
+    - name: Disable submodules
+      shell: bash
+      run: |
+        git config --global submodule.recurse false
+        git config --global fetch.recurseSubmodules false
+        git config --global status.submoduleSummary false

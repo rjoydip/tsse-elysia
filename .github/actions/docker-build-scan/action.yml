@@ -1,0 +1,147 @@
+name: Docker Build & Scan
+description: Build Docker image and run security scans
+
+inputs:
+  dockerfile:
+    description: Path to Dockerfile
+    default: "docker/Dockerfile"
+  image-tag:
+    description: Image tag to use
+    required: true
+  context:
+    description: Build context
+    default: "."
+  trivy-config:
+    description: Path to Trivy config
+    default: ".trivy/trivy.yml"
+  post-to-pr:
+    description: Post results to PR
+    default: "true"
+  scan-ref:
+    description: Scan reference path
+    default: "app"
+  gh-token:
+    description: GitHub token for posting comments to PR
+    required: true
+
+outputs:
+  vuln-total:
+    description: Total vulnerabilities found
+    value: ${{ steps.parse-results.outputs.vuln-total }}
+  vuln-critical:
+    description: Critical vulnerabilities found
+    value: ${{ steps.parse-results.outputs.vuln-critical }}
+  vuln-high:
+    description: High vulnerabilities found
+    value: ${{ steps.parse-results.outputs.vuln-high }}
+  malware-total:
+    description: Total malware found
+    value: ${{ steps.parse-results.outputs.malware-total }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+    - name: Build Docker image
+      uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+      with:
+        context: ${{ inputs.context }}
+        file: ${{ inputs.dockerfile }}
+        load: true
+        tags: ${{ inputs.image-tag }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      with:
+        image-ref: ${{ inputs.image-tag }}
+        format: "json"
+        severity: "CRITICAL,HIGH"
+        ignore-unfixed: false
+        scan-ref: ${{ inputs.scan-ref }}
+        trivy-config: ${{ inputs.trivy-config }}
+        scanners: vuln,secret,misconfig,license
+        vuln-type: "os,library"
+        output: trivy-vuln.json
+
+    - name: Run Trivy malware scanner
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      with:
+        image-ref: ${{ inputs.image-tag }}
+        format: "json"
+        scanner: "malware"
+        scan-ref: ${{ inputs.scan-ref }}
+        trivy-config: ${{ inputs.trivy-config }}
+        output: trivy-malware.json
+
+    - name: Parse scan results
+      id: parse-results
+      shell: bash
+      run: |
+        VULN_TOTAL=0
+        VULN_CRITICAL=0
+        VULN_HIGH=0
+        MALWARE_TOTAL=0
+
+        if [ -f "trivy-vuln.json" ]; then
+          VULN_TOTAL=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-vuln.json 2>/dev/null || echo 0)
+          VULN_CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-vuln.json 2>/dev/null || echo 0)
+          VULN_HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-vuln.json 2>/dev/null || echo 0)
+        fi
+
+        if [ -f "trivy-malware.json" ]; then
+          MALWARE_TOTAL=$(jq '[.Results[]?.Misconfigurations[]?] | length' trivy-malware.json 2>/dev/null || echo 0)
+        fi
+
+        echo "vuln-total=$VULN_TOTAL" >> $GITHUB_OUTPUT
+        echo "vuln-critical=$VULN_CRITICAL" >> $GITHUB_OUTPUT
+        echo "vuln-high=$VULN_HIGH" >> $GITHUB_OUTPUT
+        echo "malware-total=$MALWARE_TOTAL" >> $GITHUB_OUTPUT
+
+    - name: Post scan results to PR
+      if: inputs.post-to-pr == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        github-token: ${{ inputs.gh-token }}
+        script: |
+          const fs = require('fs');
+
+          function parseTrivyJson(path) {
+            if (!fs.existsSync(path)) return null;
+            try {
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch (e) {
+              return null;
+            }
+          }
+
+          const vuln = parseTrivyJson('trivy-vuln.json');
+          const malware = parseTrivyJson('trivy-malware.json');
+
+          const vulnTotal = ${{ steps.parse-results.outputs.vuln-total }};
+          const vulnCritical = ${{ steps.parse-results.outputs.vuln-critical }};
+          const vulnHigh = ${{ steps.parse-results.outputs.vuln-high }};
+          const malwareTotal = ${{ steps.parse-results.outputs.malware-total }};
+
+          const vulnStatus = vulnTotal > 0 ? '⚠️ Issues found' : '✅ Clean';
+          const malwareStatus = malwareTotal > 0 ? '⚠️ Malware detected' : '✅ Clean';
+
+          const body = `# 🐳 Docker Security Scan Results
+
+          | Scan Type     | Status           | Total           | Critical        | High        |
+          | ------------- | ---------------- | --------------- | --------------- | ----------- |
+          | Vulnerability | ${vulnStatus}    | ${vulnTotal}    | ${vulnCritical} | ${vulnHigh} |
+          | Malware       | ${malwareStatus} | ${malwareTotal} | -               | -           |
+
+          ${vulnTotal > 0 || malwareTotal > 0 ? '**Action required:** Review the issues above before merging.' : '**All checks passed!** Your image passed the security scan.'}
+          `;
+
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            body: body
+          });

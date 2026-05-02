@@ -1,0 +1,29 @@
+name: Database Operations
+description: Setup, reset, or remove database
+
+inputs:
+  operation:
+    description: Operation to perform (setup, reset, remove)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run database operation
+      shell: bash
+      run: |
+        case "${{ inputs.operation }}" in
+          setup)
+            bun run db:setup
+            ;;
+          reset)
+            bun run db:reset
+            ;;
+          remove)
+            bun run db:remove
+            ;;
+          *)
+            echo "Invalid operation: ${{ inputs.operation }}"
+            exit 1
+            ;;
+        esac

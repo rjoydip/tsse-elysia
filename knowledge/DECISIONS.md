@@ -616,6 +616,67 @@ export const mcpKeysRoutes = new Elysia({ prefix: "/keys" }).get("/", async ({ a
 
 ---
 
+### 018: Reusable GitHub Actions Components
+
+**Status:** Accepted
+
+**Why:**
+
+- Follow DRY principle (Don't Repeat Yourself) across workflows
+- Single point of change for common patterns
+- Consistent behavior across all workflows
+- Easier maintenance and testing
+- Enable versioned updates to common logic
+
+**Implementation:**
+
+Created 11 reusable actions under `.github/actions/`:
+
+| Action                | Purpose                                  |
+| --------------------- | ---------------------------------------- |
+| `setup-environment`   | Checkout + Setup Bun + Cache + Install   |
+| `configure-git`       | Configure Git user and remote URL        |
+| `disable-submodules`  | Disable submodule recursion              |
+| `run-quality-checks`  | Run lint:ci + typecheck                  |
+| `run-tests`           | Run tests with optional coverage         |
+| `run-security-audit`  | Run bun audit                            |
+| `setup-database`      | Setup/reset/remove database              |
+| `docker-build-scan`   | Build Docker + Trivy scan + Post results |
+| `run-opencode`        | Run OpenCode AI for review/triage        |
+| `commit-changes`      | Commit and push changes                  |
+| `validate-changesets` | Check for changesets                     |
+| `check-changed-files` | Detect changed files in PR               |
+
+**Workflows Refactored:**
+
+1. **ci.yml**: Reduced from 191 lines to ~75 lines using reusable actions
+2. **release.yml**: Uses configure-git, commit-changes, validate-changesets
+3. **sync-tasks.yml**: Uses commit-changes for updating TASKS.md
+4. **autofix.yml**: Uses setup-environment + commit-changes
+5. **pr-review.yml**: Uses run-opencode + disable-submodules
+6. **issue-triage.yml**: Uses run-opencode + disable-submodules
+
+**Example Usage:**
+
+```yaml
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/run-quality-checks
+```
+
+**Tradeoffs:**
+
+- Additional indirection layer (harder to trace in GitHub UI)
+- Must maintain action versions separately
+- Initial development time investment
+- Benefits: ~40% reduction in workflow code duplication
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

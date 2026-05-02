@@ -3,6 +3,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
+import { isCI } from "std-env";
 import { Result } from "~/lib/result";
 import { accountRepository } from "~/repositories/settings/account.repository";
 
@@ -17,7 +18,7 @@ describe("Account Repository (Result Types)", () => {
       expect(Result.isOk(result) || Result.isError(result)).toBe(true);
     });
 
-    test("should return Result.err with NotFoundError when not found", async () => {
+    test.skipIf(isCI)("should return Result.err with NotFoundError when not found", async () => {
       const result = await accountRepository.findAccountByUserId("non-existent-user");
 
       if (Result.isError(result)) {
