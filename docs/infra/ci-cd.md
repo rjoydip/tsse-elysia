@@ -9,14 +9,48 @@ This document covers the continuous integration and deployment pipelines for thi
 
 ## GitHub Actions Workflows
 
-| Workflow           | Trigger          | Purpose                          |
-| ------------------ | ---------------- | -------------------------------- |
-| `ci.yml`           | PR/Push to main  | Quality checks, tests, builds    |
-| `autofix.yml`      | PR opened/synced | Auto-fix lint issues             |
-| `release.yml`      | Push to main     | Create releases with changelogen |
-| `nightly.yml`      | Daily/manual     | Dev builds                       |
-| `issue-triage.yml` | Issues opened    | AI-powered issue triage          |
-| `pr-review.yml`    | PR opened/synced | AI-powered PR review             |
+| Workflow           | Trigger               | Purpose                          |
+| ------------------ | --------------------- | -------------------------------- |
+| `ci.yml`           | PR/Push to main       | Quality checks, tests, builds    |
+| `autofix.yml`      | PR opened/synced      | Auto-fix lint issues             |
+| `versioning.yml`   | PR opened/synced/push | Version calculation (PR + main)  |
+| `release.yml`      | Push to main          | Create releases with changelogen |
+| `nightly.yml`      | Daily/manual          | Dev builds                       |
+| `issue-triage.yml` | Issues opened         | AI-powered issue triage          |
+| `pr-review.yml`    | PR opened/synced      | AI-powered PR review             |
+
+## Versioning Workflow
+
+The `versioning.yml` workflow handles automatic version management for PRs and releases.
+
+### Version Scheme
+
+| Type               | Format                | Example           | Release Created? |
+| ------------------ | --------------------- | ----------------- | ---------------- |
+| PR Pre-release     | `X.Y.Z-rc.<PR#>`      | `1.2.3-rc.42`     | No               |
+| Hotfix Pre-release | `X.Y.Z-hotfix.<N>`    | `1.2.3-hotfix.1`  | No               |
+| Main Merge         | `X.Y.Z` (patch)       | `1.2.4`           | Yes              |
+| Manual Bump        | `X.Y.Z` (minor/major) | `1.3.0` / `2.0.0` | Yes              |
+
+### PR Pre-release Behavior
+
+- On every push to a PR, the workflow calculates a pre-release version
+- Updates `package.json` with the calculated version
+- **No release is created** while the PR is open
+- Uses PR number for deterministic versioning (no collision)
+
+### Main Branch Merge
+
+- On merge to main, triggers release.yml workflow
+- Auto-detects bump type from commits:
+  - `BREAKING CHANGE:` → major bump
+  - `feat:` → minor bump
+  - Otherwise → patch bump
+- Manual bump via `workflow_dispatch` (patch/minor/major)
+
+### Hotfix Branches
+
+Branches named `hotfix/*` generate pre-release versions like `1.2.3-hotfix.1` while open, then convert to patch bump on merge.
 
 ## Quality Gates
 

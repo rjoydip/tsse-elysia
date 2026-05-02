@@ -676,6 +676,56 @@ jobs:
 
 ---
 
+### 019: Semantic Versioning with PR Pre-release Support
+
+**Status:** Accepted
+
+**Why:**
+
+- Support concurrent PRs without version collision
+- Provide version preview during PR review (no release creation)
+- Enable hotfix branch workflow with proper versioning
+- Allow manual version bumps for minor/major releases
+
+**Implementation:**
+
+Created `versioning.yml` workflow with three modes:
+
+1. **PR Pre-release** (`pull_request` trigger):
+   - Calculates version: `X.Y.Z-rc.<PR#>` or `X.Y.Z-hotfix.<N>` for hotfix branches
+   - Updates `package.json` for display purposes
+   - **No release created** (only version calculation)
+   - Uses PR number for deterministic suffix (no collision)
+
+2. **Main Merge** (`push` to `main`):
+   - Triggers release.yml workflow
+   - Auto-detects bump type from commits:
+     - `BREAKING CHANGE:` → major bump
+     - `feat:` → minor bump
+     - Otherwise → patch bump
+   - Creates annotated tag + GitHub release
+
+3. **Manual Bump** (`workflow_dispatch`):
+   - Accepts `version_bump` input (patch/minor/major)
+   - Overrides auto-detection
+
+**Version Derivation:**
+
+```bash
+# Get base version (excludes pre-releases)
+git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
+# → v1.2.3
+```
+
+**Tradeoffs:**
+
+- Additional workflow to maintain
+- PR pre-releases don't create releases (by design - correct behavior)
+- Excludes pre-release tags from base version calculation (intentional)
+- Hotfix merges to main convert to patch bump (not hotfix.N)
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
