@@ -20,6 +20,9 @@ inputs:
   scan-ref:
     description: Scan reference path
     default: "app"
+  gh-token:
+    description: GitHub token for posting comments to PR
+    required: true
 
 outputs:
   vuln-total:
@@ -102,7 +105,7 @@ runs:
       if: inputs.post-to-pr == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       with:
-        github-token: ${{ secrets.GH_TOKEN }}
+        github-token: ${{ inputs.gh-token }}
         script: |
           const fs = require('fs');
 

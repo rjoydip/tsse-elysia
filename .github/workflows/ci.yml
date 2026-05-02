@@ -126,3 +126,4 @@ jobs:
       - uses: ./.github/actions/docker-build-scan
         with:
           image-tag: tsse-elysia:${{ github.sha }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
