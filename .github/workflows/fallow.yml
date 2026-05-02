@@ -46,6 +46,9 @@ jobs:
           sarif_file: fallow-results.sarif
           category: fallow-analysis-${{ github.run_id }}
 
+      - name: Create artifacts directory
+        run: mkdir -p .artifacts
+
       - name: Generate health badge
         run: bunx fallow health --format badge > .artifacts/health-badge.svg
 
