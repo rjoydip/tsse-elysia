@@ -3,64 +3,70 @@ title: Changelog
 description: All notable changes to this project
 ---
 
-# Changelog
+## v0.0.0 (2026-03-25)
 
-All notable changes to this project will be documented in this file.
+### 🚀 Enhancements
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- Implement Redis integration with rate limiting, authentication, and documentation infrastructure ([#13](https://github.com/rjoydip/tsse-elysia/pull/13))
+- Implement LLM Optimization (LLMO) features ([#22](https://github.com/rjoydip/tsse-elysia/pull/22))
+- Enhance status page with cache infrastructure and latency graph ([#24](https://github.com/rjoydip/tsse-elysia/pull/24))
+- Enhance GitHub Actions with decisions log enforcement and task syncing ([#25](https://github.com/rjoydip/tsse-elysia/pull/25))
+- Implement user profile details display ([#42](https://github.com/rjoydip/tsse-elysia/pull/42))
+- Implement API layered architecture (HTTP → Controller → Service → Repository) ([#61](https://github.com/rjoydip/tsse-elysia/pull/61))
+- Add Fallow health badge with CI automation
+- Add /api/meta endpoint and display version in footer
+- Add fallow configuration and update development workflow
+- Add commitizen for guided conventional commits
 
-## [Unreleased]
+### 💅 Refactors
 
-### Added
+- Update logger to use Consola and add commands documentation ([#20](https://github.com/rjoydip/tsse-elysia/pull/20))
+- Resolve auth store hook issues and update dependencies ([#19](https://github.com/rjoydip/tsse-elysia/pull/19))
+- Implement reusable GitHub Actions components ([#68](https://github.com/rjoydip/tsse-elysia/pull/68))
+- Extract shared components and utilities to reduce code duplication
+- Split monolithic schema into modular files
+- Reorganize lib directory structure
+- Move business logic to services layer
 
-- User profile details display
-- Status page with cache infrastructure and latency graph
-- Evlog integration for structured logging (FS and OTLP adapters)
-- Unstorage-based Pub/Sub system with multi-backend support
-- Comprehensive Tools Reference documentation
-- Service layer for business logic separation
+### 🩹 Fixes
 
-### Changed
+- Resolve SSR hydration errors and update auth store tests ([#26](https://github.com/rjoydip/tsse-elysia/pull/26))
+- Prevent duplicate issue creation in sync-tasks workflow ([#60](https://github.com/rjoydip/tsse-elysia/pull/60))
+- Fix the workflow issue which introduced in previous PR ([#67](https://github.com/rjoydip/tsse-elysia/pull/67))
+- Add id prop to Input component for label association
+- Resolve circular dependencies, duplicate exports, and TypeScript errors
+- Resolve duplicate ChangelogEntry export between features and services
+- Resolve codeql/upload-sarif category conflict in fallow workflow
 
-- Refactored logger to use Evlog for unified client/server logging
-- Updated Project Structure to organize library modules more effectively
-- Migrated Pub/Sub from Bun native RedisClient to Unstorage event system
-- Fixed import paths and folder structure organization
-- Fixed SSR hydration errors in auth store tests
+### 🏗️ Infrastructure
 
-### Fixed
+- Implement PostgreSQL replica configuration with round-robin read distribution
+- Add Trivy container security scanning to CI
+- Add Docker build with multi-stage builds for production
+- Add E2E test infrastructure with dynamic database adapter
 
-- Resolve SSR hydration errors and update auth store tests
-- Backup integration test and db seed for Windows stability
-- Auth store hook issues and updated dependencies
-- GitHub Actions workflow issue for duplicate task creation
+### 📖 Documentation
 
-## 0.1.0
+- Add commands.md with all package.json scripts
+- Add CODECOV_TOKEN to CI/CD secrets documentation
+- Add Fallow MCP integration knowledge document
+- Add DECISION 017 and 018 for GitHub Actions workflow changes
+- Update folder structure and tech stack in documentation
 
-### Minor Changes
+### 🤖 CI
 
-- [#61](https://github.com/rjoydip/tsse-elysia/pull/61) [`2e851b0`](https://github.com/rjoydip/tsse-elysia/commit/2e851b046667c739e0d7c475af2002889ac33633) Thanks [@rjoydip](https://github.com/rjoydip)! - refactor: introduce service layer for business logic separation
+- Add fallow analysis workflow for GitHub Actions
+- Add decisions-check.yml for architecture enforcement
+- Add sync-tasks.yml for task-to-issue automation
+- Add pr-review.yml for automated PR reviews
+- Add issue-triage.yml for automated issue triage
+- Add docker-scan job for container security
 
-  Extract business logic from route handlers into dedicated service modules:
-  - `services/settings/`: User settings CRUD operations
-  - `services/llmo/`: LLMO schema.org transformations
-  - `services/mcp/`: MCP rate limiting and tool catalog
-  - `services/status/`: Historical status fetching
+### 🏡 Chore
 
-  Routes now delegate to services, enabling better testability and reusability.
+- Add commitizen and standard-version for conventional commits
+- Add versioning workflow with PR pre-release support
 
-### Patch Changes
+### ❤️ Contributors
 
-- [#9](https://github.com/rjoydip/tsse-elysia/pull/9) [`d7be727`](https://github.com/rjoydip/tsse-elysia/commit/d7be7279ed2e1fd3277438a2c1d0e3dabca8ee0f) Thanks [@rjoydip](https://github.com/rjoydip)! - Fix docs E2E tests, add frontmatter to docs, and add unit/E2E tests
-  - Fix sidebar locator in docs E2E tests (use data-sidebar attribute instead of aside)
-  - Add frontmatter (title, description) to all markdown docs
-  - Add unit tests for new UI components (avatar, breadcrumb, collapsible, dropdown-menu, select, sheet, table, tooltip)
-  - Add unit tests for useIsMobile hook logic
-  - Add E2E tests for mobile behavior
-
-## [0.0.0] - 2026-03-25
-
-### Added
-
-- Initial release
+- Joydip Roy ([@rjoydip](https://github.com/rjoydip))

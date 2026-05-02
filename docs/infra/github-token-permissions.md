@@ -4,10 +4,9 @@ This document provides guidance on selecting the appropriate GitHub token permis
 
 ## Overview
 
-All GitHub Actions workflows require specific permissions to function properly. Two primary secrets are used:
+All GitHub Actions workflows require specific permissions. One primary secret is used:
 
-- `GH_TOKEN_CHANGESET`: Used for tagging, releasing, and synchronizing tasks.
-- `GH_TOKEN`: Used for PR review automation and other API interactions.
+- `GH_TOKEN`: Used for tagging, releasing, and other API interactions.
 
 ## Required Scopes by Workflow
 
@@ -78,7 +77,7 @@ permissions:
 
 ### 5. Release Workflow (`.github/workflows/release.yml`)
 
-**Purpose**: Automated releases using changesets
+**Purpose**: Automated releases using changelogen
 **Required Scopes**:
 
 ```yaml
@@ -90,7 +89,7 @@ permissions:
 
 - `contents: write` - Create commits, tags, and releases
 - Additional recommended: `packages: write` if publishing to npm
-- Uses secret: `GH_TOKEN_CHANGESET`
+- Uses secret: `GH_TOKEN`
 
 ### 6. Stale Workflow (`.github/workflows/stale.yml`)
 
@@ -129,8 +128,7 @@ permissions:
 
 1. Go to your repository on GitHub
 2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Add a new repository secret named `GH_TOKEN_CHANGESET` (for releases)
-4. Add a new repository secret named `GH_TOKEN` (for reviews)
+3. Add a new repository secret named `GH_TOKEN` (for releases)
 
 ### 2. Fine-grained Personal Access Token (Recommended)
 
@@ -144,7 +142,7 @@ For better security, use a fine-grained personal access token:
    - **Pull requests**: Read & write
    - **Issues**: Read & write
    - **Commit statuses**: Read & write
-   - **Workflows**: Read & write (Required for `GH_TOKEN_CHANGESET`)
+   - **Workflows**: Read & write
    - **Repository hooks**: Full control (optional)
 
 ### 3. Legacy Personal Access Token (Alternative)
