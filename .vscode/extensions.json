@@ -5,6 +5,7 @@
     "github.vscode-github-actions",
     "ms-azuretools.vscode-docker",
     "ms-azuretools.vscode-containers",
+    "ms-playwright.playwright",
     "pflannery.vscode-versionlens",
     "oven.bun-vscode",
     "oxc.oxc-vscode",

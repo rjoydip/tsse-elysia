@@ -74,14 +74,14 @@ export function AuthLayout({ title, description, footer, children }: AuthLayoutP
             className="dark:hidden"
             width={1024}
             height={1151}
-            alt={`${APP_NAME}-Auth`}
+            alt={APP_NAME}
           />
           <img
             src={authBannerDark}
             className="hidden dark:block"
             width={1024}
             height={1138}
-            alt={`${APP_NAME}-Auth`}
+            alt={APP_NAME}
           />
         </div>
       </div>

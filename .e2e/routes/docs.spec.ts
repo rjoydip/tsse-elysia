@@ -3,11 +3,11 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { navigateAndWait } from "../utils";
 
 test.describe("Docs Sidebar", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
   });
 
   test("should render sidebar with all sections", async ({ page }) => {
@@ -106,26 +106,22 @@ test.describe("Docs Breadcrumbs", () => {
 
 test.describe("Docs Layout", () => {
   test("should render header with nav links", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.locator("header nav a[href='/docs']").first()).toBeVisible();
   });
 
   test("should render footer", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.locator("footer.py-4").filter({ hasText: "TSS" }).first()).toBeVisible();
   });
 
   test("should render h1 heading on docs landing", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
   test("should preserve sidebar when navigating between docs pages", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.getByRole("button", { name: "Getting Started" })).toBeVisible();
 
     // Getting Started auto-expands on /docs, no need to click
@@ -141,22 +137,19 @@ test.describe("Docs Layout", () => {
 
 test.describe("Docs Landing Page Content", () => {
   test("should display Quick Start section", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.getByRole("heading", { name: "Quick Start" })).toBeVisible();
     await expect(page.getByText("bun install")).toBeVisible();
   });
 
   test("should display Features section", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.getByRole("heading", { name: "Features" })).toBeVisible();
     await expect(page.getByText("Type-Safe API")).toBeVisible();
   });
 
   test("should display Next Steps links", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.getByRole("heading", { name: "Next Steps" })).toBeVisible();
     const devLink = page.getByRole("link", { name: /Development Setup/ });
     await expect(devLink).toBeVisible();
@@ -166,14 +159,12 @@ test.describe("Docs Landing Page Content", () => {
 
 test.describe("Docs Theme Toggle", () => {
   test("should toggle theme on docs page", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
     await expect(page.locator("header").first().getByRole("link", { name: "Login" })).toBeVisible();
   });
 
   test("should persist theme across docs navigation", async ({ page }) => {
-    await page.goto("/docs");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs", { waitForIdle: true });
 
     // Getting Started auto-expands on /docs, no need to click
     await page
@@ -188,8 +179,7 @@ test.describe("Docs Theme Toggle", () => {
 test.describe("Docs 404 Handling", () => {
   test("should show error boundary for non-existent doc page", async ({ page }) => {
     // Navigate to a doc path that doesn't exist — the networkidleer throws an Error
-    await page.goto("/docs/this-page-does-not-exist");
-    await page.waitForLoadState("networkidle");
+    await navigateAndWait(page, "/docs/this-page-does-not-exist", { waitForIdle: true });
     // The root route's errorComponent renders the 500 error page
     // Check for either the error code or message
     await expect(page.getByText("500")).toBeVisible();

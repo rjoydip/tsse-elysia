@@ -2,6 +2,7 @@
  * Common E2E utility functions for authentication
  */
 
+import { isCI } from "std-env";
 import type { Page } from "@playwright/test";
 import { E2E_BASE_URL } from "./config";
 
@@ -12,6 +13,69 @@ const TEST_PASSWORD = "TestPassword123!";
  */
 export function generateTestEmail(pageName: string): string {
   return `e2e-${pageName}-${Date.now()}@test.com`;
+}
+
+/**
+ * Waits for page to be fully ready (network idle + hydration)
+ * Works in both CI and local environments
+ *
+ * @param page - Playwright page object
+ * @param options - Configuration options
+ * @param options.timeout - Max wait time in ms (default: 15000ms for CI, 5000ms for local)
+ * @param options.waitForIdle - Wait for network idle (default: true)
+ * @param options.waitForDomStable - Wait for DOM to stabilize (default: true)
+ */
+export async function waitForPageReady(
+  page: Page,
+  options?: {
+    timeout?: number;
+    waitForIdle?: boolean;
+    waitForDomStable?: boolean;
+  },
+): Promise<void> {
+  const timeout = options?.timeout ?? (isCI ? 15000 : 5000);
+  const waitForIdle = options?.waitForIdle ?? true;
+  const waitForDomStable = options?.waitForDomStable ?? true;
+
+  if (waitForIdle) {
+    try {
+      await page.waitForLoadState("networkidle", { timeout });
+    } catch {
+      await page.waitForLoadState("domcontentloaded");
+    }
+  } else {
+    await page.waitForLoadState("domcontentloaded");
+  }
+
+  if (waitForDomStable) {
+    try {
+      await page.waitForFunction(
+        () => {
+          return document.readyState === "complete";
+        },
+        { timeout },
+      );
+    } catch {
+      // Fallback: small delay to allow hydration
+      await page.waitForTimeout(isCI ? 1000 : 500);
+    }
+  }
+}
+
+/**
+ * Navigate to a URL and wait for page to be fully ready
+ */
+export async function navigateAndWait(
+  page: Page,
+  url: string,
+  options?: {
+    timeout?: number;
+    waitForIdle?: boolean;
+    waitForDomStable?: boolean;
+  },
+): Promise<void> {
+  await page.goto(url);
+  await waitForPageReady(page, options);
 }
 
 /**

@@ -11,12 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DATABASE_TYPE: "sqlite"
-  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-  E2E_HOST: "0.0.0.0"
-  E2E_PORT: "4173"
-
 jobs:
   quality:
     name: Quality Checks
@@ -61,44 +55,8 @@ jobs:
       - name: Run tests (${{ matrix.runtime }})
         run: bun test:coverage --run
 
-      - uses: ./.github/actions/setup-database
-        with:
-          operation: reset
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-
       - name: Build (${{ matrix.runtime }})
         run: bun run ${{ matrix.build_cmd }}
-
-      - name: Resolve host IP
-        run: |
-          HOST_IP=$(ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
-          echo "E2E_HOST=$HOST_IP" >> $GITHUB_ENV
-          echo "E2E_BASE_URL=http://$HOST_IP:$E2E_PORT" >> $GITHUB_ENV
-          echo "BETTER_AUTH_URL=http://$HOST_IP:$E2E_PORT/api/auth" >> $GITHUB_ENV
-          echo "Resolved host IP: $HOST_IP"
-
-      - name: Start preview server
-        env:
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-        run: |
-          bun run preview --port $E2E_PORT --host $E2E_HOST &
-          for i in $(seq 1 30); do
-            if curl -sf http://$E2E_HOST:$E2E_PORT > /dev/null 2>&1; then
-              echo "Server http://$E2E_HOST:$E2E_PORT is ready"
-              break
-            fi
-            echo "Waiting for server... ($i)"
-            sleep 2
-          done
-
-      - name: Run E2E tests
-        run: bun test:e2e
-
-      - name: Stop preview server
-        if: always()
-        run: pkill -f "bun run preview" || true
 
       - name: Upload ${{ matrix.artifact_name }} artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

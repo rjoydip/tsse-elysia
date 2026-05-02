@@ -3,12 +3,11 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { navigateAndWait } from "./utils";
 
 test.describe("Landing Page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Wait for page to fully load
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/", { waitForIdle: true });
   });
 
   // Skipped - flaky test with hydration timing issues
@@ -60,8 +59,7 @@ test.describe("Landing Page", () => {
 
 test.describe("Landing Page Header", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/", { waitForIdle: true });
   });
 
   test("should render header", async ({ page }) => {
@@ -83,8 +81,7 @@ test.describe("Landing Page Header", () => {
 
 test.describe("Landing Page Footer", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/", { waitForIdle: true });
   });
 
   test("should render footer", async ({ page }) => {

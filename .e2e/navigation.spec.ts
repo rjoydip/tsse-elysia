@@ -4,6 +4,7 @@
 
 import { test, expect } from "@playwright/test";
 import { E2E_BASE_URL } from "./config";
+import { navigateAndWait } from "./utils";
 
 function uniqueEmail(prefix = "test") {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
@@ -11,8 +12,7 @@ function uniqueEmail(prefix = "test") {
 
 test.describe("Header Navigation", () => {
   test("should navigate to Docs from landing page", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/", { waitForIdle: true });
     await expect(page.locator("header nav a[href='/docs']").first()).toBeVisible({
       timeout: 15000,
     });
@@ -21,8 +21,7 @@ test.describe("Header Navigation", () => {
   });
 
   test("should navigate to Blog from landing page", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("load");
+    await navigateAndWait(page, "/", { waitForIdle: true });
     await page.locator("header nav a[href='/blog']").first().click();
     await expect(page).toHaveURL(/.*blog/);
   });
