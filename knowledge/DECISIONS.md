@@ -790,34 +790,35 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 
 **Why:**
 
-- Move from `push` to `main` triggers to `pull_request` triggers for better PR-based validation
-- Prevent CI runs on direct pushes to main (all changes should go through PRs)
-- Add database environment variables (`DATABASE_TYPE`, `SQLITE_URL`) to workflows for proper database configuration during CI/CD runs
-- Align with PR-based review workflow (Decision 020: Semantic Versioning with PR Pre-release Support)
+- Use `pull_request` triggers for better PR-based validation
+- Add database environment variables (`DATABASE_TYPE`, `SQLITE_URL`) to CI workflow for proper database configuration during tests
+- Tag-based release workflow for semantic versioning
+- Prevent duplicate CI runs (PR merge triggers via push to main, not direct push)
 
 **Changes:**
 
 1. **CI Workflow (`ci.yml`)**:
-   - Removed `push: branches: [main]` trigger
+   - Uses `pull_request` trigger (not push to main)
    - Added `env` section with `DATABASE_TYPE: "sqlite"` and `SQLITE_URL: "file:.artifacts/tsse-elysia.db"`
+   - Added `create-release` job that runs on main push to trigger version bump and release
 
 2. **Release Workflow (`release.yml`)**:
-   - Commented out `push: branches: [main]` trigger (kept for reference)
-   - Added `pull_request` trigger with `types: [opened, synchronize, reopened, ready_for_review]`
-   - Added `env` section with `DATABASE_TYPE: "sqlite"` and `SQLITE_URL: "file:.artifacts/tsse-elysia.db"`
+   - Uses tag-based trigger (`push: tags: ["v*"]`)
+   - Added workflow_dispatch for manual version bump (patch/minor/major)
+   - Uses changelogen for version bumping and changelog generation
+   - No database env vars (not needed for release)
 
 **Rationale:**
 
-- PR-based triggers allow validation before merging to main
-- Database environment variables ensure workflows have proper database configuration
-- Consistent with Decision 020's PR pre-release workflow
-- Prevents accidental direct pushes to main
+- PR-based CI triggers validate changes before merge
+- Tag-based release workflow for semantic versioning
+- Database env vars ensure CI tests run with proper configuration
+- Changelogen handles version bump and changelog automatically
 
 **Tradeoffs:**
 
-- Release workflow now triggers on PRs (may need adjustment for actual release creation)
-- Database env vars added to all workflow jobs (slight increase in config size)
-- PR-based triggers may increase CI resource usage
+- Release requires manual tag creation or workflow_dispatch trigger
+- No automatic version bump on PR merge (uses conventional commits)
 
 ---
 
