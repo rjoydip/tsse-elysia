@@ -100,8 +100,8 @@ jobs:
   create-release:
     name: Create Release Tag
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]' && github.event_name == 'push'
-    #  && github.ref == 'refs/heads/main'
+    if: github.actor != 'dependabot[bot]'
+    #   && github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [quality, security, test]
     permissions:
       contents: write
