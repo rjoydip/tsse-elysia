@@ -826,6 +826,7 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 **Status:** Accepted
 
 **Why:**
+
 - Simplify release process with minimal workflows
 - Use @unjs/changelogen for version management and changelog generation
 - Use changelogithub for GitHub release creation

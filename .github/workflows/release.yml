@@ -6,21 +6,28 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to release"
+      bump:
+        description: "Version bump type"
         required: true
-        type: string
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 # =============================================================================
 # Release Workflow
 # =============================================================================
 # Triggers:
-#   - Push of version tag (e.g., v1.2.3)
-#   - Manual workflow_dispatch
+#   - Push of version tag (e.g., v1.2.3) - triggers release
+#   - Manual workflow_dispatch - bumps version and creates release
 #
 # Process:
-#   1. Checkout code
-#   2. Create GitHub release with changelog using changelogithub
+#   1. Bump version using changelogen (manual trigger only)
+#   2. Create version tag
+#   3. Push tag (triggers release on tag push)
+#   4. Create GitHub release with changelog using changelogithub
 #
 # Note: NPM publishing is commented out for reference - not enabled
 # =============================================================================
@@ -29,39 +36,75 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
 jobs:
   # ---------------------------------------------------------------------------
-  # NPM Publishing (Reference Only - Not Enabled)
+  # Version Bump (only on workflow_dispatch)
   # ---------------------------------------------------------------------------
-  # publish-npm:
-  #   name: Publish to NPM
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   if: github.actor != 'dependabot[bot]'
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' && github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
 
-  #     - name: Setup Node
-  #       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-  #       with:
-  #         node-version: lts/*
-  #         registry-url: https://registry.npmjs.org/
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+        with:
+          fetch-depth: 0
 
-  #     - name: Install Dependencies
-  #       run: bun install
+      - name: Bump Version
+        id: bump
+        run: |
+          BUMP_TYPE="${{ github.event.inputs.bump }}"
+          echo "🚀 Bumping version ($BUMP_TYPE)..."
 
-  #     - name: Build
-  #       run: bun run build
+          # Run changelogen to bump version
+          bun changelogen --bump "$BUMP_TYPE"
 
-  #     - name: Publish to NPM
-  #       run: npm publish --access public
-  #       env:
-  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Get new version from package.json
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 New version: $NEW_VERSION"
 
+      - name: Get Changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(bun changelogen --output - 2>/dev/null || echo "")
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Tag
+        id: tag
+        run: |
+          TAG="v${{ steps.bump.outputs.new_version }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "🏷️ Created tag: $TAG"
+
+      - name: Commit Version Bump
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        with:
+          commit_message: "chore: release v${{ steps.bump.outputs.new_version }}"
+          file_pattern: "package.json CHANGELOG.md"
+          push: true
+
+  # ---------------------------------------------------------------------------
+  # Create GitHub Release (triggers on tag push or after bump)
+  # ---------------------------------------------------------------------------
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -82,32 +125,17 @@ jobs:
       - name: Get Tag Name
         id: tag
         run: |
-          if [[ "${{ github.event.inputs.tag }}" != "" ]]; then
-            TAG_NAME="${{ github.event.inputs.tag }}"
+          if [[ "${{ github.event.inputs.bump }}" != "" ]]; then
+            # For workflow_dispatch, use the version from bump job
+            TAG_NAME="v${{ needs.bump-version.outputs.version }}"
           else
+            # For tag push
             TAG_NAME="${GITHUB_REF#refs/tags/}"
           fi
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "📦 Releasing: $TAG_NAME"
 
-      - name: Get Version
-        id: version
-        run: |
-          TAG="${{ steps.tag.outputs.tag_name }}"
-          VERSION="${TAG#v}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Get Changelog
-        id: changelog
-        run: |
-          # Get changelog content using changelogen
-          CHANGELOG=$(bun changelogen --output - 2>/dev/null || echo "")
-          {
-            echo "changelog<<EOF"
-            echo "$CHANGELOG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - run: pnpm dlx changelogithub
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Create GitHub Release
+        uses: antfu/changelogithub@e206e55c39bb959d81eefd4435499f0f029880af # v14.0.0
+        with:
+          token: ${{ secrets.GH_TOKEN }}
