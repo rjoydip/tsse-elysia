@@ -23,15 +23,10 @@ on:
 # =============================================================================
 # Triggers:
 #   - Push of version tag (e.g., v1.2.3) - triggers release
-#   - Manual workflow_dispatch - bumps version and creates release
 #
 # Process:
-#   1. Bump version using changelogen (manual trigger only)
-#   2. Create version tag
-#   3. Push tag (triggers release on tag push)
-#   4. Create GitHub release with changelog using changelogithub
+#   Create GitHub release with changelog using changelogithub
 #
-# Note: NPM publishing is commented out for reference - not enabled
 # =============================================================================
 
 concurrency:
@@ -42,68 +37,6 @@ env:
   GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Version Bump (only on workflow_dispatch)
-  # ---------------------------------------------------------------------------
-  bump-version:
-    name: Bump Version
-    runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]' && github.event_name == 'workflow_dispatch'
-    outputs:
-      version: ${{ steps.version.outputs.new_version }}
-      tag: ${{ steps.version.outputs.tag }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: 0
-
-      - name: Bump Version
-        id: bump
-        run: |
-          BUMP_TYPE="${{ github.event.inputs.bump }}"
-          echo "🚀 Bumping version ($BUMP_TYPE)..."
-
-          # Run changelogen to bump version
-          bun changelogen --bump "$BUMP_TYPE"
-
-          # Get new version from package.json
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "📦 New version: $NEW_VERSION"
-
-      - name: Get Changelog
-        id: changelog
-        run: |
-          CHANGELOG=$(bun changelogen --output - 2>/dev/null || echo "")
-          {
-            echo "changelog<<EOF"
-            echo "$CHANGELOG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create Tag
-        id: tag
-        run: |
-          TAG="v${{ steps.bump.outputs.new_version }}"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-          echo "🏷️ Created tag: $TAG"
-
-      - name: Commit Version Bump
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
-        with:
-          commit_message: "chore: release v${{ steps.bump.outputs.new_version }}"
-          file_pattern: "package.json CHANGELOG.md"
-          push: true
-
   # ---------------------------------------------------------------------------
   # Create GitHub Release (triggers on tag push or after bump)
   # ---------------------------------------------------------------------------
@@ -124,20 +57,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get Tag Name
-        id: tag
-        run: |
-          if [[ "${{ github.event.inputs.bump }}" != "" ]]; then
-            # For workflow_dispatch, use the version from bump job
-            TAG_NAME="v${{ needs.bump-version.outputs.version }}"
-          else
-            # For tag push
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
-          fi
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "📦 Releasing: $TAG_NAME"
-
-      - name: Create GitHub Release
-        uses: antfu/changelogithub@e206e55c39bb959d81eefd4435499f0f029880af # v14.0.0
-        with:
-          token: ${{ secrets.GH_TOKEN }}
+      - run: bunx changelogithub
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
