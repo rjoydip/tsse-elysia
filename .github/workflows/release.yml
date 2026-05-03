@@ -17,8 +17,10 @@ name: Release
 # =============================================================================
 
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       version_bump:
@@ -39,6 +41,10 @@ on:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
+
+env:
+  DATABASE_TYPE: "sqlite"
+  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
 
 jobs:
   # ---------------------------------------------------------------------------
