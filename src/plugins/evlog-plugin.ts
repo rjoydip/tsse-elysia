@@ -87,13 +87,13 @@ function buildDrainContext(
  * @returns Elysia plugin
  */
 export function evlogPlugin(options: EvlogPluginOptions = {}) {
-   const {
-     logRequests = true,
-     logTiming = true,
-     logErrors = true,
-     drainFn = drain,
-     excludePaths: rawExcludePaths = [],
-   } = options;
+  const {
+    logRequests = true,
+    logTiming = true,
+    logErrors = true,
+    drainFn = drain,
+    excludePaths: rawExcludePaths = [],
+  } = options;
 
   const excludePaths = Array.isArray(rawExcludePaths) ? rawExcludePaths : [];
 
@@ -181,7 +181,7 @@ export function evlogPlugin(options: EvlogPluginOptions = {}) {
  * @returns Elysia plugin
  */
 export function evlogIngestEndpoint(options: EvlogPluginOptions = {}) {
-   const { drainFn = drain, maxBatchSize = 1000 } = options;
+  const { drainFn = drain, maxBatchSize = 1000 } = options;
 
   return (app: Elysia) => {
     return app

@@ -785,9 +785,11 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 ---
 
 ### 021: CI/CD Workflow Trigger Updates and Database Environment Variables
+
 **Status:** Accepted
 
 **Why:**
+
 - Move from `push` to `main` triggers to `pull_request` triggers for better PR-based validation
 - Prevent CI runs on direct pushes to main (all changes should go through PRs)
 - Add database environment variables (`DATABASE_TYPE`, `SQLITE_URL`) to workflows for proper database configuration during CI/CD runs
@@ -805,12 +807,14 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
    - Added `env` section with `DATABASE_TYPE: "sqlite"` and `SQLITE_URL: "file:.artifacts/tsse-elysia.db"`
 
 **Rationale:**
+
 - PR-based triggers allow validation before merging to main
 - Database environment variables ensure workflows have proper database configuration
 - Consistent with Decision 020's PR pre-release workflow
 - Prevents accidental direct pushes to main
 
 **Tradeoffs:**
+
 - Release workflow now triggers on PRs (may need adjustment for actual release creation)
 - Database env vars added to all workflow jobs (slight increase in config size)
 - PR-based triggers may increase CI resource usage

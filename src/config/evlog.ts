@@ -81,6 +81,4 @@ export const evlogDrain = async (ctx: DrainContext | DrainContext[]) => {
  * Exported drain for use in framework configuration.
  * In test mode, this is a no-op to prevent unhandled errors.
  */
-export const drain = isTest
-  ? async () => {}
-  : evlogDrain;
+export const drain = isTest ? async () => {} : evlogDrain;
