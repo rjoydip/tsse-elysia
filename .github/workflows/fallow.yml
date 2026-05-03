@@ -12,6 +12,7 @@ jobs:
   fallow:
     name: Fallow Code Analysis
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: read
       security-events: write

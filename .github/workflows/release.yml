@@ -53,6 +53,7 @@ jobs:
   validate:
     name: Validate Release
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     outputs:
       has_changes: ${{ steps.check_changes.outputs.has-changes }}
       version: ${{ steps.get_version.outputs.version }}
@@ -108,6 +109,7 @@ jobs:
     name: Quality Checks
     needs: validate
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -127,6 +129,7 @@ jobs:
     name: Security Audit
     needs: validate
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -141,6 +144,7 @@ jobs:
     name: Build
     needs: [quality, security]
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -173,7 +177,7 @@ jobs:
   release:
     name: Create Release
     needs: [validate, quality, security, build]
-    if: needs.validate.outputs.has_changes == 'true'
+    if: needs.validate.outputs.has_changes == 'true' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -240,7 +244,7 @@ jobs:
   no_release:
     name: No Release Needed
     needs: validate
-    if: needs.validate.outputs.has_changes != 'true'
+    if: needs.validate.outputs.has_changes != 'true' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Notify no release
