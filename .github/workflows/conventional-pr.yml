@@ -1,0 +1,62 @@
+name: Conventional PR Title Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: conventional-pr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check-conventional:
+    name: Check PR Title Convention
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Check PR Title
+        id: check
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "PR Title: $PR_TITLE"
+
+          # Conventional commit types
+          TYPES="feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert"
+
+          # Check if PR title matches conventional commit format
+          if echo "$PR_TITLE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+"; then
+            echo "✅ PR title follows conventional commit format"
+            echo "is_valid=true" >> $GITHUB_OUTPUT
+
+            # Extract type for version bump determination
+            TYPE=$(echo "$PR_TITLE" | grep -oE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)" | head -1)
+
+            # Check for BREAKING CHANGE
+            if echo "$PR_TITLE" | grep -qi "BREAKING CHANGE"; then
+              echo "bump_type=major" >> $GITHUB_OUTPUT
+              echo "🔴 Breaking change detected - major version bump"
+            elif [ "$TYPE" = "feat" ]; then
+              echo "bump_type=minor" >> $GITHUB_OUTPUT
+              echo "🟢 New feature - minor version bump"
+            else
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+              echo "🟡 Other fix - patch version bump"
+            fi
+          else
+            echo "❌ PR title does not follow conventional commit format"
+            echo "Expected format: <type>(<scope>): <description>"
+            echo "Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+            echo "bump_type=none" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Output Result
+        run: |
+          echo "PR is valid: ${{ steps.check.outputs.is_valid }}"
+          echo "Version bump type: ${{ steps.check.outputs.bump_type }}"

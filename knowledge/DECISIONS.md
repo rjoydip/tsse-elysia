@@ -821,6 +821,54 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 
 ---
 
+### 022: Separated Release Workflows (Conventional Commits + Version Bump + Release)
+
+**Status:** Accepted
+
+**Why:**
+- Separate concerns: PR validation, version bump, and release creation
+- Enforce conventional commit format via PR title validation
+- Version bump based on PR title (conventional commits) after PR merge
+- Trigger release only on tag push (not on every PR)
+- Keep NPM publishing code commented for reference only
+
+**Workflows:**
+
+1. **conventional-pr.yml** (`pull_request`):
+   - Validates PR title follows conventional commit format
+   - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+   - Determines version bump type (major/minor/patch) from PR title
+   - Fails PR if title doesn't match format
+
+2. **version-bump.yml** (`pull_request` merged):
+   - Triggered when PR is merged to main
+   - Analyzes PR title for conventional commit type
+   - Bumps version (major for BREAKING CHANGE, minor for feat, patch otherwise)
+   - Creates version commit and tag
+   - Supports manual workflow_dispatch for manual version bump
+
+3. **release.yml** (`push tags v*`):
+   - Simplified release workflow (triggered by tag push)
+   - Builds application
+   - Creates GitHub release with changelog using changelogithub
+   - NPM publishing code commented for reference
+
+**Changes:**
+
+- Removed versioning from PR pre-release (no longer runs on every PR)
+- Version bump happens only after PR merge
+- Release creates GitHub release from tag push
+- PR title check enforced before merge
+
+**Tradeoffs:**
+
+- More complex workflow structure (3 workflows vs 1)
+- Requires PR title to follow conventional format
+- Version bump happens post-merge (not preview-able in PR)
+- NPM publishing code available but not active
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
