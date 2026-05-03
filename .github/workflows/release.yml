@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -20,9 +20,7 @@ on:
 #
 # Process:
 #   1. Checkout code
-#   2. Setup environment
-#   3. Build application
-#   4. Create GitHub release with changelog using changelogithub
+#   2. Create GitHub release with changelog using changelogithub
 #
 # Note: NPM publishing is commented out for reference - not enabled
 # =============================================================================
@@ -31,46 +29,7 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  DATABASE_TYPE: "sqlite"
-  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-
 jobs:
-  build:
-    name: Build Application
-    runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup-environment
-
-      - name: Setup Database
-        uses: ./.github/actions/setup-database
-        with:
-          operation: setup
-
-      - name: Build Application
-        run: bun run build
-
-      - name: Cleanup Database
-        uses: ./.github/actions/setup-database
-        with:
-          operation: remove
-        if: always()
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: build-artifact
-          path: |
-            dist
-            .output
-            public
-          retention-days: 7
-
   # ---------------------------------------------------------------------------
   # NPM Publishing (Reference Only - Not Enabled)
   # ---------------------------------------------------------------------------
@@ -105,7 +64,6 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: build
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]'
     permissions:
@@ -150,8 +108,6 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        uses: antfu/changelogithub@e206e55c39bb959d81eefd4435499f0f029880af # v14.0.0
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          duplicate-contributor: false
+      - run: pnpm dlx changelogithub
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

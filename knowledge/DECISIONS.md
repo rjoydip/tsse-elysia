@@ -821,51 +821,42 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 
 ---
 
-### 022: Separated Release Workflows (Conventional Commits + Version Bump + Release)
+### 022: Simplified Release Workflow with changelogen and changelogithub
 
 **Status:** Accepted
 
 **Why:**
-- Separate concerns: PR validation, version bump, and release creation
-- Enforce conventional commit format via PR title validation
-- Version bump based on PR title (conventional commits) after PR merge
-- Trigger release only on tag push (not on every PR)
+- Simplify release process with minimal workflows
+- Use @unjs/changelogen for version management and changelog generation
+- Use changelogithub for GitHub release creation
+- Trigger releases only on tag push (manual or automated)
 - Keep NPM publishing code commented for reference only
 
-**Workflows:**
+**Current Workflow:**
 
-1. **conventional-pr.yml** (`pull_request`):
-   - Validates PR title follows conventional commit format
-   - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-   - Determines version bump type (major/minor/patch) from PR title
-   - Fails PR if title doesn't match format
-
-2. **version-bump.yml** (`pull_request` merged):
-   - Triggered when PR is merged to main
-   - Analyzes PR title for conventional commit type
-   - Bumps version (major for BREAKING CHANGE, minor for feat, patch otherwise)
-   - Creates version commit and tag
-   - Supports manual workflow_dispatch for manual version bump
-
-3. **release.yml** (`push tags v*`):
-   - Simplified release workflow (triggered by tag push)
-   - Builds application
-   - Creates GitHub release with changelog using changelogithub
+1. **release.yml** (`push tags v*` or `workflow_dispatch`):
+   - Triggered on version tag push (e.g., `v1.2.3`)
+   - Manual trigger via workflow_dispatch with tag input
+   - Uses `bun changelogen --output` to generate changelog
+   - Uses changelogithub to create GitHub release with changelog
    - NPM publishing code commented for reference
 
-**Changes:**
+**Usage:**
 
-- Removed versioning from PR pre-release (no longer runs on every PR)
-- Version bump happens only after PR merge
-- Release creates GitHub release from tag push
-- PR title check enforced before merge
+```bash
+# Create a version tag (manually or via script)
+git tag v1.2.3
+git push origin v1.2.3
+
+# Or trigger via workflow_dispatch with tag name
+```
 
 **Tradeoffs:**
 
-- More complex workflow structure (3 workflows vs 1)
-- Requires PR title to follow conventional format
-- Version bump happens post-merge (not preview-able in PR)
-- NPM publishing code available but not active
+- Simpler workflow (1 instead of multiple)
+- No automatic version bump on PR merge (manual process)
+- Changelog generation relies on conventional commits
+- NPM publishing available but not active
 
 ---
 
