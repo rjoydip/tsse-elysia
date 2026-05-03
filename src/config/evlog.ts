@@ -8,7 +8,7 @@
 import type { DrainContext } from "evlog";
 import { createFsDrain } from "evlog/fs";
 import { createOTLPDrain } from "evlog/otlp";
-import { isProduction } from "./";
+import { isProduction, isTest } from "./";
 import { env } from "./env";
 
 /**
@@ -79,5 +79,8 @@ export const evlogDrain = async (ctx: DrainContext | DrainContext[]) => {
 
 /**
  * Exported drain for use in framework configuration.
+ * In test mode, this is a no-op to prevent unhandled errors.
  */
-export const drain = evlogDrain;
+export const drain = isTest
+  ? async () => {}
+  : evlogDrain;

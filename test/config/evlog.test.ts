@@ -13,9 +13,9 @@ describe("evlog module", () => {
     expect(typeof evlogDrain).toBe("function");
   });
 
-  it("should export drain as alias", async () => {
-    const { evlogDrain, drain } = await import(evlogPath);
-    expect(drain).toBe(evlogDrain);
+  it("should export drain as a function", async () => {
+    const { drain } = await import(evlogPath);
+    expect(typeof drain).toBe("function");
   });
 });
 
