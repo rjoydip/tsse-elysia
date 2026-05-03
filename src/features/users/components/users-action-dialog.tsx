@@ -1,8 +1,8 @@
 "use client";
 
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
+import { useStore } from "@tanstack/react-store";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { Button } from "~/components/ui/button";
 import {
@@ -91,8 +91,6 @@ const formSchema = z
       path: ["confirmPassword"],
     },
   );
-type UserForm = z.infer<typeof formSchema>;
-
 type UserActionDialogProps = {
   currentRow?: User;
   open: boolean;
@@ -101,8 +99,7 @@ type UserActionDialogProps = {
 
 export function UsersActionDialog({ currentRow, open, onOpenChange }: UserActionDialogProps) {
   const isEdit = !!currentRow;
-  const form = useForm<UserForm>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
     defaultValues: isEdit
       ? {
           ...currentRow,
@@ -121,15 +118,17 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
           confirmPassword: "",
           isEdit,
         },
+    validators: {
+      onChange: formSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      form.reset();
+      showSubmittedData(value);
+      onOpenChange(false);
+    },
   });
 
-  const onSubmit = (values: UserForm) => {
-    form.reset();
-    showSubmittedData(values);
-    onOpenChange(false);
-  };
-
-  const isPasswordTouched = !!form.formState.dirtyFields.password;
+  const isPasswordTouched = useStore(form.baseStore, (state) => !!state.values.password);
 
   return (
     <Dialog
@@ -148,16 +147,11 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
           </DialogDescription>
         </DialogHeader>
         <div className="h-105 w-[calc(100%+0.75rem)] overflow-y-auto py-1 pe-3">
-          <Form {...form}>
-            <form
-              id="user-form"
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-4 px-0.5"
-            >
+          <Form form={form}>
+            <div id="user-form" className="space-y-4 px-0.5">
               <FormField
-                control={form.control}
                 name="firstName"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">First Name</FormLabel>
                     <FormControl>
@@ -165,7 +159,9 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                         placeholder="John"
                         className="col-span-4"
                         autoComplete="off"
-                        {...field}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
@@ -173,9 +169,8 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                 )}
               />
               <FormField
-                control={form.control}
                 name="lastName"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Last Name</FormLabel>
                     <FormControl>
@@ -183,7 +178,9 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                         placeholder="Doe"
                         className="col-span-4"
                         autoComplete="off"
-                        {...field}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
@@ -191,53 +188,67 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                 )}
               />
               <FormField
-                control={form.control}
                 name="username"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="john_doe" className="col-span-4" {...field} />
+                      <Input
+                        placeholder="john_doe"
+                        className="col-span-4"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
                   </FormItem>
                 )}
               />
               <FormField
-                control={form.control}
                 name="email"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john.doe@gmail.com" className="col-span-4" {...field} />
+                      <Input
+                        placeholder="john.doe@gmail.com"
+                        className="col-span-4"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
                   </FormItem>
                 )}
               />
               <FormField
-                control={form.control}
                 name="phoneNumber"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+123456789" className="col-span-4" {...field} />
+                      <Input
+                        placeholder="+123456789"
+                        className="col-span-4"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
                   </FormItem>
                 )}
               />
               <FormField
-                control={form.control}
                 name="role"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Role</FormLabel>
                     <SelectDropdown
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => field.onChange(value)}
                       isControlled
                       placeholder="Select a role"
                       className="col-span-4"
@@ -251,16 +262,17 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                 )}
               />
               <FormField
-                control={form.control}
                 name="password"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Password</FormLabel>
                     <FormControl>
                       <PasswordInput
                         placeholder="e.g., S3cur3P@ssw0rd"
                         className="col-span-4"
-                        {...field}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
@@ -268,9 +280,8 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                 )}
               />
               <FormField
-                control={form.control}
                 name="confirmPassword"
-                render={({ field }) => (
+                children={({ field }) => (
                   <FormItem className="grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1">
                     <FormLabel className="col-span-2 text-end">Confirm Password</FormLabel>
                     <FormControl>
@@ -278,20 +289,26 @@ export function UsersActionDialog({ currentRow, open, onOpenChange }: UserAction
                         disabled={!isPasswordTouched}
                         placeholder="e.g., S3cur3P@ssw0rd"
                         className="col-span-4"
-                        {...field}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage className="col-span-4 col-start-3" />
                   </FormItem>
                 )}
               />
-            </form>
+            </div>
           </Form>
         </div>
         <DialogFooter>
-          <Button type="submit" form="user-form">
-            Save changes
-          </Button>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" form="user-form" disabled={isSubmitting}>
+                Save changes
+              </Button>
+            )}
+          </form.Subscribe>
         </DialogFooter>
       </DialogContent>
     </Dialog>

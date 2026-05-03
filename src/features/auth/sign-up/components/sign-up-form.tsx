@@ -1,13 +1,12 @@
 /**
  * Sign Up Form Component
- * Uses react-hook-form with Zod validation and password strength indicators.
+ * Uses TanStack Form with Zod validation and password strength indicators.
  * Integrates with auth client for actual registration.
  */
 
 import { useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -105,21 +104,10 @@ interface SignUpFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string;
 }
 
-export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export function SignUpForm({ className, redirectTo }: SignUpFormProps) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const navigate = useNavigate();
   const enabledProviders = getEnabledSocialProviders(env);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
 
   const handleSocialSignIn = createHandleSocialSignIn({
     setLoadingProvider,
@@ -127,145 +115,178 @@ export function SignUpForm({ className, redirectTo, ...props }: SignUpFormProps)
     BASE_URL,
   });
 
-  async function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    setLoadingProvider("email");
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    validators: {
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setLoadingProvider("email");
 
-    try {
-      const result = await signUpWithEmail(
-        data.name,
-        data.email,
-        await encodePassword(data.password),
-      );
+      try {
+        const result = await signUpWithEmail(
+          value.name,
+          value.email,
+          await encodePassword(value.password),
+        );
 
-      if (result.error) {
-        const errorMessage = getAuthErrorMessage(extractAuthErrorMessage(result.error));
-        toast.error(errorMessage);
-        return;
+        if (result.error) {
+          const errorMessage = getAuthErrorMessage(extractAuthErrorMessage(result.error));
+          toast.error(errorMessage);
+          setLoadingProvider(null);
+          return;
+        }
+
+        if (result.data?.user) {
+          const user = result.data.user;
+          const mockUser = {
+            accountNo: user.id || "ACC001",
+            email: user.email,
+            role: ["user"],
+            exp: Date.now() + 24 * 60 * 60 * 1000,
+          };
+          authActions.setUser(mockUser);
+          authActions.setAccessToken("auth-access-token");
+          toast.success("Account created successfully");
+          const targetPath = redirectTo || "/dashboard";
+          navigate({ to: targetPath, replace: true });
+        }
+      } catch {
+        setLoadingProvider(null);
       }
+    },
+  });
 
-      if (result.data?.user) {
-        const user = result.data.user;
-        const mockUser = {
-          accountNo: user.id || "ACC001",
-          email: user.email,
-          role: ["user"],
-          exp: Date.now() + 24 * 60 * 60 * 1000,
-        };
-        authActions.setUser(mockUser);
-        authActions.setAccessToken("auth-access-token");
-        toast.success("Account created successfully");
-        const targetPath = redirectTo || "/dashboard";
-        navigate({ to: targetPath, replace: true });
-      }
-    } finally {
-      setIsLoading(false);
-      setLoadingProvider(null);
-    }
-  }
-
-  const passwordValue = form.watch("password");
+  // Use form.Subscribe to get password value
 
   return (
-    <Form {...form}>
+    <Form form={form}>
       <div className={cn("grid gap-3", className)}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3" {...props}>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <EmailField form={form} fieldName="email" />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <PasswordInput placeholder="********" {...field} />
-                </FormControl>
-                {passwordValue.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((level) => (
-                        <div
-                          key={level}
-                          className={`h-1 flex-1 rounded-full transition-colors ${
-                            level <= getPasswordStrength(passwordValue)
-                              ? getStrengthColor(getPasswordStrength(passwordValue))
-                              : "bg-muted"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p
-                      className={`text-xs ${
-                        getPasswordStrength(passwordValue) === 4
-                          ? "text-green-600"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {getStrengthLabel(getPasswordStrength(passwordValue))}
-                    </p>
-                  </div>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {passwordValue.length > 0 && (
-            <div className="space-y-1">
-              {PASSWORD_REQUIREMENTS.map((req, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs">
-                  {req.test(passwordValue) ? (
-                    <svg
-                      className="w-4 h-4 text-green-500"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-muted-foreground/30" />
-                  )}
-                  <span
-                    className={req.test(passwordValue) ? "text-green-600" : "text-muted-foreground"}
-                  >
-                    {req.label}
-                  </span>
-                </div>
-              ))}
-            </div>
+        <FormField
+          name="name"
+          children={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="John Doe"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <PasswordInput placeholder="********" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" className="mt-2" disabled={isLoading}>
-            {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <UserPlus />}
-            Create Account
-          </Button>
-        </form>
+        />
+        <EmailField fieldName="email" />
+        <FormField
+          name="password"
+          children={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <PasswordInput
+                  placeholder="********"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
+              </FormControl>
+              {field.value && field.value.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-1 flex-1 rounded-full transition-colors ${
+                          level <= getPasswordStrength(field.value)
+                            ? getStrengthColor(getPasswordStrength(field.value))
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p
+                    className={`text-xs ${
+                      getPasswordStrength(field.value) === 4
+                        ? "text-green-600"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {getStrengthLabel(getPasswordStrength(field.value))}
+                  </p>
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <form.Subscribe selector={(state) => state.values.password}>
+          {(password) =>
+            password &&
+            password.length > 0 && (
+              <div className="space-y-1">
+                {PASSWORD_REQUIREMENTS.map((req, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs">
+                    {req.test(password) ? (
+                      <svg
+                        className="w-4 h-4 text-green-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-muted-foreground/30" />
+                    )}
+                    <span
+                      className={req.test(password) ? "text-green-600" : "text-muted-foreground"}
+                    >
+                      {req.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
+          }
+        </form.Subscribe>
+        <FormField
+          name="confirmPassword"
+          children={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <PasswordInput
+                  placeholder="********"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button
+              type="submit"
+              className="mt-2"
+              disabled={isSubmitting || loadingProvider !== null}
+            >
+              {loadingProvider === "email" ? <Loader2 className="animate-spin" /> : <UserPlus />}
+              Create Account
+            </Button>
+          )}
+        </form.Subscribe>
 
         <SocialSignIn
           enabledProviders={enabledProviders}

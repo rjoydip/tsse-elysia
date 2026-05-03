@@ -114,7 +114,7 @@ Detailed documentation available in `docs/`:
 - **Server**: Elysia
 - **Runtime**: Bun
 - **UI**: React 19 + TypeScript
-- **Form**: TanStack Form
+- **Form**: tanstack-form
 - **Table**: TanStack Table v8
 - **State Management**: TanStack Store
 - **Function Execution Timing**: TanStack Pacer
@@ -180,6 +180,41 @@ The API follows a layered architecture pattern (HTTP → Controller → Service 
 | **Controller** | `src/controllers/`  | Session validation, request parsing, response formatting |
 | **Service**    | `src/services/`     | Business logic, data transformation, validation          |
 | **Repository** | `src/repositories/` | ORM operations, database queries, data access            |
+
+### Repository Dependency Injection
+
+Repositories support dependency injection via constructor for testability:
+
+```typescript
+// Repository with optional db parameter
+export class AccountRepository implements IAccountRepository {
+  private db: DbType;
+
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;
+  }
+
+  async findAccountByUserId(userId: string) {
+    return Result.tryPromise({
+      try: () => this.db.select()...,  // Uses injected db
+      catch: (error) => new DatabaseError(...),
+    });
+  }
+}
+
+// In tests: inject mock database
+const mockDb = {
+  select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) ),
+  // ...
+};
+const repository = new AccountRepository(mockDb);
+```
+
+This enables:
+
+- **Inline mocking** without actual database connections
+- **Unit tests** that run fast and reliably
+- **Isolation** from infrastructure concerns
 
 ### Example Flow (Settings API)
 

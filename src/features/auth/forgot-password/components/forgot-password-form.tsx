@@ -1,13 +1,11 @@
 /**
  * Forgot Password Form Component
- * Uses react-hook-form with Zod validation.
+ * Uses TanStack Form with Zod validation.
  * Integrates with auth client for password reset.
  */
 
-import { useState } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,45 +21,42 @@ const formSchema = z.object({
   }),
 });
 
-export function ForgotPasswordForm({ className, ...props }: React.HTMLAttributes<HTMLFormElement>) {
+export function ForgotPasswordForm({ className }: React.HTMLAttributes<HTMLFormElement>) {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
     defaultValues: { email: "" },
+    validators: {
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        const result = await sendPasswordReset(value.email);
+        if (result.error) {
+          const message = result.error?.message ?? "Failed to send reset email";
+          toast.error(message);
+          return;
+        }
+        toast.success("Reset link sent. Please check your email.");
+        navigate({ to: "/otp", replace: true });
+      } catch {
+        toast.error("An unexpected error occurred");
+      }
+    },
   });
 
-  async function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-
-    try {
-      const result = await sendPasswordReset(data.email);
-      if (result.error) {
-        const message = result.error?.message ?? "Failed to send reset email";
-        toast.error(message);
-        return;
-      }
-      toast.success("Reset link sent. Please check your email.");
-      navigate({ to: "/otp", replace: true });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className={cn("grid gap-2", className)}
-        {...props}
-      >
-        <EmailField form={form} fieldName="email" />
-        <Button className="mt-2" disabled={isLoading}>
-          Continue
-          {isLoading ? <Loader2 className="animate-spin" /> : <ArrowRight />}
-        </Button>
-      </form>
+    <Form form={form}>
+      <div className={cn("grid gap-2", className)}>
+        <EmailField fieldName="email" />
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button className="mt-2" disabled={isSubmitting}>
+              Continue
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <ArrowRight />}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </Form>
   );
 }

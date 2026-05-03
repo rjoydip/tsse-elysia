@@ -1,54 +1,85 @@
 import * as React from "react";
-import {
-  Controller,
-  FormProvider,
-  useFormContext,
-  useFormState,
-  type ControllerProps,
-  type FieldPath,
-  type FieldValues,
-} from "react-hook-form";
+import type { AnyFieldApi } from "@tanstack/react-form";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "~/lib/utils";
 import { Label } from "~/components/ui/label";
 
-const Form = FormProvider;
+/**
+ * Context to provide the TanStack form instance across the form hierarchy.
+ */
+const FormContext = React.createContext<any>(null);
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> = {
-  name: TName;
+/**
+ * Hook to access the TanStack form instance from context.
+ * @returns The TanStack form instance.
+ * @throws If used outside of a `<Form>` component.
+ */
+const useFormContext = <TFormValues = any>(): TFormValues => {
+  const form = React.useContext(FormContext);
+  if (!form) {
+    throw new Error("useFormContext should be used within a <Form> component");
+  }
+  return form as TFormValues;
 };
 
-const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
+/**
+ * Props for the Form component.
+ */
+interface FormProps {
+  form: any;
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}
 
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
+/**
+ * Form component that provides the TanStack form instance via context.
+ * Wrap your form with this component and pass the `form` instance.
+ */
+function Form({ form, children, className, ...props }: FormProps) {
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
+    <FormContext.Provider value={form}>
+      <form
+        className={className}
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
+        }}
+        {...props}
+      >
+        {children}
+      </form>
+    </FormContext.Provider>
   );
-};
+}
 
+/**
+ * Context to provide field-specific information (field name, field API).
+ */
+const FormFieldContext = React.createContext<{
+  name: string;
+  fieldApi?: AnyFieldApi;
+} | null>(null);
+
+/**
+ * Hook to access field state and helpers.
+ * Must be used within a `<FormField>` component.
+ */
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
-  const itemContext = React.useContext(FormItemContext);
-  const { getFieldState } = useFormContext();
-  const formState = useFormState({ name: fieldContext.name });
-  const fieldState = getFieldState(fieldContext.name, formState);
-
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>");
   }
 
-  const { id } = itemContext;
+  const fieldApi = fieldContext.fieldApi;
+  if (!fieldApi) {
+    throw new Error("useFormField must be used within a FormField with a valid field API");
+  }
+
+  const { id } = React.useContext(FormItemContext);
+  const meta = fieldApi.state.meta;
 
   return {
     id,
@@ -56,16 +87,20 @@ const useFormField = () => {
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
-    ...fieldState,
+    error: meta.errors.length > 0 ? { message: meta.errors.join(", ") } : undefined,
+    isTouched: meta.isTouched,
+    isValidating: meta.isValidating,
   };
 };
 
-type FormItemContextValue = {
-  id: string;
-};
+/**
+ * Context for FormItem to provide a unique ID.
+ */
+const FormItemContext = React.createContext<{ id: string }>({ id: "" });
 
-const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
-
+/**
+ * FormItem component that groups a form field with its label, control, description, and message.
+ */
 function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   const id = React.useId();
 
@@ -76,12 +111,18 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * FormLabel component that renders a label associated with the form field.
+ */
 function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   const { formItemId } = useFormField();
 
   return <Label data-slot="form-label" className={className} htmlFor={formItemId} {...props} />;
 }
 
+/**
+ * FormControl component that wraps the input element and associates it with the field.
+ */
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
@@ -96,6 +137,9 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
   );
 }
 
+/**
+ * FormDescription component for rendering helper text.
+ */
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   const { formDescriptionId } = useFormField();
 
@@ -109,6 +153,9 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   );
 }
 
+/**
+ * FormMessage component for rendering validation errors.
+ */
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message ?? "") : props.children;
@@ -129,8 +176,77 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   );
 }
 
+/**
+ * Props for FormField component.
+ */
+interface FormFieldProps {
+  name: string;
+  children: (props: {
+    field: { value: any; onChange: (value: any) => void; onBlur: () => void };
+  }) => React.ReactNode;
+}
+
+/**
+ * FormField component that connects a field to the TanStack form.
+ * Must be used within a `<Form>` component.
+ * Uses form.Subscribe to access field state reactively.
+ */
+function FormField({ name, children }: FormFieldProps) {
+  const form = useFormContext();
+
+  return (
+    <FormFieldContext.Provider value={{ name }}>
+      <form.Subscribe
+        selector={(state: any) => ({
+          value: state.values[name],
+          errors: state.errors?.[name] || [],
+        })}
+      >
+        {(fieldState: { value: any; errors: any[] }) => {
+          const handleChange = (newValue: any) => {
+            form.setFieldValue(name, newValue);
+          };
+
+          const handleBlur = () => {
+            form.setFieldMeta(name, (prev: any) => ({ ...prev, isTouched: true }));
+          };
+
+          return (
+            <FormFieldContext.Provider
+              value={{
+                name,
+                fieldApi: {
+                  state: {
+                    value: fieldState.value,
+                    meta: {
+                      errors: fieldState.errors,
+                      isTouched: false,
+                      isValidating: false,
+                    },
+                  },
+                  handleChange,
+                  handleBlur,
+                } as AnyFieldApi,
+              }}
+            >
+              {children({
+                field: {
+                  value: fieldState.value,
+                  onChange: handleChange,
+                  onBlur: handleBlur,
+                },
+              })}
+            </FormFieldContext.Provider>
+          );
+        }}
+      </form.Subscribe>
+    </FormFieldContext.Provider>
+  );
+}
+
 export {
   useFormField,
+  useFormContext,
   Form,
   FormItem,
   FormLabel,

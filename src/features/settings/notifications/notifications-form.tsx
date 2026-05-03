@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { Button } from "~/components/ui/button";
@@ -18,6 +17,18 @@ import {
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import { Switch } from "~/components/ui/switch";
 import { settingsActions } from "~/lib/stores/dashboard/settings";
+
+/**
+ * Type for notifications form values inferred from schema.
+ */
+type NotificationsFormValues = {
+  type: "all" | "mentions" | "none";
+  mobile: boolean;
+  communication_emails: boolean;
+  social_emails: boolean;
+  marketing_emails: boolean;
+  security_emails: boolean;
+};
 
 /**
  * Schema for validating notifications form data.
@@ -54,8 +65,6 @@ const notificationsFormSchema = z.object({
 /**
  * Type for notifications form values inferred from schema.
  */
-type NotificationsFormValues = z.infer<typeof notificationsFormSchema>;
-
 /**
  * Default values for notifications settings.
  */
@@ -82,39 +91,41 @@ export function NotificationsForm({
 }) {
   const { updateNotifications, submitNotifications } = settingsActions;
 
-  const form = useForm<NotificationsFormValues>({
-    resolver: zodResolver(notificationsFormSchema),
+  const form = useForm({
+    defaultValues: defaultValues,
+    validators: {
+      onChange: notificationsFormSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      updateNotifications(value);
+      submitNotifications(value);
+      showSubmittedData(value);
+    },
   });
 
   // Update form values when initialNotifications changes
   useEffect(() => {
     const formValues: NotificationsFormValues = initialNotifications ?? defaultValues;
-    form.reset(formValues);
-  }, [initialNotifications, form]);
-
-  /**
-   * Handles form submission.
-   * @param {NotificationsFormValues} data - Form data to submit
-   */
-  const handleSubmit = form.handleSubmit((data) => {
-    updateNotifications(data);
-    submitNotifications(data);
-    showSubmittedData(data);
-  });
+    form.setFieldValue("type", formValues.type);
+    form.setFieldValue("mobile", formValues.mobile);
+    form.setFieldValue("communication_emails", formValues.communication_emails);
+    form.setFieldValue("marketing_emails", formValues.marketing_emails);
+    form.setFieldValue("social_emails", formValues.social_emails);
+    form.setFieldValue("security_emails", formValues.security_emails);
+  }, [initialNotifications]);
 
   return (
-    <Form {...form}>
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <Form form={form}>
+      <div className="space-y-8">
         <FormField
-          control={form.control}
           name="type"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem className="relative space-y-3">
               <FormLabel>Notify me about...</FormLabel>
               <FormControl>
                 <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
+                  onValueChange={(value) => field.onChange(value)}
                   className="flex flex-col gap-2"
                 >
                   <FormItem className="flex items-center">
@@ -145,24 +156,25 @@ export function NotificationsForm({
           <h3 className="mb-4 text-lg font-medium">Email Notifications</h3>
           <div className="space-y-4">
             <FormField
-              control={form.control}
               name="communication_emails"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Communication emails</FormLabel>
                     <FormDescription>Receive emails about your account activity.</FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
             <FormField
-              control={form.control}
               name="marketing_emails"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Marketing emails</FormLabel>
@@ -171,15 +183,17 @@ export function NotificationsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
             <FormField
-              control={form.control}
               name="social_emails"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Social emails</FormLabel>
@@ -188,15 +202,17 @@ export function NotificationsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
             <FormField
-              control={form.control}
               name="security_emails"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Security emails</FormLabel>
@@ -207,7 +223,7 @@ export function NotificationsForm({
                   <FormControl>
                     <Switch
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => field.onChange(checked)}
                       disabled
                       aria-readonly
                     />
@@ -218,12 +234,14 @@ export function NotificationsForm({
           </div>
         </div>
         <FormField
-          control={form.control}
           name="mobile"
-          render={({ field }) => (
+          children={({ field }) => (
             <FormItem className="relative flex flex-row items-start">
               <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked)}
+                />
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Use different settings for my mobile devices</FormLabel>
@@ -241,10 +259,14 @@ export function NotificationsForm({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Update notifications"}
-        </Button>
-      </form>
+        <form.Subscribe selector={(state) => state.isSubmitting}>
+          {(isSubmitting) => (
+            <Button type="submit" disabled={isLoading || isSubmitting}>
+              {isSubmitting ? "Updating..." : "Update notifications"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </Form>
   );
 }

@@ -5,10 +5,11 @@
  */
 
 import { eq } from "drizzle-orm";
-import { db } from "~/config/db";
+import { db as defaultDb } from "~/config/db";
 import { nanoid } from "nanoid";
 import { userSettingsDisplay } from "~/lib/db/schema/user-settings";
 import { Result, DatabaseError, NotFoundError } from "~/lib/result";
+import type { DbType } from "~/config/db";
 
 /**
  * Repository interface for display settings database operations.
@@ -38,6 +39,16 @@ export interface IDisplayRepository {
  * Uses Result types for explicit error handling.
  */
 export class DisplayRepository implements IDisplayRepository {
+  private db: DbType;
+
+  /**
+   * Creates a new DisplayRepository instance.
+   * @param db - Optional database instance (defaults to the global db)
+   */
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;
+  }
+
   /**
    * Finds display settings by user ID.
    */
@@ -46,7 +57,7 @@ export class DisplayRepository implements IDisplayRepository {
   ): Promise<Result<typeof userSettingsDisplay.$inferSelect, DatabaseError | NotFoundError>> {
     const result = await Result.tryPromise({
       try: () =>
-        db
+        this.db
           .select()
           .from(userSettingsDisplay)
           .where(eq(userSettingsDisplay.userId, userId))
@@ -55,7 +66,12 @@ export class DisplayRepository implements IDisplayRepository {
         new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
     });
 
-    if (Result.isOk(result) && (result.value as any[]).length === 0) {
+    if (Result.isError(result)) {
+      return result;
+    }
+
+    const records = result.value as any[];
+    if (records.length === 0) {
       return Result.err(new NotFoundError({ resource: "Display", id: userId }));
     }
 
@@ -76,7 +92,7 @@ export class DisplayRepository implements IDisplayRepository {
   }): Promise<Result<void, DatabaseError>> {
     return Result.tryPromise({
       try: () =>
-        db.insert(userSettingsDisplay).values({
+        this.db.insert(userSettingsDisplay).values({
           id: nanoid(),
           userId: data.userId,
           items: data.items,
@@ -106,7 +122,7 @@ export class DisplayRepository implements IDisplayRepository {
 
     return Result.tryPromise({
       try: () =>
-        db
+        this.db
           .update(userSettingsDisplay)
           .set({
             items: data.items,

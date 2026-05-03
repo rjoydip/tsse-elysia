@@ -100,6 +100,28 @@ HTTP Layer (routes/api/) → Controller Layer (controllers/) → Service Layer (
 - **MCP API Keys**: `src/routes/api/mcp/-keys.ts`, `src/controllers/mcp/keys.controller.ts`, `src/services/mcp/api-keys.service.ts`, `src/repositories/mcp/api-keys.repository.ts`
 - **Settings API**: `src/routes/api/settings/-profile.ts`, `src/controllers/settings/controller.ts`, `src/services/dashboard/settings/profile.ts`, `src/repositories/settings/profile.repository.ts`
 
+**Dependency Injection for Testing:**
+
+Repositories support dependency injection via constructor for inline mocking:
+
+```typescript
+// Repository constructor accepts optional db parameter
+export class AccountRepository implements IAccountRepository {
+  private db: DbType;
+
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;
+  }
+}
+```
+
+When writing unit tests:
+
+- Create a mock `db` object with the methods you need (`select`, `insert`, `update`)
+- Pass the mock to the repository constructor: `new AccountRepository(mockDb)`
+- Override mock methods in `beforeEach` or individual tests to return test data
+- See `test/repositories/settings/*.test.ts` for examples
+
 **Documentation:**
 
 - [API Architecture Decision](./knowledge/DECISIONS.md) - Full decision rationale

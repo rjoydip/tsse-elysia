@@ -255,14 +255,13 @@ Each decision must answer:
 **Implementation:**
 
 - Created comprehensive Zod schema for profile validation (username, email, bio, URLs)
-- Used react-hook-form with Zod resolver for form handling and validation
+- Used tanstack-form with Zod validation for form handling
 - Integrated with TanStack Store profile state for data persistence
 - Added loading states and error handling for form submission
-- Implemented dynamic URL field management with useFieldArray hook
+- Implemented dynamic URL field management with manual array handling
 
 **Tradeoffs:**
 
-- Increased bundle size due to additional dependencies (zod, react-hook-form)
 - More complex form logic compared to simple controlled components
 - Requires careful synchronization between form state and profile store
 
@@ -676,7 +675,60 @@ jobs:
 
 ---
 
-### 019: Semantic Versioning with PR Pre-release Support
+### 019: Repository Dependency Injection for Testability
+
+- Enable inline mocking in unit tests without database connections
+- Support dependency injection pattern for better testability
+- Allow repositories to work with any compatible database instance
+- Align with layered architecture (Repository → Database abstraction)
+
+**Implementation:**
+
+- Added optional `db` parameter to repository constructors:
+
+  ```typescript
+  constructor(db?: DbType) {
+    this.db = db ?? defaultDb;  // Use injected db or fallback to default
+  }
+  ```
+
+- Changed all internal DB calls from `db.method()` to `this.db.method()`
+
+- Updated test files to inject mock databases:
+  ```typescript
+  const mockDb = {
+    select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) ),
+    insert: () => ({ values: () => Promise.resolve([]) }),
+    update: () => ({ set: () => ({ where: () => Promise.resolve([]) }) }),
+  };
+  const repository = new AccountRepository(mockDb);
+  ```
+
+**Files Changed:**
+
+- `src/repositories/settings/account.repository.ts`
+- `src/repositories/settings/display.repository.ts`
+- `src/repositories/settings/notifications.repository.ts`
+- `test/repositories/settings/account.repository.test.ts`
+- `test/repositories/settings/display.repository.test.ts`
+- `test/repositories/settings/notifications.repository.test.ts`
+
+**Benefits:**
+
+- ✅ Tests run without database setup
+- ✅ Fast unit tests (no I/O)
+- ✅ Explicit mocking (no hidden dependencies)
+- ✅ Type-safe database injection via `DbType`
+
+**Tradeoffs:**
+
+- ⚠️ Slightly more verbose constructor
+- ⚠️ Need to maintain mock structure in tests
+- ⚠️ Learning curve for developers unfamiliar with pattern
+
+---
+
+### 020: Semantic Versioning with PR Pre-release Support
 
 **Status:** Accepted
 

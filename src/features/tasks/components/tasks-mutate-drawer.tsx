@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { Button } from "~/components/ui/button";
 import {
@@ -37,27 +36,26 @@ const formSchema = z.object({
   label: z.string().min(1, "Please select a label."),
   priority: z.string().min(1, "Please choose a priority."),
 });
-type TaskForm = z.infer<typeof formSchema>;
-
 export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutateDrawerProps) {
   const isUpdate = !!currentRow;
 
-  const form = useForm<TaskForm>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
     defaultValues: currentRow ?? {
       title: "",
       status: "",
       label: "",
       priority: "",
     },
+    validators: {
+      onChange: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      // do something with the form data
+      onOpenChange(false);
+      form.reset();
+      showSubmittedData(value);
+    },
   });
-
-  const onSubmit = (data: TaskForm) => {
-    // do something with the form data
-    onOpenChange(false);
-    form.reset();
-    showSubmittedData(data);
-  };
 
   return (
     <Sheet
@@ -77,34 +75,33 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutate
             Click save when you&apos;re done.
           </SheetDescription>
         </SheetHeader>
-        <Form {...form}>
-          <form
-            id="tasks-form"
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex-1 space-y-6 overflow-y-auto px-4"
-          >
+        <Form form={form}>
+          <div id="tasks-form" className="flex-1 space-y-6 overflow-y-auto px-4">
             <FormField
-              control={form.control}
               name="title"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter a title" />
+                    <Input
+                      placeholder="Enter a title"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <FormField
-              control={form.control}
               name="status"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem>
                   <FormLabel>Status</FormLabel>
                   <SelectDropdown
                     value={field.value}
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => field.onChange(value)}
                     isControlled
                     placeholder="Select dropdown"
                     items={[
@@ -120,15 +117,14 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutate
               )}
             />
             <FormField
-              control={form.control}
               name="label"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="relative">
                   <FormLabel>Label</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
                       className="flex flex-col space-y-1"
                     >
                       <FormItem className="flex items-center">
@@ -156,15 +152,14 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutate
               )}
             />
             <FormField
-              control={form.control}
               name="priority"
-              render={({ field }) => (
+              children={({ field }) => (
                 <FormItem className="relative">
                   <FormLabel>Priority</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
                       className="flex flex-col space-y-1"
                     >
                       <FormItem className="flex items-center">
@@ -191,15 +186,19 @@ export function TasksMutateDrawer({ open, onOpenChange, currentRow }: TaskMutate
                 </FormItem>
               )}
             />
-          </form>
+          </div>
         </Form>
         <SheetFooter className="gap-2">
           <SheetClose asChild>
             <Button variant="outline">Close</Button>
           </SheetClose>
-          <Button form="tasks-form" type="submit">
-            Save changes
-          </Button>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button form="tasks-form" type="submit" disabled={isSubmitting}>
+                Save changes
+              </Button>
+            )}
+          </form.Subscribe>
         </SheetFooter>
       </SheetContent>
     </Sheet>

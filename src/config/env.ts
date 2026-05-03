@@ -277,7 +277,7 @@ export const env = await _createEnv({
     BETTER_AUTH_URL: _getEnv("BETTER_AUTH_URL", `${_BASE_URL}/api/auth`),
     BETTER_AUTH_SECRET: _getAuthSecret(),
     DATABASE_TYPE: _getEnv("DATABASE_TYPE", "sqlite") as "sqlite" | "postgres",
-    SQLITE_URL: _getEnv("SQLITE_URL", "") || undefined,
+    SQLITE_URL: _getEnv("SQLITE_URL", "file:.artifacts/tsse-elysia.db") || undefined,
     SQLITE_AUTH_TOKEN: _getEnv("SQLITE_AUTH_TOKEN", "") || undefined,
     POSTGRES_USER: _getEnv("POSTGRES_USER", "") || undefined,
     POSTGRES_PASSWORD: _getEnv("POSTGRES_PASSWORD", "") || undefined,
