@@ -100,7 +100,8 @@ jobs:
   create-release:
     name: Create Release Tag
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.actor != 'dependabot[bot]' && github.event_name == 'push'
+    #  && github.ref == 'refs/heads/main'
     needs: [quality, security, test]
     permissions:
       contents: write
@@ -126,7 +127,7 @@ jobs:
         run: |
           # Run changelogen to determine version bump and get new version
           NEW_VERSION=$(bun changelogen --bump patch --print 2>/dev/null || echo "")
-          
+
           if [ -z "$NEW_VERSION" ]; then
             echo "No conventional commits found - skipping release"
             echo "skip_release=true" >> $GITHUB_OUTPUT
