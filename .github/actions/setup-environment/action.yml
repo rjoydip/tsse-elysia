@@ -11,9 +11,6 @@ inputs:
   bun-version-file:
     description: Path to bun version file
     default: "package.json"
-  fetch-depth:
-    description: Number of commits to fetch
-    default: "1"
 
 outputs:
   cache-hit:

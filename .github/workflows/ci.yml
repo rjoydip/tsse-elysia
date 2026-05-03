@@ -24,7 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-quality-checks
 
@@ -35,7 +36,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-security-audit
 
@@ -54,7 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/setup-database
         with:
@@ -100,8 +103,7 @@ jobs:
   create-release:
     name: Create Release Tag
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
-    #   && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.actor != 'dependabot[bot]' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [quality, security, test]
     permissions:
       contents: write
@@ -114,8 +116,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: 0
 
       - name: Configure Git
         uses: ./.github/actions/configure-git

@@ -1,4 +1,4 @@
-name: Enforce Decisions Log
+name: Enforce Decisions
 
 on:
   pull_request:

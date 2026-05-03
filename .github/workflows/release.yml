@@ -55,8 +55,6 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: 0
 
       - name: Get Tag Name
         id: tag
@@ -77,7 +75,7 @@ jobs:
 
           # Create release using GitHub CLI
           gh release create "$TAG" \
-            --title "Release $TAG" \
+            --title "$TAG" \
             --notes "$CHANGELOG" \
             --generate-notes
         env:

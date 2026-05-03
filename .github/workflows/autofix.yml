@@ -1,4 +1,4 @@
-name: Auto-fix
+name: Autofix
 
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
 
@@ -35,7 +35,8 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - name: Check for dependency updates
         env:
