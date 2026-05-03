@@ -125,9 +125,12 @@ jobs:
       - name: Bump Version
         id: bump
         run: |
-          # Run changelogen to determine version bump and get new version
-          NEW_VERSION=$(bun changelogen --bump patch --print 2>/dev/null || echo "")
-
+          # Run changelogen to bump version (updates package.json)
+          bun changelogen --bump patch 2>&1 || true
+          
+          # Get new version from package.json
+          NEW_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "")
+          
           if [ -z "$NEW_VERSION" ]; then
             echo "No conventional commits found - skipping release"
             echo "skip_release=true" >> $GITHUB_OUTPUT
