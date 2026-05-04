@@ -4,37 +4,47 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DATABASE_TYPE: "sqlite"
+  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
+
 jobs:
   quality:
     name: Quality Checks
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-quality-checks
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/run-security-audit
 
   test:
     name: Tests & Build (${{ matrix.runtime }})
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/setup-database
         with:
@@ -85,3 +96,58 @@ jobs:
         with:
           image-tag: tsse-elysia:${{ github.sha }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Create Release Tag (triggers on main push after CI passes)
+  # ---------------------------------------------------------------------------
+  create-release:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [quality, security, test]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Bump Version
+        id: bump
+        run: |
+          # Run changelogen to bump version (updates package.json)
+          bun changelogen --bump 2>&1 || true
+
+          # Get new version from package.json
+          NEW_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "")
+
+          if [ -z "$NEW_VERSION" ]; then
+            echo "No conventional commits found - skipping release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            echo "🚀 New version: $NEW_VERSION"
+          fi
+
+      - name: Create Version Tag
+        if: steps.bump.outputs.skip_release != 'true'
+        run: |
+          TAG="v${{ steps.bump.outputs.new_version }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "🏷️ Created and pushed tag: $TAG"
+
+      - name: Skip Release Notice
+        if: steps.bump.outputs.skip_release == 'true'
+        run: echo "ℹ️ No conventional commits found - skipping release tag creation"
