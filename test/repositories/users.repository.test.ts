@@ -81,7 +81,7 @@ describe("User Repository", () => {
   describe("count", () => {
     test("should return count of users", async () => {
       mockDb.select = () => ({
-        from: () => Promise.resolve([{ id: 1 }, { id: 2 }]),
+        from: () => Promise.resolve([{ count: 2 }] as { count: number }[]),
       });
 
       const result = await repository.count();
