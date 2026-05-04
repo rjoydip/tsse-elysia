@@ -27,6 +27,8 @@ export function Users({ initialUsers = [], isLoading = false, error = null }: Us
 
   const { users, loading, error: storeError } = useUsersStore();
 
+  // Fetch users once on mount when store is empty
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (users.length === 0) {
       usersActions.fetchAll();

@@ -21,22 +21,17 @@ interface UsersState {
 }
 
 /**
- * Module-level pagination state for non-React access.
- */
-let currentPagination = {
-  limit: 50,
-  offset: 0,
-  total: 0,
-};
-
-/**
  * Initial users state.
  */
 const initialState: UsersState = {
   users: [],
   loading: false,
   error: null,
-  pagination: currentPagination,
+  pagination: {
+    limit: 50,
+    offset: 0,
+    total: 0,
+  },
 };
 
 /**
@@ -153,12 +148,11 @@ export const usersActions = {
    * Fetch users with pagination offset and limit.
    */
   fetchAllWithPagination: async (offset: number, limit: number) => {
-    currentPagination = { ...currentPagination, offset, limit };
-
     usersStore.setState((state) => ({
       ...state,
       loading: true,
       error: null,
+      pagination: { ...state.pagination, offset, limit },
     }));
 
     try {
@@ -168,8 +162,6 @@ export const usersActions = {
 
       const url = `/api/users?${params.toString()}`;
       const result = await apiFetch<{ users: User[]; pagination: UsersState["pagination"] }>(url);
-
-      currentPagination = result.pagination;
 
       usersStore.setState(() => ({
         users: result.users,
@@ -189,10 +181,10 @@ export const usersActions = {
 };
 
 /**
- * Get current pagination state (for non-React access).
+ * Get current pagination state from store.
  */
 export function getCurrentPagination() {
-  return currentPagination;
+  return useStore(usersStore).pagination;
 }
 
 /**

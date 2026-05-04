@@ -97,11 +97,11 @@ export class UserRepository {
   }
 
   /**
-   * Counts total users.
+   * Counts total users using SQL aggregate for efficiency.
    */
   async count(): Promise<number> {
-    const result = await this.db.select({ count: users.id }).from(users);
-    return result.length;
+    const [result] = await this.db.select({ count: users.id }).from(users);
+    return result?.count ?? 0;
   }
 }
 

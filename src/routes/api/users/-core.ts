@@ -6,25 +6,28 @@
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
 import { userRepository } from "~/repositories/users";
-import type { UserRole, UserStatus } from "~/features/users/data/schema";
+import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 
 /**
  * Formats user record for API response.
+ * Returns null if user is null/undefined to properly handle missing data.
  */
 function formatUserResponse(
-  user: ReturnType<typeof userRepository.findById> extends Promise<infer R> ? R : never,
-) {
+  user: Awaited<ReturnType<typeof userRepository.findById>>,
+): User | null {
+  if (!user) return null;
+
   return {
-    id: user?.id ?? "",
-    firstName: user?.firstName,
-    lastName: user?.lastName,
-    username: user?.username,
-    email: user?.email ?? "",
-    phoneNumber: user?.phoneNumber,
-    status: (user?.status ?? "active") as UserStatus,
-    role: (user?.role ?? "user") as UserRole,
-    createdAt: user?.createdAt?.toISOString() ?? new Date().toISOString(),
-    updatedAt: user?.updatedAt?.toISOString() ?? new Date().toISOString(),
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    status: (user.status ?? "active") as UserStatus,
+    role: (user.role ?? "user") as UserRole,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
   };
 }
 
@@ -55,6 +58,12 @@ export const usersRoutes = new Elysia({
       if (!session || !session.user) {
         set.status = 401;
         return { error: "Unauthorized" };
+      }
+
+      const userRole = (session.user as { role?: string }).role ?? "user";
+      if (!["superadmin", "admin"].includes(userRole)) {
+        set.status = 403;
+        return { error: "Forbidden - admin role required" };
       }
 
       const searchParams = new URL(request.url).searchParams;
@@ -109,6 +118,12 @@ export const usersRoutes = new Elysia({
       if (!session || !session.user) {
         set.status = 401;
         return { error: "Unauthorized" };
+      }
+
+      const userRole = (session.user as { role?: string }).role ?? "user";
+      if (!["superadmin", "admin"].includes(userRole)) {
+        set.status = 403;
+        return { error: "Forbidden - admin role required" };
       }
 
       const result = await userRepository.findById(params.id);
