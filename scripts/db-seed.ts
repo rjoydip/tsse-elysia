@@ -4,16 +4,55 @@
  * Database seed script using drizzle-seed.
  *
  * Creates deterministic demo data for local development and testing.
+ * Seeds admin users, subscription plans, and fake users.
  */
 
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
-import { seed, reset } from "drizzle-seed";
+import { reset } from "drizzle-seed";
 import { scriptLogger as logger } from "../src/lib/logger";
 import { subscriptionPlans } from "../src/lib/db/schema/subscriptions";
-import { users } from "../src/lib/db/schema/auth";
+import { users, accounts } from "../src/lib/db/schema/auth";
 import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
+import { faker } from "@faker-js/faker";
+import { hash } from "@node-rs/argon2";
+
+/**
+ * User roles for user management.
+ */
+type UserRole = "superadmin" | "admin" | "manager" | "cashier" | "user";
+
+/**
+ * User status for user management.
+ */
+type UserStatus = "active" | "inactive" | "invited" | "suspended";
+
+/**
+ * Admin credentials for static admin accounts.
+ */
+const ADMIN_CREDENTIALS = [
+  {
+    email: "admin@tsse.local",
+    password: "admin123",
+    name: "Super Admin",
+    firstName: "Super",
+    lastName: "Admin",
+    username: "superadmin",
+    role: "superadmin" as UserRole,
+    status: "active" as UserStatus,
+  },
+  {
+    email: "manager@tsse.local",
+    password: "manager123",
+    name: "Test Manager",
+    firstName: "Test",
+    lastName: "Manager",
+    username: "manager",
+    role: "manager" as UserRole,
+    status: "active" as UserStatus,
+  },
+];
 
 /**
  * Parsed CLI options for the seed script.
@@ -155,6 +194,115 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
 }
 
 /**
+ * Seeds static admin users with email/password accounts.
+ */
+async function seedAdminUsers(db: ReturnType<typeof drizzle>): Promise<void> {
+  const baseDate = new Date();
+
+  for (const admin of ADMIN_CREDENTIALS) {
+    const userId = crypto.randomUUID();
+    const hashedPassword = await hash(admin.password, {
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 4,
+      outputLen: 32,
+      algorithm: 2,
+    });
+
+    logger.info(`Creating admin user: ${admin.email}`);
+
+    await db.insert(users).values({
+      id: userId,
+      name: admin.name,
+      email: admin.email,
+      emailVerified: true,
+      image: null,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+      subscriptionTier: "free",
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      username: admin.username,
+      phoneNumber: null,
+      role: admin.role,
+      status: admin.status,
+    });
+
+    await db.insert(accounts).values({
+      id: crypto.randomUUID(),
+      accountId: userId,
+      providerId: "email",
+      userId: userId,
+      accessToken: null,
+      refreshToken: null,
+      idToken: null,
+      accessTokenExpiresAt: null,
+      refreshTokenExpiresAt: null,
+      scope: null,
+      password: hashedPassword,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+    });
+  }
+}
+
+/**
+ * Generates fake users compatible with the extended schema.
+ */
+function generateFakeUsers(
+  count: number,
+  seed: number,
+): Array<{
+  id: string;
+  name: string | null;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  subscriptionTier: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  phoneNumber: string;
+  role: UserRole;
+  status: UserStatus;
+}> {
+  faker.seed(seed);
+  const now = new Date();
+
+  return Array.from({ length: count }, () => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const email = faker.internet.email({ firstName }).toLocaleLowerCase();
+
+    return {
+      id: faker.string.uuid(),
+      name: `${firstName} ${lastName}`,
+      email,
+      emailVerified: faker.datatype.boolean(),
+      image: faker.image.avatar(),
+      createdAt: faker.date.past({ years: 2, refDate: now }),
+      updatedAt: faker.date.recent({ days: 30 }),
+      subscriptionTier: faker.helpers.arrayElement(["free", "contributor", "enterprise"]),
+      firstName,
+      lastName,
+      username: faker.internet.username({ firstName, lastName }).toLocaleLowerCase(),
+      phoneNumber: faker.phone.number({ style: "international" }),
+      role: faker.helpers.arrayElement(["admin", "manager", "cashier", "user"] as UserRole[]),
+      status: faker.helpers.arrayElement([
+        "active",
+        "active",
+        "active",
+        "inactive",
+        "invited",
+        "suspended",
+      ] as UserStatus[]),
+    };
+  });
+}
+
+/**
  * Main seed workflow.
  */
 async function main(): Promise<void> {
@@ -180,13 +328,19 @@ async function main(): Promise<void> {
     logger.step(2, "Seeding subscription plans...");
     await seedPlans(db);
 
-    logger.step(3, "Seeding users with drizzle-seed...");
-    await seed(db as any, { users } as any, {
-      count: options.count,
-      seed: options.seed,
-    });
+    logger.step(3, "Seeding admin users...");
+    await seedAdminUsers(db);
 
-    logger.success(`Database seeded with ${options.count} users.`);
+    logger.step(4, "Seeding fake users...");
+    const fakeUsers = generateFakeUsers(options.count, options.seed);
+    logger.info(`Generated ${fakeUsers.length} fake users`);
+
+    logger.info("Inserting fake users into database...");
+    await db.insert(users).values(fakeUsers);
+
+    logger.success(
+      `Database seeded with ${ADMIN_CREDENTIALS.length} admin + ${options.count} fake users.`,
+    );
   } catch (error) {
     logger.error(error instanceof Error ? error.message : `Unknown seed failure: ${error}`);
     process.exitCode = 1;

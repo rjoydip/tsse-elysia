@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import useDialogState from "~/hooks/use-dialog-state";
+import { usersActions } from "~/lib/stores/dashboard/users";
 import { type User } from "../data/schema";
 
 type UsersDialogType = "invite" | "add" | "edit" | "delete";
@@ -9,6 +10,8 @@ type UsersContextType = {
   setOpen: (str: UsersDialogType | null) => void;
   currentRow: User | null;
   setCurrentRow: React.Dispatch<React.SetStateAction<User | null>>;
+  refetch: () => Promise<void>;
+  isRefetching: boolean;
 };
 
 const UsersContext = React.createContext<UsersContextType | null>(null);
@@ -16,9 +19,21 @@ const UsersContext = React.createContext<UsersContextType | null>(null);
 export function UsersProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useDialogState<UsersDialogType>(null);
   const [currentRow, setCurrentRow] = useState<User | null>(null);
+  const [isRefetching, setIsRefetching] = useState(false);
+
+  const refetch = async () => {
+    setIsRefetching(true);
+    try {
+      await usersActions.fetchAll();
+    } finally {
+      setIsRefetching(false);
+    }
+  };
 
   return (
-    <UsersContext value={{ open, setOpen, currentRow, setCurrentRow }}>{children}</UsersContext>
+    <UsersContext value={{ open, setOpen, currentRow, setCurrentRow, refetch, isRefetching }}>
+      {children}
+    </UsersContext>
   );
 }
 

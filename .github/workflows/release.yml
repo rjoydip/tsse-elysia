@@ -224,7 +224,7 @@ jobs:
           git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: Create GitHub Release with changelogithub
-        uses: antfu/changelogithub@v14.0.0
+        uses: antfu/changelogithub@e206e55c39bb959d81eefd4435499f0f029880af # v14.0.0
         with:
           token: ${{ secrets.GH_TOKEN }}
 

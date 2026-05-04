@@ -8,6 +8,7 @@ import { relations } from "drizzle-orm";
 /**
  * User table - stores authenticated user information.
  * Contains profile data and subscription tier information.
+ * Extended with user management fields (role, status, username, phoneNumber).
  */
 export const users = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -21,6 +22,13 @@ export const users = sqliteTable("user", {
   subscriptionId: text("subscriptionId"),
   subscriptionStatus: text("subscriptionStatus"),
   subscriptionExpiresAt: integer("subscriptionExpiresAt", { mode: "timestamp" }),
+  // Extended user management fields
+  firstName: text("firstName"),
+  lastName: text("lastName"),
+  username: text("username"),
+  phoneNumber: text("phoneNumber"),
+  role: text("role").notNull().default("user"),
+  status: text("status").notNull().default("active"),
 });
 
 /**

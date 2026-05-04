@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { ConfigDrawer } from "~/components/config-drawer";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "~/components/ui/card";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Header } from "~/components/layout/header";
 import { Main } from "~/components/layout/main";
 import { ProfileDropdown } from "~/components/profile-dropdown";
@@ -9,8 +10,36 @@ import { ThemeSwitch } from "~/components/theme-switch";
 import { Analytics } from "./components/analytics";
 import { RecentSales } from "./components/recent-sales";
 import { Overview } from "./components/overview";
+import { useEffect, useState } from "react";
 
-export function Dashboard() {
+interface DashboardProps {
+  userCount?: number;
+}
+
+export function Dashboard({ userCount: initialUserCount = 0 }: DashboardProps) {
+  const [userCount, setUserCount] = useState(initialUserCount);
+  const [loading, setLoading] = useState(!initialUserCount);
+
+  useEffect(() => {
+    async function fetchUserCount() {
+      try {
+        const response = await fetch("/api/users?limit=1");
+        if (response.ok) {
+          const data = (await response.json()) as { pagination: { total: number } };
+          setUserCount(data.pagination?.total ?? 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user count:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (!initialUserCount) {
+      fetchUserCount();
+    }
+  }, [initialUserCount]);
+
   return (
     <>
       {/* ===== Top Heading ===== */}
@@ -66,7 +95,7 @@ export function Dashboard() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
+                  <CardTitle className="text-sm font-medium">Users</CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -83,8 +112,12 @@ export function Dashboard() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+2350</div>
-                  <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+                  {loading ? (
+                    <Skeleton className="h-9 w-20" />
+                  ) : (
+                    <div className="text-2xl font-bold">+{userCount}</div>
+                  )}
+                  <p className="text-xs text-muted-foreground">+20.1% from last month</p>
                 </CardContent>
               </Card>
               <Card>

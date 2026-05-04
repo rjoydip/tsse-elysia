@@ -13,7 +13,7 @@ await client.execute({
   args: [],
 });
 
-console.log("Created __drizzle_migrations table");
+console.log("Ensured __drizzle_migrations table exists");
 
 const migrations = [
   ["0000", "init"],
@@ -23,12 +23,18 @@ const migrations = [
   ["0004", "true_warstar"],
 ];
 
+// Use INSERT OR IGNORE to skip existing
 for (const [id, hash] of migrations) {
-  await client.execute({
-    sql: `INSERT INTO __drizzle_migrations (id, hash, created_at) VALUES (?, ?, ?)`,
-    args: [id, hash, Date.now()],
+  const result = await client.execute({
+    sql: `INSERT OR IGNORE INTO __drizzle_migrations (id, hash, created_at) VALUES (?, ?, ?)`,
+    args: [Number(id), hash, Date.now()],
   });
+  if (result.rowsAffected && result.rowsAffected > 0) {
+    console.log(`Inserted migration: ${id}`);
+  } else {
+    console.log(`Migration ${id} already exists, skipping`);
+  }
 }
 
-const result = await client.execute("SELECT * FROM __drizzle_migrations");
-console.log("Inserted migrations:", JSON.stringify(result.rows));
+const result = await client.execute("SELECT * FROM __drizzle_migrations ORDER BY id");
+console.log("Current migrations:", JSON.stringify(result.rows));
