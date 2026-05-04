@@ -784,6 +784,84 @@ git describe --tags --abbrev=0 | grep -vE 'rc|hotfix'
 
 ---
 
+### 021: CI/CD Workflow Trigger Updates and Database Environment Variables
+
+**Status:** Accepted
+
+**Why:**
+
+- Use `pull_request` triggers for better PR-based validation
+- Add database environment variables (`DATABASE_TYPE`, `SQLITE_URL`) to CI workflow for proper database configuration during tests
+- Tag-based release workflow for semantic versioning
+- Prevent duplicate CI runs (PR merge triggers via push to main, not direct push)
+
+**Changes:**
+
+1. **CI Workflow (`ci.yml`)**:
+   - Uses `pull_request` trigger (not push to main)
+   - Added `env` section with `DATABASE_TYPE: "sqlite"` and `SQLITE_URL: "file:.artifacts/tsse-elysia.db"`
+   - Added `create-release` job that runs on main push to trigger version bump and release
+
+2. **Release Workflow (`release.yml`)**:
+   - Uses tag-based trigger (`push: tags: ["v*"]`)
+   - Added workflow_dispatch for manual version bump (patch/minor/major)
+   - Uses changelogen for version bumping and changelog generation
+   - No database env vars (not needed for release)
+
+**Rationale:**
+
+- PR-based CI triggers validate changes before merge
+- Tag-based release workflow for semantic versioning
+- Database env vars ensure CI tests run with proper configuration
+- Changelogen handles version bump and changelog automatically
+
+**Tradeoffs:**
+
+- Release requires manual tag creation or workflow_dispatch trigger
+- No automatic version bump on PR merge (uses conventional commits)
+
+---
+
+### 022: Simplified Release Workflow with changelogen and changelogithub
+
+**Status:** Accepted
+
+**Why:**
+
+- Simplify release process with minimal workflows
+- Use @unjs/changelogen for version management and changelog generation
+- Use changelogithub for GitHub release creation
+- Trigger releases only on tag push (manual or automated)
+- Keep NPM publishing code commented for reference only
+
+**Current Workflow:**
+
+1. **release.yml** (`push tags v*` or `workflow_dispatch`):
+   - Triggered on version tag push (e.g., `v1.2.3`)
+   - Manual trigger via workflow_dispatch with tag input
+   - Uses `bun changelogen --output` to generate changelog
+   - Uses changelogithub to create GitHub release with changelog
+   - NPM publishing code commented for reference
+
+**Usage:**
+
+```bash
+# Create a version tag (manually or via script)
+git tag v1.2.3
+git push origin v1.2.3
+
+# Or trigger via workflow_dispatch with tag name
+```
+
+**Tradeoffs:**
+
+- Simpler workflow (1 instead of multiple)
+- No automatic version bump on PR merge (manual process)
+- Changelog generation relies on conventional commits
+- NPM publishing available but not active
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

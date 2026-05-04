@@ -1,243 +1,114 @@
 name: Release
 
-# =============================================================================
-# Release Workflow
-# =============================================================================
-# Triggers:
-#   - Push to main branch (automatic)
-#   - Manual workflow_dispatch
-#
-# Process:
-#   1. Validate working tree (no uncommitted changes)
-#   2. Run quality checks (lint, typecheck, tests)
-#   3. Run security audit
-#   4. Build application
-#   5. Version bump with changelogen
-#   6. Create Git tag and release with changelogithub
-# =============================================================================
-
 on:
   push:
-    branches: [main]
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
-      version_bump:
-        description: "Manual version bump type"
-        required: false
+      bump:
+        description: "Version bump type"
+        required: true
         default: patch
         type: choice
         options:
           - patch
           - minor
           - major
-      dry_run:
-        description: "Dry run (skip publishing)"
-        required: false
-        default: false
-        type: boolean
+
+# =============================================================================
+# Release Workflow
+# =============================================================================
+# Triggers:
+#   - Push of version tag (e.g., v1.2.3) - triggers release
+#   - Manual workflow_dispatch - bumps version and creates release
+#
+# Process:
+#   1. Push tag (triggers release on tag push)
+#   2. Create GitHub release with changelog using changelogen
+#
+# Note: NPM publishing is commented out for reference - not enabled
+# =============================================================================
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Pre-release Validations
-  # ---------------------------------------------------------------------------
-  validate:
-    name: Validate Release
-    runs-on: ubuntu-latest
-    outputs:
-      has_changes: ${{ steps.check_changes.outputs.has-changes }}
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: "0"
-
-      - uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: "0"
-
-      - name: Check working tree status
-        if: github.event_name != 'workflow_dispatch'
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            echo "❌ Working tree is not clean. Please commit or stash changes."
-            git status
-            exit 1
-          fi
-          echo "✅ Working tree is clean"
-
-      - name: Check for changes to release
-        id: check_changes
-        run: |
-          # Check if there are conventional commits since last tag
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [[ -z "$LAST_TAG" ]]; then
-            # No tags yet, check all commits
-            COMMITS=$(git log --oneline -1 2>/dev/null || echo "")
-          else
-            COMMITS=$(git log --oneline "$LAST_TAG"..HEAD 2>/dev/null || echo "")
-          fi
-          if [[ -n "$COMMITS" ]]; then
-            echo "has-changes=true" >> $GITHUB_OUTPUT
-            echo "Changes found to release"
-          else
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            echo "No changes found to release"
-          fi
-
-      - name: Get current version
-        id: get_version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-
-  # ---------------------------------------------------------------------------
-  # Quality Checks
-  # ---------------------------------------------------------------------------
-  quality:
-    name: Quality Checks
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - uses: ./.github/actions/setup-environment
-
-      - uses: ./.github/actions/run-quality-checks
-
-      - uses: ./.github/actions/run-tests
-        with:
-          coverage: "true"
-          coverage-token: ${{ secrets.CODECOV_TOKEN }}
-
-  # ---------------------------------------------------------------------------
-  # Security Audit
-  # ---------------------------------------------------------------------------
-  security:
-    name: Security Audit
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - uses: ./.github/actions/setup-environment
-
-      - uses: ./.github/actions/run-security-audit
-
-  # ---------------------------------------------------------------------------
-  # Build
-  # ---------------------------------------------------------------------------
-  build:
-    name: Build
-    needs: [quality, security]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - uses: ./.github/actions/setup-environment
-
-      - uses: ./.github/actions/setup-database
-        with:
-          operation: setup
-
-      - name: Build application
-        run: bun run build
-
-      - uses: ./.github/actions/setup-database
-        with:
-          operation: remove
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: build-artifact
-          path: |
-            dist
-            .output
-            public
-          retention-days: 7
-
-  # ---------------------------------------------------------------------------
-  # Release (only if there are changes)
+  # Create GitHub Release (triggers on tag push)
   # ---------------------------------------------------------------------------
   release:
-    name: Create Release
-    needs: [validate, quality, security, build]
-    if: needs.validate.outputs.has_changes == 'true'
+    name: Create GitHub Release
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: "0"
+          fetch-depth: 0
 
-      - uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: "0"
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
-      - uses: ./.github/actions/configure-git
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Get bump type
-        id: bump_type
+      - name: Get Tag Name
+        id: tag
         run: |
-          if [[ "${{ github.event.inputs.version_bump }}" != "" && "${{ github.event.inputs.version_bump }}" != "patch" ]]; then
-            echo "type=${{ github.event.inputs.version_bump }}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event.inputs.bump }}" != "" ]]; then
+            TAG_NAME="v${{ needs.bump-version.outputs.version }}"
           else
-            # Let changelogen auto-detect
-            echo "type=auto" >> $GITHUB_OUTPUT
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
           fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "📦 Releasing: $TAG_NAME"
 
-      - name: Version bump with changelogen
+      - name: Create GitHub Release with Changelogen
         run: |
-          if [[ "${{ steps.bump_type.outputs.type }}" != "auto" ]]; then
-            bun changelogen --bump ${{ steps.bump_type.outputs.type }}
-          else
-            bun changelogen --bump
-          fi
+          TAG="${{ steps.tag.outputs.tag_name }}"
+          VERSION="${TAG#v}"
+          CHANGELOG=$(bun changelogen --output - 2>/dev/null || echo "")
+
+          # Create release using GitHub CLI
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "$CHANGELOG" \
+            --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Get new version
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $VERSION"
-
-      - name: Get changelog content
-        id: changelog
-        run: |
-          # Get changelog for this release
-          CHANGELOG=$(bun changelogen --output - 2>/dev/null || echo "")
-          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
-
-      - name: Create Git tag
-        run: |
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
-          git push origin "v${{ steps.version.outputs.new_version }}"
-
-      - name: Create GitHub Release with changelogithub
-        uses: antfu/changelogithub@e206e55c39bb959d81eefd4435499f0f029880af # v14.0.0
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-
   # ---------------------------------------------------------------------------
-  # No Release Needed
+  # NPM Publishing (Reference Only - Not Enabled)
   # ---------------------------------------------------------------------------
-  no_release:
-    name: No Release Needed
-    needs: validate
-    if: needs.validate.outputs.has_changes != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify no release
-        run: |
-          echo "ℹ️ No changes found - skipping release"
-          echo "To create a release, make conventional commits (feat:, fix:, etc.)"
+  # publish-npm:
+  #   name: Publish to NPM
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   if: github.actor != 'dependabot[bot]'
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #
+  #     - name: Setup Node
+  #       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+  #       with:
+  #         node-version: lts/*
+  #         registry-url: https://registry.npmjs.org/
+  #
+  #     - name: Install Dependencies
+  #       run: bun install
+  #
+  #     - name: Build
+  #       run: bun run build
+  #
+  #     - name: Publish to NPM
+  #       run: npm publish --access public
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

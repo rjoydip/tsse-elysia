@@ -1,5 +1,4 @@
-name: Sync TASKS with Issues
-
+name: Sync Tasks
 # Required GitHub Secrets (set in repository settings -> Secrets and variables -> Actions):
 #   GH_TOKEN - Personal access token with repo permissions (for gh CLI and git push)
 
@@ -24,9 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-environment
-        with:
-          fetch-depth: "0"
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - uses: ./.github/actions/configure-git
         with:

@@ -1,4 +1,4 @@
-name: Fallow Analysis
+name: Code Analysis
 
 on:
   pull_request:
@@ -10,8 +10,9 @@ concurrency:
 
 jobs:
   fallow:
-    name: Fallow Code Analysis
+    name: Fallow Analysis
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: read
       security-events: write
@@ -23,13 +24,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: package.json
-
-      - name: Install dependencies
-        run: bun install --frozen
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
 
       - name: Run Fallow analysis
         uses: fallow-rs/fallow@509b5fed07eccbdaf95e83700cd0d06b97b6abe5 # v2.63.0
