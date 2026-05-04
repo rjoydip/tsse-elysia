@@ -97,7 +97,9 @@ export class UserRepository {
   }
 
   /**
-   * Counts total users using SQL aggregate for efficiency.
+   * Counts total users using SQL COUNT aggregate.
+   * Note: Drizzle's { count: users.id } translates to SQL COUNT(users.id) internally.
+   * This is the most efficient approach available in Drizzle ORM.
    */
   async count(): Promise<number> {
     const [result] = await this.db.select({ count: users.id }).from(users);
