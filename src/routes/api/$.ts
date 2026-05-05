@@ -5,6 +5,7 @@
  */
 
 import { Elysia } from "elysia";
+import { treaty } from "@elysiajs/eden";
 import { createFileRoute } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { API_PREFIX, APP_NAME, HOST, PORT, isBrowser } from "~/config";
@@ -16,7 +17,7 @@ import { coreRoutes } from "./root/-core";
 import { mcpCoreRoutes } from "./mcp/-core";
 import { authCoreRoutes } from "./auth/-core";
 import { settingsRoutes } from "./settings/-core";
-import { treaty } from "@elysiajs/eden";
+import { usersRoutes } from "./users/-core";
 
 /**
  * Main API application instance factory.
@@ -63,6 +64,7 @@ export const createApiRoutes = () =>
     .use(authCoreRoutes)
     .use(mcpCoreRoutes)
     .use(settingsRoutes)
+    .use(usersRoutes)
     // Evlog client ingestion endpoint for browser logs
     .use(evlogIngestEndpoint());
 

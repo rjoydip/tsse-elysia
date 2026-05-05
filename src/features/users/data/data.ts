@@ -2,13 +2,10 @@ import { Shield, UserCheck, Users, CreditCard } from "lucide-react";
 import { type UserStatus } from "./schema";
 
 export const callTypes = new Map<UserStatus, string>([
-  ["active", "bg-teal-100/30 text-teal-900 dark:text-teal-200 border-teal-200"],
-  ["inactive", "bg-neutral-300/40 border-neutral-300"],
-  ["invited", "bg-sky-200/40 text-sky-900 dark:text-sky-100 border-sky-300"],
-  [
-    "suspended",
-    "bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10",
-  ],
+  ["active", "bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300"],
+  ["inactive", "bg-muted text-muted-foreground"],
+  ["invited", "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300"],
+  ["suspended", "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"],
 ]);
 
 export const roles = [

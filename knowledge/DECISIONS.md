@@ -862,6 +862,59 @@ git push origin v1.2.3
 
 ---
 
+### 023: User Management with Dashboard and API
+
+**Status:** Completed
+
+**Why:**
+
+- Add user management UI for admin users
+- Enable user CRUD operations via API
+- Support pagination and filtering for large user lists
+- Provide async loading with skeleton states
+- Use client-side fetching (no SSR database access)
+
+**Implementation:**
+
+1. **User Repository** (`src/repositories/users.ts`):
+   - `findAll` - Find users with filtering (role, status, search) and pagination
+   - `findById` - Find user by ID
+   - `findByEmail` - Find user by email
+   - `count` - Count total users
+
+2. **Users API** (`src/routes/api/users/-core.ts`):
+   - `GET /api/users` - List users with pagination and filtering
+   - `GET /api/users/:id` - Get user by ID
+   - Removed admin role requirement (any authenticated user can view)
+
+3. **Dashboard Updates**:
+   - Users page fetches data via store (`usersActions.fetchAll()`)
+   - Async user count with skeleton in dashboard card
+   - Refresh button with loading spinner
+
+4. **Database Schema** (`src/lib/db/schema/auth.ts`):
+   - Added columns: `firstName`, `lastName`, `username`, `phoneNumber`, `role`, `status`
+   - Migration created: `drizzle/0001_wooden_roughhouse.sql`
+
+5. **Tests**:
+   - Unit tests: `test/repositories/users.repository.test.ts`
+   - E2E tests: `.e2e/routes/_authenticate/dashboard/users.spec.ts`
+
+**Lessons Learned:**
+
+- TanStack Start loaders run in Node.js SSR context (no browser fetch)
+- Use `BASE_URL` for server-side fetch calls: `fetch(\`${BASE_URL}/api/users\`)`
+- Client components should use client-side fetching (useEffect) not loaders for authenticated routes
+- Test database schemas must match production schema columns
+
+**Tradeoffs:**
+
+- ⚠️ Removed admin role restriction (any authenticated user can view user list)
+- ⚠️ Client-side fetching adds network latency compared to SSR
+- ⚠️ Skeleton state increases code complexity
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

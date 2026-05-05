@@ -1,6 +1,5 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { cn } from "~/lib/utils";
-import { Badge } from "~/components/ui/badge";
 import { Checkbox } from "~/components/ui/checkbox";
 import { DataTableColumnHeader } from "~/components/data-table";
 import { LongText } from "~/components/long-text";
@@ -76,9 +75,14 @@ export const usersColumns: ColumnDef<User>[] = [
       const badgeColor = callTypes.get(status);
       return (
         <div className="flex space-x-2">
-          <Badge variant="outline" className={cn("capitalize", badgeColor)}>
+          <div
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
+              badgeColor,
+            )}
+          >
             {row.getValue("status")}
-          </Badge>
+          </div>
         </div>
       );
     },

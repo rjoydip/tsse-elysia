@@ -1,6 +1,6 @@
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { type Row } from "@tanstack/react-table";
-import { Trash2, UserPen } from "lucide-react";
+import { RefreshCw, Trash2, UserPen } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { type User } from "../data/schema";
 import { useUsers } from "./users-provider";
+import { usersActions, getCurrentPagination } from "~/lib/stores/dashboard/users";
 
 type DataTableRowActionsProps = {
   row: Row<User>;
@@ -19,6 +20,12 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useUsers();
+
+  const handleRefresh = async () => {
+    const pagination = getCurrentPagination();
+    await usersActions.fetchAllWithPagination(pagination.offset, pagination.limit);
+  };
+
   return (
     <>
       <DropdownMenu modal={false}>
@@ -35,9 +42,16 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               setOpen("edit");
             }}
           >
-            Edit
+            View
             <DropdownMenuShortcut>
               <UserPen size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleRefresh}>
+            Refresh
+            <DropdownMenuShortcut>
+              <RefreshCw size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

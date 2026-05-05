@@ -3,11 +3,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { Users } from "~/features/users";
 import { roles } from "~/features/users/data/data";
+import { usersActions, useUsersStore } from "~/lib/stores/dashboard/users";
+import { useEffect } from "react";
 
 function UsersWithGuard() {
+  const { users, loading, error } = useUsersStore();
+
+  useEffect(() => {
+    if (users.length === 0) {
+      usersActions.fetchAll();
+    }
+  }, []);
+
   return (
     <AuthGuard>
-      <Users />
+      <Users initialUsers={users} isLoading={loading} error={error} />
     </AuthGuard>
   );
 }
@@ -15,7 +25,6 @@ function UsersWithGuard() {
 const usersSearchSchema = z.object({
   page: z.number().optional().catch(1),
   pageSize: z.number().optional().catch(10),
-  // Facet filters
   status: z
     .array(
       z.union([
@@ -31,7 +40,6 @@ const usersSearchSchema = z.object({
     .array(z.enum(roles.map((r) => r.value as (typeof roles)[number]["value"])))
     .optional()
     .catch([]),
-  // Per-column text filter (example for username)
   username: z.string().optional().catch(""),
 });
 

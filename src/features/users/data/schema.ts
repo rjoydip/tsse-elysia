@@ -11,17 +11,19 @@ export type UserStatus = z.infer<typeof userStatusSchema>;
 const userRoleSchema = z.union([
   z.literal("superadmin"),
   z.literal("admin"),
-  z.literal("cashier"),
   z.literal("manager"),
+  z.literal("cashier"),
+  z.literal("user"),
 ]);
+export type UserRole = z.infer<typeof userRoleSchema>;
 
 const _userSchema = z.object({
   id: z.string(),
-  firstName: z.string(),
-  lastName: z.string(),
-  username: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  username: z.string().nullable(),
   email: z.string(),
-  phoneNumber: z.string(),
+  phoneNumber: z.string().nullable(),
   status: userStatusSchema,
   role: userRoleSchema,
   createdAt: z.coerce.date(),

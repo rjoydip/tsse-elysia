@@ -62,16 +62,22 @@ Core focus:
 
 ## Active Focus
 
-### Phase 9 – MCP Platform
-
-- External API layer
-- Secure tool execution
-- Multi-tenant access
-
 ### Phase 10 – Data Evolution
 
 - Vector + Graph DB
 - Performance & scaling
+
+### Phase 9 – User Management Dashboard ✅ (Recent)
+
+**Completed:**
+
+- User repository with findAll, findById, findByEmail, count methods
+- Users API route with pagination and filtering
+- Users dashboard page with data table
+- Refresh button with loading state
+- Async user count with skeleton in dashboard
+- Unit tests for repository
+- E2E tests for users page
 
 ### Phase 11 – API Architecture Refactoring ✅
 
@@ -83,7 +89,7 @@ Core focus:
 - Refactored MCP API keys (moved ORM logic to repository, business logic to service)
 - Refactored Settings API (profile, account, display, notifications)
 - Added barrel files (index.ts) for all new layers
-- All 932 unit tests pass
+- All unit tests pass
 - TypeScript typecheck passes
 - Linter passes with 0 errors
 
@@ -93,22 +99,20 @@ Core focus:
 src/
 ├── routes/api/         # HTTP Layer (Elysia route definitions)
 ├── controllers/        # Controller Layer (session validation, request parsing)
-├── services/          # Service Layer (business logic)
+├── services/           # Service Layer (business logic)
 └── repositories/      # Repository Layer (ORM operations)
 ```
-
-See [README.md](./README.md#api-architecture) for detailed diagram.
 
 ---
 
 ## Linked Execution Plans
 
-- `plans/phase-9-mcp-server-plan.md`
-- `plans/phase-7.1-redis-implementation-plan.md`
-- `plans/phase-8-realtime-features.md`
-- `plans/phase-5.2-user-management-dashboard.md`
-- `plans/phase-db0-database-refactoring.md`
-- `plans/phase-13-contract-testing-implementation-plan.md`
+- [Phase 9: MCP Server Plan](./plans/phase-9-mcp-server-plan.md)
+- [Phase 7.1: Redis Implementation](./plans/phase-7.1-redis-implementation-plan.md)
+- [Phase 8: Real-time Features](./plans/phase-8-realtime-features.md)
+- [Phase 5.2: User Management Dashboard](./plans/phase-5.2-user-management-dashboard.md)
+- [Phase 11: Database Refactoring](./plans/phase-11-db0-database-refactoring.md)
+- [Phase 13: Contract Testing](./plans/phase-13-contract-testing-implementation-plan.md)
 
 ---
 
