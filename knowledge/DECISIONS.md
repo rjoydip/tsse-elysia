@@ -915,6 +915,52 @@ git push origin v1.2.3
 
 ---
 
+### 024: Automated CHANGELOG and Version Bump on PR Merge
+
+**Status:** Accepted
+
+**Why:**
+
+- Automate version management when PRs are merged to main
+- Keep CHANGELOG.md up-to-date with each release
+- Prevent duplicate tag creation errors
+- Run security scans only on PRs, not on main push
+
+**Changes:**
+
+1. **CI Workflow (`ci.yml`)**:
+   - Added `Commit Version Changes` step after changelogen to commit CHANGELOG.md and package.json
+   - Added tag existence check before creating tags (prevents "tag already exists" errors)
+   - Limited `create-release` job to only run on merged PRs (`github.event.pull_request.merged == true`)
+   - Removed `Security Scan` and `Docker Security Scan` from main branch push (only run on PRs)
+
+2. **Release Workflow (`release.yml`)**:
+   - Removed broken `workflow_dispatch` trigger (referenced non-existent bump-version job)
+   - Simplified to only trigger on tag push
+
+3. **AGENTS.md**:
+   - Updated release process documentation
+
+**Release Flow:**
+
+```
+1. PR merged to main → CI runs
+2. After CI passes → create-release job:
+   - Runs changelogen --bump (updates package.json + CHANGELOG.md)
+   - Commits changes with "chore: release v<x.y.z>"
+   - Pushes commit to main
+   - Creates and pushes version tag (e.g., v0.1.0)
+3. Tag pushed → release.yml creates GitHub Release
+```
+
+**Tradeoffs:**
+
+- Additional CI run triggered by commit push (mitigated by tag existence check)
+- Release workflow depends on ci.yml for tag creation (tight coupling)
+- Benefits: fully automated releases with no manual intervention
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
