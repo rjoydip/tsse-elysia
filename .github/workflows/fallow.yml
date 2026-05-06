@@ -28,7 +28,7 @@ jobs:
         uses: ./.github/actions/setup-environment
 
       - name: Run Fallow analysis
-        uses: fallow-rs/fallow@509b5fed07eccbdaf95e83700cd0d06b97b6abe5 # v2.63.0
+        uses: fallow-rs/fallow@274a99aafcf591be2d810e8b8f455b3851b1a5c1 # v2.66.1
         with:
           format: sarif
           comment: true
