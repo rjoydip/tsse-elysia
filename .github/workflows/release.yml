@@ -4,30 +4,20 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: "Version bump type"
-        required: true
-        default: patch
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
 
 # =============================================================================
 # Release Workflow
 # =============================================================================
 # Triggers:
 #   - Push of version tag (e.g., v1.2.3) - triggers release
-#   - Manual workflow_dispatch - bumps version and creates release
 #
 # Process:
-#   1. Push tag (triggers release on tag push)
+#   1. Tag pushed (from ci.yml create-release job)
 #   2. Create GitHub release with changelog using changelogen
 #
-# Note: NPM publishing is commented out for reference - not enabled
+# Note:
+#   - Version bump, CHANGELOG.md update, and tag creation handled by ci.yml
+#   - NPM publishing is commented out for reference - not enabled
 # =============================================================================
 
 concurrency:
@@ -59,11 +49,7 @@ jobs:
       - name: Get Tag Name
         id: tag
         run: |
-          if [[ "${{ github.event.inputs.bump }}" != "" ]]; then
-            TAG_NAME="v${{ needs.bump-version.outputs.version }}"
-          else
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
-          fi
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "📦 Releasing: $TAG_NAME"
 
