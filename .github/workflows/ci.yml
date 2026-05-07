@@ -103,7 +103,7 @@ jobs:
   create-release:
     name: Create Release Tag
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]' && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.pull_request.merged == true
+    if: github.actor != 'dependabot[bot]' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [quality, test]
     permissions:
       contents: write
@@ -143,11 +143,15 @@ jobs:
       - name: Commit Version Changes
         if: steps.bump.outputs.skip_release != 'true'
         run: |
+          # Get the branch name dynamically (works for both PR merges and direct pushes)
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "Pushing to branch: $BRANCH_NAME"
+
           # Check if there are changes to commit
           if [ -n "$(git status --porcelain)" ]; then
             git add CHANGELOG.md package.json
             git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
-            git push origin main
+            git push origin "$BRANCH_NAME"
             echo "📝 Committed and pushed version changes"
           else
             echo "ℹ️ No files to commit"
@@ -161,7 +165,7 @@ jobs:
             echo "🏷️ Tag $TAG already exists, skipping tag creation"
           else
             git tag -a "$TAG" -m "Release $TAG"
-            git push origin "$TAG"
+            git push origin "$TAG" --force-if-needed
             echo "🏷️ Created and pushed tag: $TAG"
           fi
 

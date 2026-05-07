@@ -931,8 +931,9 @@ git push origin v1.2.3
 1. **CI Workflow (`ci.yml`)**:
    - Added `Commit Version Changes` step after changelogen to commit CHANGELOG.md and package.json
    - Added tag existence check before creating tags (prevents "tag already exists" errors)
-   - Limited `create-release` job to only run on merged PRs (`github.event.pull_request.merged == true`)
    - Removed `Security Scan` and `Docker Security Scan` from main branch push (only run on PRs)
+   - Made release trigger dynamic: uses `GITHUB_HEAD_REF` for PRs or extracts branch from `GITHUB_REF` for direct pushes
+   - Removed `pull_request.merged` condition (was causing release to skip on non-PR main pushes)
 
 2. **Release Workflow (`release.yml`)**:
    - Removed broken `workflow_dispatch` trigger (referenced non-existent bump-version job)
@@ -948,8 +949,8 @@ git push origin v1.2.3
 2. After CI passes → create-release job:
    - Runs changelogen --bump (updates package.json + CHANGELOG.md)
    - Commits changes with "chore: release v<x.y.z>"
-   - Pushes commit to main
-   - Creates and pushes version tag (e.g., v0.1.0)
+   - Pushes commit to branch dynamically
+   - Creates and pushes version tag (e.g., v0.1.0) with --force-if-needed
 3. Tag pushed → release.yml creates GitHub Release
 ```
 
