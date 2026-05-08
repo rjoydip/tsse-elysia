@@ -962,6 +962,44 @@ git push origin v1.2.3
 
 ---
 
+### 025: Skip CI Jobs on Release Tag Push
+
+**Status:** Accepted
+
+**Why:**
+
+- Avoid redundant CI runs when triggered by release tag push
+- Release tags are created after CI passes on main merge, so re-running CI is unnecessary
+- Reduce CI resource usage and wait times for release process
+
+**Changes:**
+
+1. **Quality Checks job** (`ci.yml`):
+   - Added condition: `(github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/'))`
+   - Skips when triggered by tag push
+
+2. **Tests & Build job** (`ci.yml`):
+   - Added same condition: `(github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/'))`
+   - Skips when triggered by tag push
+
+3. **Security Scan** and **Docker Security Scan** already skip on push (condition: `github.event_name == 'pull_request'`)
+
+**Flow:**
+
+```
+1. PR merged to main → CI runs (quality, test, security, docker-scan)
+2. create-release job creates version tag (vX.Y.Z)
+3. Tag pushed → release.yml creates GitHub Release
+4. CI re-runs on tag push → now skips quality and test (security/docker-scan already skipped)
+```
+
+**Tradeoffs:**
+
+- ⚠️ Release tag push won't run quality checks (acceptable since main push already passed)
+- ⚠️ If tag created manually without prior CI, jobs won't run (manual tag creation should ensure CI passed)
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
