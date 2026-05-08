@@ -3,7 +3,7 @@ title: Changelog
 description: All notable changes to this project
 ---
 
-## v0.0.0 (2026-03-25)
+## v0.0.0
 
 ### 🚀 Enhancements
 
