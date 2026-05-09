@@ -143,16 +143,20 @@ jobs:
       - name: Commit Version Changes
         if: steps.bump.outputs.skip_release != 'true'
         run: |
-          # Get the branch name dynamically (works for both PR merges and direct pushes)
-          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-          echo "Pushing to branch: $BRANCH_NAME"
+          # Detect merge scenario: GITHUB_HEAD_REF is set for PR merges, otherwise use branch from ref
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            TARGET_BRANCH="main"
+          else
+            TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "Pushing to branch: $TARGET_BRANCH"
 
           # Check if there are changes to commit
           if [ -n "$(git status --porcelain)" ]; then
             bunx oxfmt CHANGELOG.md package.json
             git add CHANGELOG.md package.json
             git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
-            git push origin "$BRANCH_NAME"
+            git push origin "$TARGET_BRANCH"
             echo "📝 Committed and pushed version changes"
           else
             echo "ℹ️ No files to commit"
