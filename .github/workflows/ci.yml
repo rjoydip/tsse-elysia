@@ -149,6 +149,7 @@ jobs:
 
           # Check if there are changes to commit
           if [ -n "$(git status --porcelain)" ]; then
+            bunx oxfmt CHANGELOG.md package.json
             git add CHANGELOG.md package.json
             git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
             git push origin "$BRANCH_NAME"

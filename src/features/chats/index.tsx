@@ -55,8 +55,7 @@ export function Chats() {
     return acc;
   }, {});
 
-  // oxlint-disable-next-line: no-unused-vars
-  const users = conversations.map(({ messages, ...user }) => user);
+  const users = conversations.map(({ messages: _messages, ...user }) => user);
 
   return (
     <>

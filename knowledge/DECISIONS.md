@@ -1000,6 +1000,35 @@ git push origin v1.2.3
 
 ---
 
+### 026: Format CHANGELOG and package.json Before Release Commit
+
+**Status:** Accepted
+
+**Why:**
+
+- Ensure consistent formatting of CHANGELOG.md and package.json before committing version changes
+- Prevent unformatted files from being committed during automated release process
+- Align with project's code style standards
+
+**Changes:**
+
+Added `bunx oxfmt CHANGELOG.md package.json` step in `ci.yml` release workflow before git commit:
+
+```yaml
+if [ -n "$(git status --porcelain)" ]; then
+  bunx oxfmt CHANGELOG.md package.json
+  git add CHANGELOG.md package.json
+  git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
+  ...
+```
+
+**Tradeoffs:**
+
+- ⚠️ Additional step adds small delay to release process (~1-2 seconds)
+- ✅ Ensures consistent formatting across all releases
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
