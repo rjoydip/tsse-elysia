@@ -3,6 +3,10 @@ title: Changelog
 description: All notable changes to this project
 ---
 
+## v0.0.6
+
+[compare changes](https://github.com/rjoydip/tsse-elysia/compare/v0.0.5...v0.0.6)
+
 ## v0.0.5
 
 [compare changes](https://github.com/rjoydip/tsse-elysia/compare/v0.0.4...v0.0.5)
