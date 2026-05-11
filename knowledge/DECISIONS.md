@@ -1000,32 +1000,44 @@ git push origin v1.2.3
 
 ---
 
-### 026: Format CHANGELOG and package.json Before Release Commit
+### 027: Fix Release Workflow to Push Commits to Main on PR Merge
 
 **Status:** Accepted
 
 **Why:**
 
-- Ensure consistent formatting of CHANGELOG.md and package.json before committing version changes
-- Prevent unformatted files from being committed during automated release process
-- Align with project's code style standards
+- Prevent duplicate tag creation from repetitive release commits
+- When PR merges, `GITHUB_HEAD_REF` contained PR branch name (e.g., `swe-fix`), causing commits to be pushed to PR branch
+- This re-triggered CI on PR branch, creating duplicate tags
 
 **Changes:**
 
-Added `bunx oxfmt CHANGELOG.md package.json` step in `ci.yml` release workflow before git commit:
+Updated `ci.yml` "Commit Version Changes" step to detect merge scenario:
 
-```yaml
-if [ -n "$(git status --porcelain)" ]; then
-  bunx oxfmt CHANGELOG.md package.json
-  git add CHANGELOG.md package.json
-  git commit -m "chore: release v${{ steps.bump.outputs.new_version }}"
-  ...
+```bash
+# Before (buggy):
+BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+git push origin "$BRANCH_NAME"
+
+# After (fixed):
+if [ -n "$GITHUB_HEAD_REF" ]; then
+  TARGET_BRANCH="main"
+else
+  TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+fi
+git push origin "$TARGET_BRANCH"
 ```
+
+**Flow:**
+
+1. PR merged to main → CI runs with `GITHUB_HEAD_REF` set to PR branch name
+2. create-release detects merge scenario → pushes commit to `main` (not PR branch)
+3. No re-trigger of CI on PR branch → no duplicate tags
 
 **Tradeoffs:**
 
-- ⚠️ Additional step adds small delay to release process (~1-2 seconds)
-- ✅ Ensures consistent formatting across all releases
+- ⚠️ Additional conditional logic in release workflow
+- ✅ Prevents duplicate tags and wasted CI resources
 
 ---
 
