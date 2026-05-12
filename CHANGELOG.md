@@ -7,6 +7,13 @@ description: All notable changes to this project
 
 ### 🚀 Enhancements
 
+- Add user create/edit dialog with password validation and matching indicator
+- Add password strength requirements indicator (8 chars, lowercase, number)
+- Improve username generation from name (handles special characters)
+- Add unit tests for user form schemas (20 tests)
+- Add E2E tests for users dashboard and add user dialog
+- Add sign-up password match indicator
+- Improve form error handling in TanStack Form integration
 - Auth service and changes in other places ([#2](https://github.com/rjoydip/tsse-elysia/pull/2))
 - Add dead code detection with TypeScript and oxlint rules ([#3](https://github.com/rjoydip/tsse-elysia/pull/3))
 - Implement user account management with auth pages and UI components ([#8](https://github.com/rjoydip/tsse-elysia/pull/8))

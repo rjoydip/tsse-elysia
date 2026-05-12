@@ -1041,6 +1041,61 @@ git push origin "$TARGET_BRANCH"
 
 ---
 
+### 028: User Management Dialog with Password Validation
+
+**Status:** Completed
+
+**Why:**
+
+- Add user creation/editing dialog with password validation
+- Show password strength requirements indicator (8+ chars, lowercase, number)
+- Show password match/mismatch indicator for confirmation
+- Improve username generation from name (handles special characters)
+- Fix form submission via TanStack Form integration
+
+**Implementation:**
+
+1. **Form Component** (`src/components/ui/form.tsx`):
+   - Updated `FormField` to read errors from `state.errors.[name].[0]`
+   - Changed `Form.onSubmit` to call `form.handleSubmit()` for native form submission
+   - Moved submit button inside `<Form>` component for proper form submission
+
+2. **User Action Dialog** (`src/features/users/components/users-action-dialog.tsx`):
+   - Added password strength requirements indicator
+   - Added password match/mismatch indicator with visual feedback
+   - Improved username generation: removes special characters from names
+   - Fixed form submission: removed encoded password (API handles hashing internally)
+
+3. **Sign-Up Form** (`src/features/auth/sign-up/components/sign-up-form.tsx`):
+   - Added password match indicator similar to user dialog
+
+4. **API** (`src/routes/api/users/-core.ts`):
+   - Fixed `auth.api.signUpEmail()` call with correct `body` wrapper
+   - Updated role validation to accept all 5 roles (user, cashier, manager, admin, superadmin)
+
+5. **Tests**:
+   - Unit tests: `test/features/users/schema.test.ts` (20 tests)
+   - E2E tests: `.e2e/routes/_authenticate/dashboard/users.spec.ts`
+
+**Changes:**
+
+| File                                                    | Change                                       |
+| ------------------------------------------------------- | -------------------------------------------- |
+| `src/components/ui/form.tsx`                            | Fix FormField error retrieval, Form.onSubmit |
+| `src/features/users/components/users-action-dialog.tsx` | Add password indicators, fix form submission |
+| `src/features/auth/sign-up/components/sign-up-form.tsx` | Add password match indicator                 |
+| `src/routes/api/users/-core.ts`                         | Fix signUpEmail call, update role validation |
+| `test/features/users/schema.test.ts`                    | New unit tests (20 tests)                    |
+| `.e2e/routes/_authenticate/dashboard/users.spec.ts`     | E2E tests                                    |
+
+**Tradeoffs:**
+
+- ⚠️ More complex form component logic
+- ✅ Better user feedback with visual indicators
+- ✅ Improved username generation handles international names
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged

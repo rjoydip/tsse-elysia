@@ -32,6 +32,8 @@ const sidebarNavItems = [
     title: "Notifications",
     href: "/dashboard/settings/notifications",
     icon: <Bell size={18} />,
+    disabled: true,
+    disabledMessage: "Coming soon",
   },
 ];
 

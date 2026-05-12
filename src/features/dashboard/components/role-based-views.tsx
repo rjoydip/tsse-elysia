@@ -6,6 +6,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Header } from "~/components/layout/header";
+import { Main } from "~/components/layout/main";
+import { ProfileDropdown } from "~/components/profile-dropdown";
+import { ConfigDrawer } from "~/components/config-drawer";
+import { ThemeSwitch } from "~/components/theme-switch";
+import { Search } from "~/components/search";
 import { usePermission } from "~/hooks/use-permission";
 import { Overview } from "./overview";
 import { RecentSales } from "./recent-sales";
@@ -440,17 +446,35 @@ import { useEffect, useState } from "react";
 export function RoleBasedDashboard(props: RoleBasedDashboardProps) {
   const { dashboardView } = usePermission();
 
-  switch (dashboardView) {
-    case "full":
-      return <FullDashboard {...props} />;
-    case "team":
-      return <TeamDashboard {...props} />;
-    case "sales":
-      return <SalesDashboard {...props} />;
-    case "analytics":
-      return <FullDashboard {...props} />;
-    case "basic":
-    default:
-      return <BasicDashboard {...props} />;
-  }
+  const DashboardComponent = (() => {
+    switch (dashboardView) {
+      case "full":
+        return FullDashboard;
+      case "team":
+        return TeamDashboard;
+      case "sales":
+        return SalesDashboard;
+      case "analytics":
+        return FullDashboard;
+      case "basic":
+      default:
+        return BasicDashboard;
+    }
+  })();
+
+  return (
+    <>
+      <Header>
+        <div className="ms-auto flex items-center space-x-4">
+          <Search />
+          <ThemeSwitch />
+          <ConfigDrawer />
+          <ProfileDropdown />
+        </div>
+      </Header>
+      <Main>
+        <DashboardComponent {...props} />
+      </Main>
+    </>
+  );
 }

@@ -4,6 +4,7 @@
  */
 
 import { useSession } from "~/lib/auth/client";
+import { useAuthStore, getUserRoleFromCookie } from "~/lib/stores/auth";
 import type { UserRole, Permission } from "~/lib/auth/permissions";
 import {
   hasPermission,
@@ -16,16 +17,19 @@ import {
 } from "~/lib/auth/permissions";
 
 /**
- * Extracts user role from session data.
+ * Extracts user role from auth store or cookie.
+ * Auth store has priority as it contains the role set during admin sign-in.
+ * Falls back to reading directly from cookie to handle initial load timing.
  */
-function getUserRole(session: unknown): UserRole {
-  if (session && typeof session === "object" && "user" in session) {
-    const user = (session as { user?: { role?: string } }).user;
-    if (user?.role && isValidRole(user.role)) {
-      return user.role as UserRole;
+function getUserRole(authState: { user: { role?: string[] } | null }): UserRole {
+  if (authState.user?.role && authState.user.role.length > 0) {
+    const role = authState.user.role[0];
+    if (isValidRole(role)) {
+      return role;
     }
   }
-  return "user";
+
+  return getUserRoleFromCookie();
 }
 
 /**
@@ -77,10 +81,11 @@ export interface UsePermissionReturn {
  * }
  */
 export function usePermission(): UsePermissionReturn {
+  const authState = useAuthStore();
   const { data: session, isPending } = useSession();
 
-  const role = getUserRole(session);
-  const isAuthenticated = Boolean(session?.user);
+  const role = getUserRole(authState);
+  const isAuthenticated = Boolean(session?.user) || Boolean(authState.user);
 
   return {
     role,

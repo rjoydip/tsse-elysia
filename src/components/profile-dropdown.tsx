@@ -50,7 +50,7 @@ export function ProfileDropdown() {
                 <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild disabled>
               <Link to="/dashboard/settings">
                 Billing
                 <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
@@ -62,7 +62,6 @@ export function ProfileDropdown() {
                 <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-destructive" onClick={() => setOpen(true)}>

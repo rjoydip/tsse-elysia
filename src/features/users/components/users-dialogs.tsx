@@ -4,10 +4,15 @@ import { UsersInviteDialog } from "./users-invite-dialog";
 import { useUsers } from "./users-provider";
 
 export function UsersDialogs() {
-  const { open, setOpen, currentRow, setCurrentRow } = useUsers();
+  const { open, setOpen, currentRow, setCurrentRow, refetch } = useUsers();
   return (
     <>
-      <UsersActionDialog key="user-add" open={open === "add"} onOpenChange={() => setOpen("add")} />
+      <UsersActionDialog
+        key="user-add"
+        open={open === "add"}
+        onOpenChange={() => setOpen("add")}
+        onSuccess={refetch}
+      />
 
       <UsersInviteDialog
         key="user-invite"
@@ -27,6 +32,7 @@ export function UsersDialogs() {
               }, 500);
             }}
             currentRow={currentRow}
+            onSuccess={refetch}
           />
 
           <UsersDeleteDialog
@@ -39,6 +45,7 @@ export function UsersDialogs() {
               }, 500);
             }}
             currentRow={currentRow}
+            onSuccess={refetch}
           />
         </>
       )}

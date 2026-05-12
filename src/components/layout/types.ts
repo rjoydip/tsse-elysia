@@ -1,4 +1,5 @@
 import { type LinkProps } from "@tanstack/react-router";
+import type { UserRole } from "~/lib/auth/permissions";
 
 type User = {
   name: string;
@@ -16,6 +17,12 @@ type BaseNavItem = {
   title: string;
   badge?: string;
   icon?: React.ElementType;
+  /** Roles that can see this item. If not specified, visible to all. */
+  roles?: UserRole[];
+  /** If true, item is visible but disabled (not clickable) */
+  disabled?: boolean;
+  /** Message shown when disabled item is clicked */
+  disabledMessage?: string;
 };
 
 type NavLink = BaseNavItem & {
@@ -33,6 +40,8 @@ type NavItem = NavCollapsible | NavLink;
 type NavGroup = {
   title: string;
   items: NavItem[];
+  /** Roles that can see this group. If not specified, visible to all. */
+  roles?: UserRole[];
 };
 
 type SidebarData = {

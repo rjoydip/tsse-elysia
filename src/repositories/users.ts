@@ -105,6 +105,13 @@ export class UserRepository {
     const [result] = await this.db.select({ count: users.id }).from(users);
     return result?.count ?? 0;
   }
+
+  /**
+   * Updates a user by ID.
+   */
+  async update(id: string, data: Partial<typeof users.$inferInsert>): Promise<void> {
+    await this.db.update(users).set(data).where(eq(users.id, id));
+  }
 }
 
 /**

@@ -177,6 +177,12 @@ export const auth = new Proxy({} as any, {
   },
 });
 
+/**
+ * Export getAuth for direct access to auth instance.
+ * Useful for server-side scripts like seed.
+ */
+export { getAuth };
+
 // Type exports for use in route handlers and API responses
 export type Session = typeof auth.$Infer.Session.session;
 export type User = typeof auth.$Infer.Session.user;

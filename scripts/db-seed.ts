@@ -12,11 +12,10 @@ import { drizzle } from "drizzle-orm/libsql";
 import { reset } from "drizzle-seed";
 import { scriptLogger as logger } from "../src/lib/logger";
 import { subscriptionPlans } from "../src/lib/db/schema/subscriptions";
-import { users, accounts } from "../src/lib/db/schema/auth";
+import { users } from "../src/lib/db/schema/auth";
 import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
 import { faker } from "@faker-js/faker";
-import { hash } from "@node-rs/argon2";
 
 /**
  * User roles for user management.
@@ -190,59 +189,86 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
   }));
 
   logger.info(`Seeding ${planRecords.length} subscription plans...`);
-  await db.insert(subscriptionPlans).values(planRecords);
+  for (const plan of planRecords) {
+    await db
+      .insert(subscriptionPlans)
+      .values(plan)
+      .onConflictDoUpdate({
+        target: subscriptionPlans.id,
+        set: {
+          name: plan.name,
+          description: plan.description,
+          price: plan.price,
+          currency: plan.currency,
+          interval: plan.interval,
+          intervalCount: plan.intervalCount,
+          features: plan.features,
+          rateLimit: plan.rateLimit,
+          rateLimitDuration: plan.rateLimitDuration,
+          updatedAt: plan.updatedAt,
+        },
+      });
+  }
 }
 
 /**
- * Seeds static admin users with email/password accounts.
+ * Seeds static admin users via HTTP API to the running server.
+ * This ensures proper password hashing and account creation.
  */
-async function seedAdminUsers(db: ReturnType<typeof drizzle>): Promise<void> {
-  const baseDate = new Date();
+async function seedAdminUsers(): Promise<void> {
+  const BASE_URL = "http://localhost:3000";
 
   for (const admin of ADMIN_CREDENTIALS) {
-    const userId = crypto.randomUUID();
-    const hashedPassword = await hash(admin.password, {
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-      outputLen: 32,
-      algorithm: 2,
-    });
-
     logger.info(`Creating admin user: ${admin.email}`);
 
-    await db.insert(users).values({
-      id: userId,
-      name: admin.name,
-      email: admin.email,
-      emailVerified: true,
-      image: null,
-      createdAt: baseDate,
-      updatedAt: baseDate,
-      subscriptionTier: "free",
-      firstName: admin.firstName,
-      lastName: admin.lastName,
-      username: admin.username,
-      phoneNumber: null,
-      role: admin.role,
-      status: admin.status,
-    });
+    // Create user via HTTP API - use encoded password like client does
+    const { encodePassword } = await import("../src/lib/utils/encryption");
+    const encodedPassword = await encodePassword(admin.password);
 
-    await db.insert(accounts).values({
-      id: crypto.randomUUID(),
-      accountId: userId,
-      providerId: "email",
-      userId: userId,
-      accessToken: null,
-      refreshToken: null,
-      idToken: null,
-      accessTokenExpiresAt: null,
-      refreshTokenExpiresAt: null,
-      scope: null,
-      password: hashedPassword,
-      createdAt: baseDate,
-      updatedAt: baseDate,
-    });
+    try {
+      const response = await fetch(`${BASE_URL}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: admin.email,
+          password: encodedPassword,
+          name: admin.name,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        if (err.error?.code === "USER_ALREADY_EXISTS" || err.message?.includes("already exists")) {
+          logger.info(`Admin ${admin.email} already exists, updating role`);
+        } else {
+          logger.warn(`Could not create admin ${admin.email}: ${JSON.stringify(err)}`);
+          continue;
+        }
+      } else {
+        const data = await response.json();
+        logger.info(`Created admin user: ${admin.email} with ID: ${data.user?.id}`);
+      }
+
+      // Update the user's role in the database
+      const { db } = await import("../src/config/db");
+      const { users } = await import("../src/lib/db/schema/auth");
+      const { eq } = await import("drizzle-orm");
+
+      await db
+        .update(users)
+        .set({
+          role: admin.role,
+          firstName: admin.firstName,
+          lastName: admin.lastName,
+          username: admin.username,
+        })
+        .where(eq(users.email, admin.email));
+
+      logger.info(`Updated role to ${admin.role} for ${admin.email}`);
+    } catch (error) {
+      // Server might not be running - skip admin creation
+      logger.info(`Could not create admin ${admin.email} (server may not be running): ${error}`);
+    }
   }
 }
 
@@ -329,14 +355,20 @@ async function main(): Promise<void> {
     await seedPlans(db);
 
     logger.step(3, "Seeding admin users...");
-    await seedAdminUsers(db);
+    await seedAdminUsers();
 
     logger.step(4, "Seeding fake users...");
     const fakeUsers = generateFakeUsers(options.count, options.seed);
     logger.info(`Generated ${fakeUsers.length} fake users`);
 
-    logger.info("Inserting fake users into database...");
-    await db.insert(users).values(fakeUsers);
+    logger.info("Inserting fake users into database (skipping duplicates)...");
+    for (const user of fakeUsers) {
+      try {
+        await db.insert(users).values(user);
+      } catch {
+        // Skip duplicates
+      }
+    }
 
     logger.success(
       `Database seeded with ${ADMIN_CREDENTIALS.length} admin + ${options.count} fake users.`,

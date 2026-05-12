@@ -90,9 +90,9 @@ export function NavUser({ user }: { user?: NavUserProps }) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem disabled>
                   <Sparkles />
-                  Upgrade to Pro
+                  <span className="opacity-50">Upgrade to Pro</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
@@ -103,17 +103,13 @@ export function NavUser({ user }: { user?: NavUserProps }) {
                     Account
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard/settings">
-                    <CreditCard />
-                    Billing
-                  </Link>
+                <DropdownMenuItem disabled>
+                  <CreditCard />
+                  <span className="opacity-50">Billing</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard/settings/notifications">
-                    <Bell />
-                    Notifications
-                  </Link>
+                <DropdownMenuItem disabled>
+                  <Bell />
+                  <span className="opacity-50">Notifications</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

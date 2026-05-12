@@ -37,6 +37,7 @@ import { Route as AuthenticatedDashboardSettingsRouteRouteImport } from './route
 import { Route as AuthenticatedDashboardUsersIndexRouteImport } from './routes/_authenticated/dashboard/users/index'
 import { Route as AuthenticatedDashboardTasksIndexRouteImport } from './routes/_authenticated/dashboard/tasks/index'
 import { Route as AuthenticatedDashboardSettingsIndexRouteImport } from './routes/_authenticated/dashboard/settings/index'
+import { Route as AuthenticatedDashboardRolesIndexRouteImport } from './routes/_authenticated/dashboard/roles/index'
 import { Route as AuthenticatedDashboardChatsIndexRouteImport } from './routes/_authenticated/dashboard/chats/index'
 import { Route as AuthenticatedDashboardAppsIndexRouteImport } from './routes/_authenticated/dashboard/apps/index'
 import { Route as AuthenticatedDashboardSettingsNotificationsRouteImport } from './routes/_authenticated/dashboard/settings/notifications'
@@ -189,6 +190,12 @@ const AuthenticatedDashboardSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedDashboardSettingsRouteRoute,
   } as any)
+const AuthenticatedDashboardRolesIndexRoute =
+  AuthenticatedDashboardRolesIndexRouteImport.update({
+    id: '/dashboard/roles/',
+    path: '/dashboard/roles/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardChatsIndexRoute =
   AuthenticatedDashboardChatsIndexRouteImport.update({
     id: '/dashboard/chats/',
@@ -250,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/dashboard/apps/': typeof AuthenticatedDashboardAppsIndexRoute
   '/dashboard/chats/': typeof AuthenticatedDashboardChatsIndexRoute
+  '/dashboard/roles/': typeof AuthenticatedDashboardRolesIndexRoute
   '/dashboard/settings/': typeof AuthenticatedDashboardSettingsIndexRoute
   '/dashboard/tasks/': typeof AuthenticatedDashboardTasksIndexRoute
   '/dashboard/users/': typeof AuthenticatedDashboardUsersIndexRoute
@@ -282,6 +290,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/dashboard/apps': typeof AuthenticatedDashboardAppsIndexRoute
   '/dashboard/chats': typeof AuthenticatedDashboardChatsIndexRoute
+  '/dashboard/roles': typeof AuthenticatedDashboardRolesIndexRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsIndexRoute
   '/dashboard/tasks': typeof AuthenticatedDashboardTasksIndexRoute
   '/dashboard/users': typeof AuthenticatedDashboardUsersIndexRoute
@@ -318,6 +327,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard/settings/notifications': typeof AuthenticatedDashboardSettingsNotificationsRoute
   '/_authenticated/dashboard/apps/': typeof AuthenticatedDashboardAppsIndexRoute
   '/_authenticated/dashboard/chats/': typeof AuthenticatedDashboardChatsIndexRoute
+  '/_authenticated/dashboard/roles/': typeof AuthenticatedDashboardRolesIndexRoute
   '/_authenticated/dashboard/settings/': typeof AuthenticatedDashboardSettingsIndexRoute
   '/_authenticated/dashboard/tasks/': typeof AuthenticatedDashboardTasksIndexRoute
   '/_authenticated/dashboard/users/': typeof AuthenticatedDashboardUsersIndexRoute
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/notifications'
     | '/dashboard/apps/'
     | '/dashboard/chats/'
+    | '/dashboard/roles/'
     | '/dashboard/settings/'
     | '/dashboard/tasks/'
     | '/dashboard/users/'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/notifications'
     | '/dashboard/apps'
     | '/dashboard/chats'
+    | '/dashboard/roles'
     | '/dashboard/settings'
     | '/dashboard/tasks'
     | '/dashboard/users'
@@ -421,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard/settings/notifications'
     | '/_authenticated/dashboard/apps/'
     | '/_authenticated/dashboard/chats/'
+    | '/_authenticated/dashboard/roles/'
     | '/_authenticated/dashboard/settings/'
     | '/_authenticated/dashboard/tasks/'
     | '/_authenticated/dashboard/users/'
@@ -646,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedDashboardSettingsRouteRoute
     }
+    '/_authenticated/dashboard/roles/': {
+      id: '/_authenticated/dashboard/roles/'
+      path: '/dashboard/roles'
+      fullPath: '/dashboard/roles/'
+      preLoaderRoute: typeof AuthenticatedDashboardRolesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard/chats/': {
       id: '/_authenticated/dashboard/chats/'
       path: '/dashboard/chats'
@@ -715,6 +735,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedDashboardAppsIndexRoute: typeof AuthenticatedDashboardAppsIndexRoute
   AuthenticatedDashboardChatsIndexRoute: typeof AuthenticatedDashboardChatsIndexRoute
+  AuthenticatedDashboardRolesIndexRoute: typeof AuthenticatedDashboardRolesIndexRoute
   AuthenticatedDashboardTasksIndexRoute: typeof AuthenticatedDashboardTasksIndexRoute
   AuthenticatedDashboardUsersIndexRoute: typeof AuthenticatedDashboardUsersIndexRoute
 }
@@ -727,6 +748,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedDashboardAppsIndexRoute: AuthenticatedDashboardAppsIndexRoute,
   AuthenticatedDashboardChatsIndexRoute: AuthenticatedDashboardChatsIndexRoute,
+  AuthenticatedDashboardRolesIndexRoute: AuthenticatedDashboardRolesIndexRoute,
   AuthenticatedDashboardTasksIndexRoute: AuthenticatedDashboardTasksIndexRoute,
   AuthenticatedDashboardUsersIndexRoute: AuthenticatedDashboardUsersIndexRoute,
 }

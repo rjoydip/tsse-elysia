@@ -18,6 +18,7 @@ import { mcpCoreRoutes } from "./mcp/-core";
 import { authCoreRoutes } from "./auth/-core";
 import { settingsRoutes } from "./settings/-core";
 import { usersRoutes } from "./users/-core";
+import { rolesRoutes } from "./roles/-core";
 
 /**
  * Main API application instance factory.
@@ -65,6 +66,7 @@ export const createApiRoutes = () =>
     .use(mcpCoreRoutes)
     .use(settingsRoutes)
     .use(usersRoutes)
+    .use(rolesRoutes)
     // Evlog client ingestion endpoint for browser logs
     .use(evlogIngestEndpoint());
 
