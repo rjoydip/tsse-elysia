@@ -8,6 +8,57 @@ import { auth } from "~/lib/auth";
 import { userRepository } from "~/repositories/users";
 import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 
+const VALID_ROLES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
+const ADMIN_ROLES = ["superadmin", "admin"] as const;
+
+interface AuthValidationResult {
+  error?: { status: number; message: string };
+  userId?: string;
+  userRole?: string;
+}
+
+async function validateAdminAccess(request: Request, set: Record<string, unknown>): Promise<AuthValidationResult> {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user) {
+    set.status = 401;
+    return { error: { status: 401, message: "Unauthorized" } };
+  }
+
+  const currentUser = await userRepository.findById(session.user.id);
+  const userRole = currentUser?.role ?? "user";
+
+  if (!ADMIN_ROLES.includes(userRole as (typeof ADMIN_ROLES)[number])) {
+    set.status = 403;
+    return { error: { status: 403, message: "Forbidden - admin role required" } };
+  }
+
+  return { userId: session.user.id, userRole };
+}
+
+async function validateAuthenticated(request: Request, set: Record<string, unknown>): Promise<AuthValidationResult> {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user) {
+    set.status = 401;
+    return { error: { status: 401, message: "Unauthorized" } };
+  }
+
+  return { userId: session.user.id };
+}
+
+function validateRole(role?: string): boolean {
+  return !role || VALID_ROLES.includes(role as (typeof VALID_ROLES)[number]);
+}
+
+function sanitizeUsername(username: string | undefined, firstName: string, lastName: string): string {
+  return username?.trim() || `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
+}
+
+function validatePhoneNumber(phoneNumber?: string): boolean {
+  return !phoneNumber || /^\d{10}$/.test(phoneNumber);
+}
+
 /**
  * Formats user record for API response.
  * Returns null if user is null/undefined to properly handle missing data.
@@ -53,20 +104,8 @@ export const usersRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const searchParams = new URL(request.url).searchParams;
       const limit = Math.min(100, Math.max(1, Number.parseInt(searchParams.get("limit") ?? "50")));
@@ -115,15 +154,10 @@ export const usersRoutes = new Elysia({
   .get(
     "/me",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const result = await userRepository.findById(session.user.id);
-
+      const result = await userRepository.findById(authResult.userId!);
       if (!result) {
         set.status = 404;
         return { error: "User not found" };
@@ -147,23 +181,10 @@ export const usersRoutes = new Elysia({
   .get(
     "/:id",
     async ({ set, params, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const result = await userRepository.findById(params.id);
-
       if (!result) {
         set.status = 404;
         return { error: "User not found" };
@@ -245,20 +266,8 @@ export const usersRoutes = new Elysia({
   .post(
     "/",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const body = await request.json().catch(() => ({}));
 
@@ -277,27 +286,22 @@ export const usersRoutes = new Elysia({
         return { error: "Missing required fields" };
       }
 
-      // Validate phone number (10 digits for India)
-      if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
+      if (!validatePhoneNumber(phoneNumber)) {
         set.status = 400;
         return { error: "Phone number must be exactly 10 digits" };
       }
 
-      // Generate username if not provided
-      let finalUsername = username;
-      if (!finalUsername) {
-        finalUsername = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
-      }
-
-      // Validate role if provided
-      if (role && !["user", "cashier", "manager", "admin", "superadmin"].includes(role)) {
+      if (!validateRole(role)) {
         set.status = 400;
         return { error: "Invalid role" };
       }
 
-      // Create user via better-auth sign up (better-auth handles bcrypt hashing internally)
+      const finalUsername = sanitizeUsername(username, firstName, lastName);
+
+      let signUpResult: Awaited<ReturnType<typeof auth.api.signUpEmail>> | null = null;
+
       try {
-        const signUpResult = await auth.api.signUpEmail({
+        signUpResult = await auth.api.signUpEmail({
           body: {
             email,
             password,
@@ -315,7 +319,6 @@ export const usersRoutes = new Elysia({
           return { error: "Failed to create user - no user returned" };
         }
 
-        // Update user with additional fields
         await userRepository.update(signUpResult.user.id, {
           firstName,
           lastName,
@@ -328,6 +331,13 @@ export const usersRoutes = new Elysia({
         return { success: true, userId: signUpResult.user.id };
       } catch (error) {
         console.error("User creation error:", error);
+        if (signUpResult?.user) {
+          try {
+            await auth.api.deleteAccount({ userId: signUpResult.user.id });
+          } catch {
+            console.error("Failed to cleanup orphaned account:", signUpResult.user.id);
+          }
+        }
         set.status = 500;
         return { error: "Failed to create user" };
       }
@@ -349,20 +359,8 @@ export const usersRoutes = new Elysia({
   .patch(
     "/:id",
     async ({ set, params, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const targetUser = await userRepository.findById(params.id);
       if (!targetUser) {
@@ -381,23 +379,17 @@ export const usersRoutes = new Elysia({
         role?: string;
       };
 
-      // Validate phone number if provided
-      if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
+      if (!validatePhoneNumber(phoneNumber)) {
         set.status = 400;
         return { error: "Phone number must be exactly 10 digits" };
       }
 
-      // Validate role if provided
-      if (role && !["user", "cashier", "manager", "admin", "superadmin"].includes(role)) {
+      if (!validateRole(role)) {
         set.status = 400;
         return { error: "Invalid role" };
       }
 
-      // Generate username if not provided but firstName/lastName are
-      let finalUsername = username;
-      if (!finalUsername && firstName && lastName) {
-        finalUsername = `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
-      }
+      const finalUsername = username ? username.trim() : (firstName && lastName ? sanitizeUsername(undefined, firstName, lastName) : undefined);
 
       const updates: Record<string, unknown> = {};
       if (firstName !== undefined) updates.firstName = firstName;
@@ -438,20 +430,8 @@ export const usersRoutes = new Elysia({
   .patch(
     "/:id/status",
     async ({ set, params, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const targetUser = await userRepository.findById(params.id);
       if (!targetUser) {
@@ -493,20 +473,8 @@ export const usersRoutes = new Elysia({
   .post(
     "/:id/reset-password",
     async ({ set, params, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-
-      if (!session || !session.user) {
-        set.status = 401;
-        return { error: "Unauthorized" };
-      }
-
-      const currentUser = await userRepository.findById(session.user.id);
-      const userRole = currentUser?.role ?? "user";
-
-      if (!["superadmin", "admin"].includes(userRole)) {
-        set.status = 403;
-        return { error: "Forbidden - admin role required" };
-      }
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const targetUser = await userRepository.findById(params.id);
       if (!targetUser) {
@@ -514,10 +482,8 @@ export const usersRoutes = new Elysia({
         return { error: "User not found" };
       }
 
-      // Generate strong password
       const generatedPassword = Math.random().toString(36).slice(-8) + "A1!";
 
-      // Hash the new password using same algorithm as better-auth (argon2)
       const { hash } = await import("@node-rs/argon2");
       const hashOpts = {
         memoryCost: 65536,
@@ -528,7 +494,6 @@ export const usersRoutes = new Elysia({
       };
       const hashedPassword = await hash(generatedPassword, hashOpts);
 
-      // Update password directly in the account table
       const { db } = await import("~/config/db");
       const { accounts } = await import("~/lib/db/schema/auth");
       const { eq } = await import("drizzle-orm");

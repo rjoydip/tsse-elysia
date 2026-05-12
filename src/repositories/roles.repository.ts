@@ -17,6 +17,21 @@ import {
 import { Result, DatabaseError, NotFoundError, ValidationError } from "~/lib/result";
 
 /**
+ * Helper function to wrap database operations in error handling.
+ */
+async function withDatabaseError<T>(
+  operation: () => Promise<T>,
+): Promise<Result<T, DatabaseError>> {
+  try {
+    return Result.ok(await operation());
+  } catch (error) {
+    return Result.err(
+      new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
+    );
+  }
+}
+
+/**
  * Repository interface for role and permission database operations.
  */
 export interface IRolesRepository {
@@ -75,31 +90,23 @@ export class RolesRepository implements IRolesRepository {
    * Finds all permissions in the system.
    */
   async findAllPermissions(): Promise<Result<Permission[], DatabaseError>> {
-    try {
+    return withDatabaseError(async () => {
       const records = await db.select().from(permissions).orderBy(permissions.name);
-      return Result.ok(records as Permission[]);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records as Permission[];
+    });
   }
 
   /**
    * Finds a permission by ID.
    */
   async findPermissionById(id: string): Promise<Result<Permission, DatabaseError | NotFoundError>> {
-    try {
+    return withDatabaseError(async () => {
       const records = await db.select().from(permissions).where(eq(permissions.id, id)).limit(1);
       if (records.length === 0) {
-        return Result.err(new NotFoundError({ resource: "Permission", id }));
+        throw new NotFoundError({ resource: "Permission", id });
       }
-      return Result.ok(records[0] as Permission);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records[0] as Permission;
+    });
   }
 
   /**
@@ -108,21 +115,13 @@ export class RolesRepository implements IRolesRepository {
   async findPermissionByName(
     name: string,
   ): Promise<Result<Permission, DatabaseError | NotFoundError>> {
-    try {
-      const records = await db
-        .select()
-        .from(permissions)
-        .where(eq(permissions.name, name))
-        .limit(1);
+    return withDatabaseError(async () => {
+      const records = await db.select().from(permissions).where(eq(permissions.name, name)).limit(1);
       if (records.length === 0) {
-        return Result.err(new NotFoundError({ resource: "Permission", id: name }));
+        throw new NotFoundError({ resource: "Permission", id: name });
       }
-      return Result.ok(records[0] as Permission);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records[0] as Permission;
+    });
   }
 
   /**
@@ -215,45 +214,32 @@ export class RolesRepository implements IRolesRepository {
       return existing;
     }
 
-    try {
+    return withDatabaseError(async () => {
       await db.delete(permissions).where(eq(permissions.id, id));
-      return Result.ok();
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+    });
   }
 
   /**
    * Finds all roles in the system.
    */
   async findAllRoles(): Promise<Result<Role[], DatabaseError>> {
-    try {
+    return withDatabaseError(async () => {
       const records = await db.select().from(roles).orderBy(roles.name);
-      return Result.ok(records as Role[]);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records as Role[];
+    });
   }
 
   /**
    * Finds a role by ID.
    */
   async findRoleById(id: string): Promise<Result<Role, DatabaseError | NotFoundError>> {
-    try {
+    return withDatabaseError(async () => {
       const records = await db.select().from(roles).where(eq(roles.id, id)).limit(1);
       if (records.length === 0) {
-        return Result.err(new NotFoundError({ resource: "Role", id }));
+        throw new NotFoundError({ resource: "Role", id });
       }
-      return Result.ok(records[0] as Role);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records[0] as Role;
+    });
   }
 
   /**
@@ -261,17 +247,13 @@ export class RolesRepository implements IRolesRepository {
    */
   async findRoleByName(name: string): Promise<Result<Role, DatabaseError | NotFoundError>> {
     const normalizedName = name.toLowerCase().trim();
-    try {
+    return withDatabaseError(async () => {
       const records = await db.select().from(roles).where(eq(roles.name, normalizedName)).limit(1);
       if (records.length === 0) {
-        return Result.err(new NotFoundError({ resource: "Role", id: normalizedName }));
+        throw new NotFoundError({ resource: "Role", id: normalizedName });
       }
-      return Result.ok(records[0] as Role);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records[0] as Role;
+    });
   }
 
   /**
@@ -373,14 +355,9 @@ export class RolesRepository implements IRolesRepository {
       return existing;
     }
 
-    try {
+    return withDatabaseError(async () => {
       await db.delete(roles).where(eq(roles.id, id));
-      return Result.ok();
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+    });
   }
 
   /**
@@ -394,19 +371,14 @@ export class RolesRepository implements IRolesRepository {
       return roleExists;
     }
 
-    try {
+    return withDatabaseError(async () => {
       const records = await db
         .select({ permission: permissions })
         .from(rolePermissions)
         .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
         .where(eq(rolePermissions.roleId, roleId));
-      const perms: Permission[] = records.map((r: { permission: Permission }) => r.permission);
-      return Result.ok(perms);
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+      return records.map((r) => r.permission) as Permission[];
+    });
   }
 
   /**
@@ -426,7 +398,7 @@ export class RolesRepository implements IRolesRepository {
       return permExists;
     }
 
-    try {
+    return withDatabaseError(async () => {
       const existing = await db
         .select()
         .from(rolePermissions)
@@ -435,17 +407,10 @@ export class RolesRepository implements IRolesRepository {
         )
         .limit(1);
 
-      if (existing.length > 0) {
-        return Result.ok();
+      if (existing.length === 0) {
+        await db.insert(rolePermissions).values({ roleId, permissionId });
       }
-
-      await db.insert(rolePermissions).values({ roleId, permissionId });
-      return Result.ok();
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+    });
   }
 
   /**
@@ -460,18 +425,13 @@ export class RolesRepository implements IRolesRepository {
       return roleExists;
     }
 
-    try {
+    return withDatabaseError(async () => {
       await db
         .delete(rolePermissions)
         .where(
           and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)),
         );
-      return Result.ok();
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+    });
   }
 
   /**
@@ -486,18 +446,13 @@ export class RolesRepository implements IRolesRepository {
       return roleExists;
     }
 
-    try {
+    return withDatabaseError(async () => {
       await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
       if (permissionIds.length > 0) {
         const values = permissionIds.map((permissionId) => ({ roleId, permissionId }));
         await db.insert(rolePermissions).values(values);
       }
-      return Result.ok();
-    } catch (error) {
-      return Result.err(
-        new DatabaseError({ message: error instanceof Error ? error.message : String(error) }),
-      );
-    }
+    });
   }
 }
 

@@ -10,42 +10,37 @@ import {
   type RoleResponse,
   type PermissionResponse,
 } from "~/services/dashboard/roles";
-import { isAdminRole, type UserRole } from "~/lib/auth/permissions";
+
 import { userRepository } from "~/repositories/users";
 
-/**
- * Validates session and checks for admin role.
- */
-async function validateAdminSession(
+const ADMIN_ROLES = ["superadmin", "admin"] as const;
+
+interface AuthValidationResult {
+  error?: { status: number; message: string };
+  userId?: string;
+  userRole?: string;
+}
+
+async function validateAdminAccess(
   request: Request,
   set: Record<string, unknown>,
-): Promise<{ error?: Response; userRole?: UserRole }> {
+): Promise<AuthValidationResult> {
   const session = await auth.api.getSession({ headers: request.headers });
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     set.status = 401;
-    return {
-      error: new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      }),
-    };
+    return { error: { status: 401, message: "Unauthorized" } };
   }
 
   const currentUser = await userRepository.findById(session.user.id);
-  const userRole = (currentUser?.role ?? "user") as UserRole;
+  const userRole = currentUser?.role ?? "user";
 
-  if (!isAdminRole(userRole)) {
+  if (!ADMIN_ROLES.includes(userRole as (typeof ADMIN_ROLES)[number])) {
     set.status = 403;
-    return {
-      error: new Response(JSON.stringify({ error: "Forbidden - admin role required" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      }),
-    };
+    return { error: { status: 403, message: "Forbidden - admin role required" } };
   }
 
-  return { userRole };
+  return { userId: session.user.id, userRole };
 }
 
 /**
@@ -85,8 +80,8 @@ export const rolesRoutes = new Elysia({
   .get(
     "/permissions",
     async ({ set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const permissions = await rolesService.getAllPermissions();
       return { permissions };
@@ -114,8 +109,8 @@ export const rolesRoutes = new Elysia({
   .post(
     "/permissions",
     async ({ body, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { name, description } = body as { name: string; description?: string };
 
@@ -152,8 +147,8 @@ export const rolesRoutes = new Elysia({
   .put(
     "/permissions/:id",
     async ({ params, body, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { id } = params as { id: string };
       const { name, description } = body as { name?: string; description?: string };
@@ -190,8 +185,8 @@ export const rolesRoutes = new Elysia({
   .delete(
     "/permissions/:id",
     async ({ params, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { id } = params as { id: string };
 
@@ -222,8 +217,8 @@ export const rolesRoutes = new Elysia({
   .post(
     "/permissions/seed",
     async ({ set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       await rolesService.seedDefaultPermissions();
       return { success: true, message: "Default permissions seeded successfully" };
@@ -248,8 +243,8 @@ export const rolesRoutes = new Elysia({
   .get(
     "/",
     async ({ set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const roles = await rolesService.getAllRoles();
       return { roles };
@@ -277,8 +272,8 @@ export const rolesRoutes = new Elysia({
   .post(
     "/",
     async ({ body, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { name, description, isDefault, permissionIds } = body as {
         name: string;
@@ -322,8 +317,8 @@ export const rolesRoutes = new Elysia({
   .get(
     "/:id",
     async ({ params, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { id } = params as { id: string };
       const role = await rolesService.getRole(id);
@@ -355,8 +350,8 @@ export const rolesRoutes = new Elysia({
   .put(
     "/:id",
     async ({ params, body, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { id } = params as { id: string };
       const { name, description, isDefault, permissionIds } = body as {
@@ -405,8 +400,8 @@ export const rolesRoutes = new Elysia({
   .delete(
     "/:id",
     async ({ params, set, request }) => {
-      const { error } = await validateAdminSession(request, set);
-      if (error) return error;
+      const authResult = await validateAdminAccess(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       const { id } = params as { id: string };
 
