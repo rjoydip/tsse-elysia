@@ -310,22 +310,22 @@ export const usersRoutes = new Elysia({
           return { error: signUpResult.error.message || "Failed to create user" };
         }
 
-        if (signUpResult.user) {
-          // Update user with additional fields
-          await userRepository.update(signUpResult.user.id, {
-            firstName,
-            lastName,
-            username: finalUsername,
-            phoneNumber: phoneNumber || "",
-            role: (role as UserRole) || "user",
-            status: "active" as UserStatus,
-          });
-
-          return { success: true, userId: signUpResult.user.id };
+        if (!signUpResult.user) {
+          set.status = 500;
+          return { error: "Failed to create user - no user returned" };
         }
 
-        set.status = 500;
-        return { error: "Failed to create user" };
+        // Update user with additional fields
+        await userRepository.update(signUpResult.user.id, {
+          firstName,
+          lastName,
+          username: finalUsername,
+          phoneNumber: phoneNumber || "",
+          role: (role as UserRole) || "user",
+          status: "active" as UserStatus,
+        });
+
+        return { success: true, userId: signUpResult.user.id };
       } catch (error) {
         console.error("User creation error:", error);
         set.status = 500;
