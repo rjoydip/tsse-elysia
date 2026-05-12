@@ -10,8 +10,8 @@ description: Execution-focused task tracker (source of truth for active work)
 
 ### MCP (Phase 9)
 
-- [ ] Rate limiting per API key <!-- issue: # -->
-- [ ] Tool execution sandbox (timeout wrapper) <!-- issue: # -->
+- [ ] Rate limiting per API key <!-- issue: #83 -->
+- [ ] Tool execution sandbox (timeout wrapper) <!-- issue: #84 -->
 - [ ] MCP client SDK <!-- issue: # -->
 - [ ] WebSocket transport support (optional) <!-- issue: # -->
 
