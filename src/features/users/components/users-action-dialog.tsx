@@ -25,7 +25,6 @@ import { PasswordInput } from "~/components/password-input";
 import { SelectDropdown } from "~/components/select-dropdown";
 import { roles } from "../data/data";
 import { type User } from "../data/schema";
-import { encodePassword } from "~/lib/utils/encryption";
 
 interface PasswordRequirement {
   label: string;
@@ -132,6 +131,7 @@ export function UsersActionDialog({
           password: "",
           confirmPassword: "",
         },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     validators: {
       onChange: isEdit ? (editFormSchema as any) : (createFormSchema as any),
     },
@@ -143,15 +143,13 @@ export function UsersActionDialog({
         const username =
           value.username?.trim() ||
           `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
-        const encodedPassword = await encodePassword(value.password!);
-
         const requestData = {
           firstName,
           lastName,
           username,
           email: value.email,
           role: value.role,
-          ...(!isEdit && { password: encodedPassword }),
+          ...(!isEdit && { password: value.password }),
         };
 
         const endpoint = isEdit ? `/api/users/${currentRow.id}` : "/api/users";

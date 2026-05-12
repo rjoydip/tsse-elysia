@@ -11,6 +11,7 @@ import {
   type PermissionResponse,
 } from "~/services/dashboard/roles";
 import { isAdminRole, type UserRole } from "~/lib/auth/permissions";
+import { userRepository } from "~/repositories/users";
 
 /**
  * Validates session and checks for admin role.
@@ -21,7 +22,7 @@ async function validateAdminSession(
 ): Promise<{ error?: Response; userRole?: UserRole }> {
   const session = await auth.api.getSession({ headers: request.headers });
 
-  if (!session) {
+  if (!session || !session.user) {
     set.status = 401;
     return {
       error: new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -31,9 +32,10 @@ async function validateAdminSession(
     };
   }
 
-  const userRole = (session.user as { role?: string }).role as UserRole;
+  const currentUser = await userRepository.findById(session.user.id);
+  const userRole = (currentUser?.role ?? "user") as UserRole;
 
-  if (!userRole || !isAdminRole(userRole)) {
+  if (!isAdminRole(userRole)) {
     set.status = 403;
     return {
       error: new Response(JSON.stringify({ error: "Forbidden - admin role required" }), {
