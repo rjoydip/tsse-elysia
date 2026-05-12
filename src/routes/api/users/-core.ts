@@ -17,7 +17,10 @@ interface AuthValidationResult {
   userRole?: string;
 }
 
-async function validateAdminAccess(request: Request, set: Record<string, unknown>): Promise<AuthValidationResult> {
+async function validateAdminAccess(
+  request: Request,
+  set: Record<string, unknown>,
+): Promise<AuthValidationResult> {
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user) {
@@ -36,7 +39,10 @@ async function validateAdminAccess(request: Request, set: Record<string, unknown
   return { userId: session.user.id, userRole };
 }
 
-async function validateAuthenticated(request: Request, set: Record<string, unknown>): Promise<AuthValidationResult> {
+async function validateAuthenticated(
+  request: Request,
+  set: Record<string, unknown>,
+): Promise<AuthValidationResult> {
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user) {
@@ -51,7 +57,11 @@ function validateRole(role?: string): boolean {
   return !role || VALID_ROLES.includes(role as (typeof VALID_ROLES)[number]);
 }
 
-function sanitizeUsername(username: string | undefined, firstName: string, lastName: string): string {
+function sanitizeUsername(
+  username: string | undefined,
+  firstName: string,
+  lastName: string,
+): string {
   return username?.trim() || `${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
 }
 
@@ -389,7 +399,11 @@ export const usersRoutes = new Elysia({
         return { error: "Invalid role" };
       }
 
-      const finalUsername = username ? username.trim() : (firstName && lastName ? sanitizeUsername(undefined, firstName, lastName) : undefined);
+      const finalUsername = username
+        ? username.trim()
+        : firstName && lastName
+          ? sanitizeUsername(undefined, firstName, lastName)
+          : undefined;
 
       const updates: Record<string, unknown> = {};
       if (firstName !== undefined) updates.firstName = firstName;

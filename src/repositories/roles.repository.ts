@@ -116,7 +116,11 @@ export class RolesRepository implements IRolesRepository {
     name: string,
   ): Promise<Result<Permission, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(permissions).where(eq(permissions.name, name)).limit(1);
+      const records = await db
+        .select()
+        .from(permissions)
+        .where(eq(permissions.name, name))
+        .limit(1);
       if (records.length === 0) {
         throw new NotFoundError({ resource: "Permission", id: name });
       }
