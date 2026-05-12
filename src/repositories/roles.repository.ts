@@ -381,7 +381,7 @@ export class RolesRepository implements IRolesRepository {
         .from(rolePermissions)
         .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
         .where(eq(rolePermissions.roleId, roleId));
-      return records.map((r) => r.permission) as Permission[];
+      return records.map((r: { permission: Permission }) => r.permission) as Permission[];
     });
   }
 
