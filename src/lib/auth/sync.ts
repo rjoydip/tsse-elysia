@@ -28,11 +28,38 @@ export function useAuthSync() {
       return;
     }
 
-    if (session) {
-      // Update auth store with session data
-      // Based on Better Auth types from testing, session has: session (with id, expiresAt) and user
+    if (session?.user) {
+      // Fetch user role from our database to preserve custom role
+      fetch("/api/users/me", { credentials: "include" })
+        .then(async (res) => {
+          if (res.ok) {
+            const userData = await res.json();
+            const role = userData?.role || "user";
+            // Preserve role from database
+            authActions.setUser({
+              ...session.user,
+              image: session.user.image ?? undefined,
+              role: [role],
+            });
+          } else {
+            // Fallback to session user without role
+            authActions.setUser({
+              ...session.user,
+              image: session.user.image ?? undefined,
+            });
+          }
+        })
+        .catch(() => {
+          // Fallback to session user without role
+          authActions.setUser({
+            ...session.user,
+            image: session.user.image ?? undefined,
+          });
+        });
+
+      // Update session data
       const mappedSession = {
-        user: session.user ? { ...session.user, image: session.user.image ?? undefined } : null,
+        user: { ...session.user, image: session.user.image ?? undefined },
         expiresAt: session.session?.expiresAt ?? null,
         id: session.session?.id ?? "",
         token: session.session?.token ?? "",
@@ -43,11 +70,8 @@ export function useAuthSync() {
       };
 
       authActions.setSession(mappedSession);
-      authActions.setUser(
-        session.user ? { ...session.user, image: session.user.image ?? undefined } : null,
-      );
       authActions.setAccessToken(session.session?.token ?? "");
-    } else {
+    } else if (!session) {
       // No session, clear auth state
       authActions.reset();
     }

@@ -67,7 +67,7 @@ Core focus:
 - Vector + Graph DB
 - Performance & scaling
 
-### Phase 9 – User Management Dashboard ✅ (Recent)
+### Phase 9 – User Management Dashboard ✅
 
 **Completed:**
 
@@ -78,6 +78,9 @@ Core focus:
 - Async user count with skeleton in dashboard
 - Unit tests for repository
 - E2E tests for users page
+- Add user dialog with password validation (strength indicator, match indicator)
+- Username generation from name (handles special characters)
+- Unit tests for form schemas (20 tests)
 
 ### Phase 11 – API Architecture Refactoring ✅
 

@@ -1,4 +1,13 @@
+/**
+ * User data schema definitions.
+ * Note: Role types are centralized in src/lib/auth/permissions.ts
+ */
+
 import { z } from "zod";
+import { userRoleSchema } from "~/lib/auth/permissions";
+
+export type { UserRole } from "~/lib/auth/permissions";
+export { userRoleSchema } from "~/lib/auth/permissions";
 
 const userStatusSchema = z.union([
   z.literal("active"),
@@ -7,15 +16,6 @@ const userStatusSchema = z.union([
   z.literal("suspended"),
 ]);
 export type UserStatus = z.infer<typeof userStatusSchema>;
-
-const userRoleSchema = z.union([
-  z.literal("superadmin"),
-  z.literal("admin"),
-  z.literal("manager"),
-  z.literal("cashier"),
-  z.literal("user"),
-]);
-export type UserRole = z.infer<typeof userRoleSchema>;
 
 const _userSchema = z.object({
   id: z.string(),

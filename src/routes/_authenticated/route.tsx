@@ -1,3 +1,9 @@
+/**
+ * Authenticated Route Wrapper
+ * Protects all routes under /dashboard/* by checking authentication and optional role requirements.
+ * Redirects to sign-in if not authenticated.
+ */
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
@@ -6,6 +12,9 @@ import { useSession } from "~/lib/auth/client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedRouteWrapper,
+  beforeLoad: ({ context }) => {
+    return context;
+  },
 });
 
 function AuthenticatedRouteWrapper() {
@@ -14,10 +23,8 @@ function AuthenticatedRouteWrapper() {
   const { data: session, isPending } = useSession();
 
   useEffect(() => {
-    // Wait for session to finish loading
     if (isPending) return;
 
-    // Check if authenticated (session exists OR store has token)
     const isAuthenticated = session?.user || authStore.accessToken;
 
     if (!isAuthenticated) {

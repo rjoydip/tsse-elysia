@@ -6,9 +6,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "~/components/ui/sidebar";
+import { useAuthStore } from "~/lib/stores/auth";
 
 export function AppTitle() {
   const { open, isMobile, setOpenMobile } = useSidebar();
+  const authState = useAuthStore();
+
+  const role = authState.user?.role?.[0];
+  const displayTitle = role ? role.charAt(0).toUpperCase() + role.slice(1) : "Dashboard";
 
   return (
     <SidebarMenu>
@@ -24,7 +29,9 @@ export function AppTitle() {
             className="flex items-center gap-2 text-start"
           >
             <Logo className="me-1 size-8!" />
-            {(open || !isMobile) && <span className="truncate font-bold text-lg">Admin</span>}
+            {(open || !isMobile) && (
+              <span className="truncate font-bold text-lg">{displayTitle}</span>
+            )}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

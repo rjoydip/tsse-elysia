@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { showSubmittedData } from "~/components/show-submitted-data";
+import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -13,16 +13,44 @@ type UserDeleteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentRow: User;
+  onSuccess?: () => void;
 };
 
-export function UsersDeleteDialog({ open, onOpenChange, currentRow }: UserDeleteDialogProps) {
+export function UsersDeleteDialog({
+  open,
+  onOpenChange,
+  currentRow,
+  onSuccess,
+}: UserDeleteDialogProps) {
   const [value, setValue] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (value.trim() !== currentRow.username) return;
 
-    onOpenChange(false);
-    showSubmittedData(currentRow, "The following user has been deleted:");
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/users/${currentRow.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "inactive" }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || "Failed to deactivate user");
+        return;
+      }
+
+      toast.success("User deactivated successfully");
+      onOpenChange(false);
+      onSuccess?.();
+    } catch {
+      toast.error("Failed to deactivate user");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -30,10 +58,12 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: UserDelete
       open={open}
       onOpenChange={onOpenChange}
       form="users-delete-form"
-      disabled={value.trim() !== currentRow.username}
+      disabled={value.trim() !== currentRow.username || isDeleting}
+      isLoading={isDeleting}
       title={
         <span className="text-destructive">
-          <AlertTriangle className="me-1 inline-block stroke-destructive" size={18} /> Delete User
+          <AlertTriangle className="me-1 inline-block stroke-destructive" size={18} /> Deactivate
+          User
         </span>
       }
       desc={
@@ -46,12 +76,13 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: UserDelete
           className="space-y-4"
         >
           <p className="mb-2">
-            Are you sure you want to delete <span className="font-bold">{currentRow.username}</span>
+            Are you sure you want to deactivate{" "}
+            <span className="font-bold">{currentRow.username}</span>
             ?
             <br />
-            This action will permanently remove the user with the role of{" "}
-            <span className="font-bold">{currentRow.role.toUpperCase()}</span> from the system. This
-            cannot be undone.
+            This will set the user status to inactive. The user with role of{" "}
+            <span className="font-bold">{currentRow.role.toUpperCase()}</span> will lose access to
+            the system.
           </p>
 
           <Label className="my-2">
@@ -59,20 +90,20 @@ export function UsersDeleteDialog({ open, onOpenChange, currentRow }: UserDelete
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Enter username to confirm deletion."
+              placeholder="Enter username to confirm deactivation."
               autoFocus
             />
           </Label>
 
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mt-4">
             <AlertTitle>Warning!</AlertTitle>
             <AlertDescription>
-              Please be careful, this operation can not be rolled back.
+              The user will be marked as inactive and lose access to the system.
             </AlertDescription>
           </Alert>
         </form>
       }
-      confirmText="Delete"
+      confirmText="Deactivate"
       destructive
     />
   );

@@ -19,6 +19,8 @@ import {
   FileX,
   ServerOff,
   Construction,
+  Shield,
+  CreditCard,
 } from "lucide-react";
 import { type SidebarData } from "../types";
 import { APP_NAME } from "~/config";
@@ -59,27 +61,40 @@ export const sidebarData: SidebarData = {
           title: "Tasks",
           url: "/dashboard/tasks",
           icon: ListTodo,
+          roles: ["manager", "cashier", "user"],
         },
         {
           title: "Apps",
           url: "/dashboard/apps",
           icon: Package,
+          roles: ["superadmin", "admin", "manager"],
+          disabled: true,
         },
         {
           title: "Chats",
           url: "/dashboard/chats",
           badge: "3",
           icon: MessagesSquare,
+          roles: ["superadmin", "admin", "manager"],
+          disabled: true,
         },
         {
           title: "Users",
           url: "/dashboard/users",
           icon: Users,
+          roles: ["superadmin", "admin", "manager"],
+        },
+        {
+          title: "Roles & Permissions",
+          url: "/dashboard/roles",
+          icon: Shield,
+          roles: ["superadmin", "admin"],
         },
       ],
     },
     {
       title: "Pages",
+      roles: ["superadmin", "admin"],
       items: [
         {
           title: "Errors",
@@ -140,6 +155,15 @@ export const sidebarData: SidebarData = {
               title: "Notifications",
               url: "/dashboard/settings/notifications",
               icon: Bell,
+              disabled: true,
+              disabledMessage: "Coming soon",
+            },
+            {
+              title: "Billing",
+              url: "#",
+              icon: CreditCard,
+              disabled: true,
+              disabledMessage: "Coming soon",
             },
           ],
         },

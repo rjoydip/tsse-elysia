@@ -10,7 +10,7 @@ import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, LogIn } from "lucide-react";
 import { toast } from "sonner";
-import { authClient, signInWithEmail, useSession } from "~/lib/auth/client";
+import { authClient, getCurrentUser, signInWithEmail, useSession } from "~/lib/auth/client";
 import { authActions } from "~/lib/stores/auth";
 import { env } from "~/config/env";
 import { getEnabledSocialProviders } from "~/config/auth";
@@ -67,10 +67,14 @@ export function SignInForm({ className, redirectTo }: SignInFormProps) {
 
         if (result.data?.user) {
           const user = result.data.user;
+
+          const userResult = await getCurrentUser();
+          const userRole = userResult.data?.role || "user";
+
           authActions.setUser({
             accountNo: user.id || "ACC001",
             email: user.email,
-            role: ["user"],
+            role: [userRole],
             exp: Date.now() + 24 * 60 * 60 * 1000,
           });
           authActions.setAccessToken("auth-access-token");

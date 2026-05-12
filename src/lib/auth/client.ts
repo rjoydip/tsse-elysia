@@ -240,3 +240,21 @@ export async function resetPassword(newPassword: string, token: string) {
 
   return { data: await response.json(), error: null };
 }
+
+/**
+ * Get the current user's profile including role from the API.
+ * Uses the /api/users/me endpoint to fetch user data from database.
+ */
+export async function getCurrentUser() {
+  const response = await fetch("/api/users/me", {
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    return { data: null, error };
+  }
+
+  return { data: await response.json(), error: null };
+}

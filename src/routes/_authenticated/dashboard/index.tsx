@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { getRouteApi } from "@tanstack/react-router";
-import { APP_NAME, BASE_URL } from "~/config";
-import { Dashboard } from "~/features/dashboard";
+/**
+ * Dashboard Route
+ * Protected route that loads dashboard data and renders role-based view.
+ */
+
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { BASE_URL, APP_NAME } from "~/config";
+import { RoleBasedDashboard } from "~/features/dashboard/components/role-based-views";
 
 interface DashboardLoaderData {
   userCount: number;
@@ -25,7 +29,7 @@ const route = getRouteApi("/_authenticated/dashboard/");
 
 function DashboardWithData() {
   const loaderData = route.useLoaderData();
-  return <Dashboard userCount={loaderData?.userCount || 0} />;
+  return <RoleBasedDashboard userCount={loaderData?.userCount || 0} />;
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({

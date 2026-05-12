@@ -10,7 +10,7 @@ import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { authClient, signUpWithEmail } from "~/lib/auth/client";
+import { authClient, getCurrentUser, signUpWithEmail } from "~/lib/auth/client";
 import { authActions } from "~/lib/stores/auth";
 import { env } from "~/config/env";
 import { getEnabledSocialProviders } from "~/config/auth";
@@ -35,26 +35,12 @@ import {
 import { createHandleSocialSignIn } from "~/features/auth/shared/handle-social-sign-in";
 import { EmailField } from "~/features/auth/shared/components/email-field";
 import { SocialSignIn } from "~/features/auth/shared/components/social-sign-in";
-
-interface PasswordRequirement {
-  label: string;
-  test: (pwd: string) => boolean;
-}
-
-const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
-  { label: "At least 8 characters", test: (pwd) => pwd.length >= 8 },
-  { label: "One uppercase letter", test: (pwd) => /[A-Z]/.test(pwd) },
-  { label: "One lowercase letter", test: (pwd) => /[a-z]/.test(pwd) },
-  { label: "One number", test: (pwd) => /[0-9]/.test(pwd) },
-];
-
-const PASSWORD_REQUIREMENTS_LABELS: Record<number, string> = {
-  0: "Weak",
-  1: "Weak",
-  2: "Fair",
-  3: "Good",
-  4: "Strong",
-};
+import {
+  PASSWORD_REQUIREMENTS,
+  getPasswordStrength,
+  getStrengthColor,
+  getStrengthLabel,
+} from "~/features/auth/shared/password-utils";
 
 const formSchema = z
   .object({
@@ -62,6 +48,8 @@ const formSchema = z
     email: z.email({
       error: (iss) => (iss.input === "" ? "Please enter your email" : undefined),
     }),
+    username: z.string().optional(),
+    role: z.string().optional(),
     password: z
       .string()
       .min(1, "Please enter your password")
@@ -75,30 +63,6 @@ const formSchema = z
     message: "Passwords don't match.",
     path: ["confirmPassword"],
   });
-
-const getPasswordStrength = (pwd: string): number => {
-  return PASSWORD_REQUIREMENTS.filter((req) => req.test(pwd)).length;
-};
-
-const getStrengthColor = (score: number): string => {
-  switch (score) {
-    case 0:
-    case 1:
-      return "bg-destructive";
-    case 2:
-      return "bg-yellow-500";
-    case 3:
-      return "bg-blue-500";
-    case 4:
-      return "bg-green-500";
-    default:
-      return "bg-muted";
-  }
-};
-
-const getStrengthLabel = (score: number): string => {
-  return PASSWORD_REQUIREMENTS_LABELS[score] ?? "";
-};
 
 interface SignUpFormProps extends React.HTMLAttributes<HTMLFormElement> {
   redirectTo?: string;
@@ -144,13 +108,34 @@ export function SignUpForm({ className, redirectTo }: SignUpFormProps) {
 
         if (result.data?.user) {
           const user = result.data.user;
-          const mockUser = {
+
+          // Parse name into firstName and lastName
+          const nameParts = value.name.trim().split(/\s+/);
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+          const username = `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}_${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+
+          // Update user profile with firstName, lastName, and username
+          await fetch("/api/users/me/profile", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              firstName,
+              lastName,
+              username,
+            }),
+          });
+
+          const userResult = await getCurrentUser();
+          const userRole = userResult.data?.role || "user";
+
+          authActions.setUser({
             accountNo: user.id || "ACC001",
             email: user.email,
-            role: ["user"],
+            role: [userRole],
             exp: Date.now() + 24 * 60 * 60 * 1000,
-          };
-          authActions.setUser(mockUser);
+          });
           authActions.setAccessToken("auth-access-token");
           toast.success("Account created successfully");
           const targetPath = redirectTo || "/dashboard";
@@ -272,6 +257,43 @@ export function SignUpForm({ className, redirectTo }: SignUpFormProps) {
                 />
               </FormControl>
               <FormMessage />
+              <form.Subscribe
+                selector={(state) => [state.values.password, state.values.confirmPassword]}
+              >
+                {([password, confirmPwd]) => {
+                  if (!confirmPwd || confirmPwd.length === 0) return null;
+                  const passwordsMatch = confirmPwd === password;
+                  return (
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      {passwordsMatch ? (
+                        <svg
+                          className="w-3 h-3 text-green-500 shrink-0"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-3 h-3 text-red-500 shrink-0"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      )}
+                      <span className={passwordsMatch ? "text-green-600" : "text-red-500"}>
+                        {passwordsMatch ? "Passwords match" : "Passwords do not match"}
+                      </span>
+                    </div>
+                  );
+                }}
+              </form.Subscribe>
             </FormItem>
           )}
         />

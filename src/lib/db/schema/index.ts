@@ -52,3 +52,19 @@ export {
   type UserSettingsDisplay,
   type UserSettingsNotifications,
 } from "./user-settings";
+
+// Role and Permission schema
+export {
+  permissions,
+  roles,
+  rolePermissions,
+  permissionsRelations,
+  rolesRelations,
+  rolePermissionsRelations,
+  type Permission,
+  type Role,
+  type RolePermission,
+  type NewPermission,
+  type NewRole,
+  type NewRolePermission,
+} from "./roles";

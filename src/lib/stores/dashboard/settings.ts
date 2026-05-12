@@ -6,7 +6,7 @@
  * @module stores/settings
  */
 
-import { createStore, useStore } from "@tanstack/react-store";
+import { createStore, useSelector } from "@tanstack/react-store";
 import { settingsLogger } from "~/lib/logger";
 
 /**
@@ -431,5 +431,5 @@ export const settingsActions = {
  * @returns Selected state or full settings state
  */
 export function useSettingsStore<T = SettingsState>(selector?: (state: SettingsState) => T): T {
-  return useStore(settingsStore, selector ?? ((state: SettingsState) => state as unknown as T));
+  return useSelector(settingsStore, selector ?? ((state: SettingsState) => state as unknown as T));
 }
