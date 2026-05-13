@@ -4,6 +4,7 @@
  * Supports various layouts, sizes, and visibility options.
  */
 
+import { memo } from "react";
 import { useScramble } from "@scrambl/react";
 
 import { Logo } from "~/assets/logo";
@@ -30,7 +31,7 @@ export interface BrandDescriptionProps {
  * @example
  * <ScrambledText text="TypeScript" />
  */
-function ScrambledText({
+const ScrambledText = memo(function ScrambledText({
   text,
   speed = 0.5,
   duration = 600,
@@ -55,7 +56,7 @@ function ScrambledText({
       className="text-primary font-medium cursor-pointer inline-block"
     />
   );
-}
+});
 
 export interface BrandingProps {
   /** Custom title props */

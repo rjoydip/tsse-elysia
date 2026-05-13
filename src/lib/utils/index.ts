@@ -1,48 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { buildCache, computeRange } from "~/lib/pagination/compute";
 
-const PAGINATION_MAX_VISIBLE = 5;
-
-const COMMON_PAGINATION_RANGES: Record<string, (number | string)[]> = (() => {
-  const ranges: Record<string, (number | string)[]> = {};
-
-  for (let totalPages = 1; totalPages <= 20; totalPages++) {
-    for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
-      const maxVisiblePages = PAGINATION_MAX_VISIBLE;
-      const rangeWithDots: (number | string)[] = [];
-
-      if (totalPages <= maxVisiblePages) {
-        for (let i = 1; i <= totalPages; i++) {
-          rangeWithDots.push(i);
-        }
-      } else {
-        rangeWithDots.push(1);
-
-        if (currentPage <= 3) {
-          for (let i = 2; i <= 4; i++) {
-            rangeWithDots.push(i);
-          }
-          rangeWithDots.push("...", totalPages);
-        } else if (currentPage >= totalPages - 2) {
-          rangeWithDots.push("...");
-          for (let i = totalPages - 3; i <= totalPages; i++) {
-            rangeWithDots.push(i);
-          }
-        } else {
-          rangeWithDots.push("...");
-          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-            rangeWithDots.push(i);
-          }
-          rangeWithDots.push("...", totalPages);
-        }
-      }
-
-      ranges[`${currentPage}-${totalPages}`] = rangeWithDots;
-    }
-  }
-
-  return ranges;
-})();
+const COMMON_PAGINATION_RANGES = buildCache();
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -72,43 +32,17 @@ export function titleCase(str: string): string {
  * - Near beginning: [1, 2, 3, 4, '...', 10]
  * - In middle: [1, '...', 4, 5, 6, '...', 10]
  * - Near end: [1, '...', 7, 8, 9, 10]
+ *
+ * @note Cache is pre-computed for totalPages <= 20 at build time.
+ *       For totalPages > 20, returns all pages without ellipsis.
  */
 export function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
-  const maxVisiblePages = PAGINATION_MAX_VISIBLE;
-
-  if (totalPages <= maxVisiblePages) {
-    const range: (number | string)[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      range.push(i);
-    }
-    return range;
-  }
-
+  // Use pre-computed cache for common page counts (1-20)
   const cacheKey = `${currentPage}-${totalPages}`;
   if (COMMON_PAGINATION_RANGES[cacheKey]) {
     return [...COMMON_PAGINATION_RANGES[cacheKey]];
   }
 
-  const rangeWithDots: (number | string)[] = [];
-  rangeWithDots.push(1);
-
-  if (currentPage <= 3) {
-    for (let i = 2; i <= 4; i++) {
-      rangeWithDots.push(i);
-    }
-    rangeWithDots.push("...", totalPages);
-  } else if (currentPage >= totalPages - 2) {
-    rangeWithDots.push("...");
-    for (let i = totalPages - 3; i <= totalPages; i++) {
-      rangeWithDots.push(i);
-    }
-  } else {
-    rangeWithDots.push("...");
-    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-      rangeWithDots.push(i);
-    }
-    rangeWithDots.push("...", totalPages);
-  }
-
-  return rangeWithDots;
+  // Fallback for >20 pages
+  return computeRange(currentPage, totalPages);
 }

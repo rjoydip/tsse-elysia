@@ -69,8 +69,8 @@ describe("BrandTitle", () => {
 describe("BrandDescription", () => {
   it("should render default description", () => {
     const html = renderToString(<BrandDescription />);
-    expect(html).toContain("modern");
-    expect(html).toContain("framework");
+    expect(html).toContain("full-stack");
+    expect(html).toContain("confidence");
   });
 
   it("should render custom size", () => {

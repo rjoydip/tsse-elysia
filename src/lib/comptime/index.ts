@@ -25,6 +25,7 @@ import {
   HTML_PATTERN_FLAGS,
   PAGINATION_MAX_VISIBLE_VALUE,
 } from "./values";
+import { buildCache } from "~/lib/pagination/compute";
 
 /**
  * Build-time computed role hierarchy values.
@@ -103,43 +104,4 @@ export const PAGINATION_MAX_VISIBLE = comptime(() => PAGINATION_MAX_VISIBLE_VALU
  * Build-time computed pagination ranges for common page counts.
  * Maps (currentPage, totalPages) -> [1, 2, 3, 4, 5] patterns.
  */
-export const COMMON_PAGINATION_RANGES = comptime(() => {
-  const ranges: Record<string, (number | string)[]> = {};
-
-  for (let totalPages = 1; totalPages <= 20; totalPages++) {
-    for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
-      const maxVisiblePages = PAGINATION_MAX_VISIBLE_VALUE;
-      const rangeWithDots: (number | string)[] = [];
-
-      if (totalPages <= maxVisiblePages) {
-        for (let i = 1; i <= totalPages; i++) {
-          rangeWithDots.push(i);
-        }
-      } else {
-        rangeWithDots.push(1);
-
-        if (currentPage <= 3) {
-          for (let i = 2; i <= 4; i++) {
-            rangeWithDots.push(i);
-          }
-          rangeWithDots.push("...", totalPages);
-        } else if (currentPage >= totalPages - 2) {
-          rangeWithDots.push("...");
-          for (let i = totalPages - 3; i <= totalPages; i++) {
-            rangeWithDots.push(i);
-          }
-        } else {
-          rangeWithDots.push("...");
-          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-            rangeWithDots.push(i);
-          }
-          rangeWithDots.push("...", totalPages);
-        }
-      }
-
-      ranges[`${currentPage}-${totalPages}`] = rangeWithDots;
-    }
-  }
-
-  return ranges;
-});
+export const COMMON_PAGINATION_RANGES = comptime(() => buildCache());
