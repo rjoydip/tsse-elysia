@@ -217,9 +217,6 @@ function getViewAccessLevel(view: DashboardView): number {
 /**
  * All available roles for iteration purposes.
  */
-/**
- * All available roles for iteration purposes.
- */
 export const ALL_ROLES: UserRole[] = ["user", "cashier", "manager", "admin", "superadmin"];
 
 /**
