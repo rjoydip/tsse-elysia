@@ -1,8 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { buildCache, computeRange } from "~/lib/pagination/compute";
-
-const COMMON_PAGINATION_RANGES = buildCache();
+import { computeRange } from "~/lib/pagination/compute";
+import { COMMON_PAGINATION_RANGES_VALUES } from "~/lib/comptime/values";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,8 +38,8 @@ export function titleCase(str: string): string {
 export function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
   // Use pre-computed cache for common page counts (1-20)
   const cacheKey = `${currentPage}-${totalPages}`;
-  if (COMMON_PAGINATION_RANGES[cacheKey]) {
-    return [...COMMON_PAGINATION_RANGES[cacheKey]];
+  if (COMMON_PAGINATION_RANGES_VALUES[cacheKey]) {
+    return [...COMMON_PAGINATION_RANGES_VALUES[cacheKey]];
   }
 
   // Fallback for >20 pages

@@ -24,8 +24,8 @@ import {
   HTML_PATTERN_SOURCE,
   HTML_PATTERN_FLAGS,
   PAGINATION_MAX_VISIBLE_VALUE,
+  COMMON_PAGINATION_RANGES_VALUES,
 } from "./values";
-import { buildCache } from "~/lib/pagination/compute";
 
 /**
  * Build-time computed role hierarchy values.
@@ -104,4 +104,4 @@ export const PAGINATION_MAX_VISIBLE = comptime(() => PAGINATION_MAX_VISIBLE_VALU
  * Build-time computed pagination ranges for common page counts.
  * Maps (currentPage, totalPages) -> [1, 2, 3, 4, 5] patterns.
  */
-export const COMMON_PAGINATION_RANGES = comptime(() => buildCache());
+export const COMMON_PAGINATION_RANGES = comptime(() => COMMON_PAGINATION_RANGES_VALUES);

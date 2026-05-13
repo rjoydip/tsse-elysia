@@ -108,3 +108,11 @@ export const HTML_PATTERN_FLAGS = "g";
  * Pagination max visible pages.
  */
 export const PAGINATION_MAX_VISIBLE_VALUE = 5;
+
+/**
+ * Pre-computed pagination ranges for common page counts (1-20).
+ * Maps (currentPage, totalPages) -> page number arrays with ellipsis.
+ * Used to avoid runtime computation for common pagination scenarios.
+ */
+import { buildCache } from "~/lib/pagination/compute";
+export const COMMON_PAGINATION_RANGES_VALUES = buildCache();
