@@ -21,7 +21,7 @@ export interface DocSection {
   items: DocItem[];
 }
 
-/** Defines the display order for sidebar sections */
+/** Display order for sidebar sections */
 const SECTION_ORDER = ["getting-started", "auth", "api", "infra", "guides", "reference"] as const;
 
 /** Maps folder names to sidebar section titles */
@@ -42,22 +42,22 @@ const FILE_NAME_MAP: Record<string, string> = {
 };
 
 export const docsListLLMO = [
-  { slug: "getting-started", title: "Getting Started", category: "Guide" },
+  { slug: "getting-started", title: "Getting Started", category: "Guide" as const },
   {
     slug: "api/api-references",
     title: "API References",
-    category: "Reference",
+    category: "Reference" as const,
   },
   {
     slug: "getting-started/development",
     title: "Development Setup",
-    category: "Guide",
+    category: "Guide" as const,
   },
-  { slug: "auth/overview", title: "Authentication", category: "Guide" },
+  { slug: "auth/overview", title: "Authentication", category: "Guide" as const },
   {
     slug: "deployment/production",
     title: "Production Deployment",
-    category: "Guide",
+    category: "Guide" as const,
   },
 ];
 

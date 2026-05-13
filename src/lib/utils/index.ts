@@ -1,6 +1,49 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+const PAGINATION_MAX_VISIBLE = 5;
+
+const COMMON_PAGINATION_RANGES: Record<string, (number | string)[]> = (() => {
+  const ranges: Record<string, (number | string)[]> = {};
+
+  for (let totalPages = 1; totalPages <= 20; totalPages++) {
+    for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
+      const maxVisiblePages = PAGINATION_MAX_VISIBLE;
+      const rangeWithDots: (number | string)[] = [];
+
+      if (totalPages <= maxVisiblePages) {
+        for (let i = 1; i <= totalPages; i++) {
+          rangeWithDots.push(i);
+        }
+      } else {
+        rangeWithDots.push(1);
+
+        if (currentPage <= 3) {
+          for (let i = 2; i <= 4; i++) {
+            rangeWithDots.push(i);
+          }
+          rangeWithDots.push("...", totalPages);
+        } else if (currentPage >= totalPages - 2) {
+          rangeWithDots.push("...");
+          for (let i = totalPages - 3; i <= totalPages; i++) {
+            rangeWithDots.push(i);
+          }
+        } else {
+          rangeWithDots.push("...");
+          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+            rangeWithDots.push(i);
+          }
+          rangeWithDots.push("...", totalPages);
+        }
+      }
+
+      ranges[`${currentPage}-${totalPages}`] = rangeWithDots;
+    }
+  }
+
+  return ranges;
+})();
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -30,39 +73,41 @@ export function titleCase(str: string): string {
  * - In middle: [1, '...', 4, 5, 6, '...', 10]
  * - Near end: [1, '...', 7, 8, 9, 10]
  */
-export function getPageNumbers(currentPage: number, totalPages: number) {
-  const maxVisiblePages = 5; // Maximum number of page buttons to show
-  const rangeWithDots = [];
+export function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+  const maxVisiblePages = PAGINATION_MAX_VISIBLE;
 
   if (totalPages <= maxVisiblePages) {
-    // If total pages is 5 or less, show all pages
+    const range: (number | string)[] = [];
     for (let i = 1; i <= totalPages; i++) {
+      range.push(i);
+    }
+    return range;
+  }
+
+  const cacheKey = `${currentPage}-${totalPages}`;
+  if (COMMON_PAGINATION_RANGES[cacheKey]) {
+    return [...COMMON_PAGINATION_RANGES[cacheKey]];
+  }
+
+  const rangeWithDots: (number | string)[] = [];
+  rangeWithDots.push(1);
+
+  if (currentPage <= 3) {
+    for (let i = 2; i <= 4; i++) {
+      rangeWithDots.push(i);
+    }
+    rangeWithDots.push("...", totalPages);
+  } else if (currentPage >= totalPages - 2) {
+    rangeWithDots.push("...");
+    for (let i = totalPages - 3; i <= totalPages; i++) {
       rangeWithDots.push(i);
     }
   } else {
-    // Always show first page
-    rangeWithDots.push(1);
-
-    if (currentPage <= 3) {
-      // Near the beginning: [1] [2] [3] [4] ... [10]
-      for (let i = 2; i <= 4; i++) {
-        rangeWithDots.push(i);
-      }
-      rangeWithDots.push("...", totalPages);
-    } else if (currentPage >= totalPages - 2) {
-      // Near the end: [1] ... [7] [8] [9] [10]
-      rangeWithDots.push("...");
-      for (let i = totalPages - 3; i <= totalPages; i++) {
-        rangeWithDots.push(i);
-      }
-    } else {
-      // In the middle: [1] ... [4] [5] [6] ... [10]
-      rangeWithDots.push("...");
-      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-        rangeWithDots.push(i);
-      }
-      rangeWithDots.push("...", totalPages);
+    rangeWithDots.push("...");
+    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+      rangeWithDots.push(i);
     }
+    rangeWithDots.push("...", totalPages);
   }
 
   return rangeWithDots;

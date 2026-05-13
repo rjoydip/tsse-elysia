@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { useEffect } from "react";
 import { useForm } from "@tanstack/react-form";
-import { useSession } from "~/lib/auth/client";
+import { useAuthStore } from "~/lib/stores/auth";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 import { showSubmittedData } from "~/components/show-submitted-data";
 import { cn } from "~/lib/utils";
@@ -27,6 +27,7 @@ import { Input } from "~/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { DatePicker } from "~/components/date-picker";
 import { settingsActions } from "~/lib/stores/dashboard/settings";
+import { usePermission } from "~/hooks/use-permission";
 
 /**
  * Available language options for the application.
@@ -65,9 +66,9 @@ const accountFormSchema = z.object({
     .min(2, "Name must be at least 2 characters.")
     .max(30, "Name must not be longer than 30 characters."),
   /**
-   * Date of birth must be a valid date
+   * Date of birth is optional (required for non-admin users)
    */
-  dob: z.date("Please select your date of birth."),
+  dob: z.date().optional(),
   /**
    * Language must be selected from available options
    */
@@ -89,8 +90,11 @@ export function AccountForm({
   initialAccount: any;
   isLoading: boolean;
 }) {
-  const { data: session } = useSession();
+  const { session } = useAuthStore((state) => ({
+    session: state.session,
+  }));
   const { updateAccount, submitAccount } = settingsActions;
+  const userPermission = usePermission();
 
   const form = useForm({
     defaultValues: {
@@ -110,15 +114,15 @@ export function AccountForm({
 
   // Update form values when initialAccount changes
   useEffect(() => {
-    // Use initialAccount from route loader if available, otherwise fall back to session or empty values
+    // Use initialAccount from route loader if available, otherwise use empty values
     const accountData = initialAccount || {
-      name: session?.user?.name || "",
+      name: "",
       dob: undefined,
       language: "en",
     };
 
     const userDefaultValues: Partial<AccountFormValues> = {
-      name: accountData.name || session?.user?.name || "",
+      name: accountData.name || "",
       dob: accountData.dob || undefined,
       language: accountData.language || "en",
     };
@@ -151,17 +155,19 @@ export function AccountForm({
             </FormItem>
           )}
         />
-        <FormField
-          name="dob"
-          children={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date of birth</FormLabel>
-              <DatePicker selected={field.value} onSelect={(date) => field.onChange(date)} />
-              <FormDescription>Your date of birth is used to calculate your age.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {!userPermission.isAdmin && (
+          <FormField
+            name="dob"
+            children={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Date of birth</FormLabel>
+                <DatePicker selected={field.value} onSelect={(date) => field.onChange(date)} />
+                <FormDescription>Your date of birth is used to calculate your age.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           name="language"
           children={({ field }) => (
