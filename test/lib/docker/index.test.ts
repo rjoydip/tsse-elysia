@@ -30,7 +30,7 @@ describe("parseDockerfile", () => {
     expect(result.stages).toHaveLength(4);
     expect(result.stages[0].name).toBe("DEPS");
     expect(result.stages[1].name).toBe("BUILDER");
-    expect(result.stages[2].name).toBe("EXTRACTOR");
+    expect(result.stages[2].name).toBe("RUNTIME-DEPS");
     expect(result.stages[3].name).toBe("PRODUCTION");
   });
 
@@ -48,7 +48,7 @@ describe("parseDockerfile", () => {
   it("should collect commands for each stage", () => {
     const result = parseDockerfile(SAMPLE_DOCKERFILE);
     expect(result.stages[0].commands.length).toBeGreaterThan(0);
-    expect(result.stages[3].commands).toContain("COPY --from=extractor /app/bun /app/bun");
+    expect(result.stages[3].commands).toContain("COPY --from=runtime-deps /app/bun /app/bun");
   });
 
   it("should mark final stage correctly", () => {

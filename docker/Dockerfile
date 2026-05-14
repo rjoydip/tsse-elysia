@@ -35,27 +35,27 @@ RUN bun run db:generate 2>/dev/null || true
 RUN bun run build
 
 # =============================================================================
-# Stage 3: RUNTIME (scratch) - Minimal runtime with Bun binary only
+# Stage 3: RUNTIME EXTRACTOR - Extract Bun binary and CA certs from Alpine
 # =============================================================================
-FROM oven/bun:alpine AS extractor
+FROM oven/bun:alpine AS runtime-deps
 
 WORKDIR /app
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
+RUN cp /usr/bin/bun /app/bun && \
+    cp /etc/ssl/certs/ca-certificates.crt /app/ca-certificates.crt
 
-COPY --from=oven/bun:alpine /usr/bin/bun ./bun
-
-COPY --from=oven/bun:alpine /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
+# =============================================================================
+# Stage 4: PRODUCTION (scratch) - Minimal runtime with Bun binary only
+# =============================================================================
 FROM scratch AS production
 
 WORKDIR /app
 
-COPY --from=extractor /app/bun /app/bun
-COPY --from=extractor /app/dist /app/dist
-COPY --from=extractor /app/package.json /app/package.json
-COPY --from=extractor /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=runtime-deps /app/bun /app/bun
+COPY --from=runtime-deps /app/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
 
 RUN /app/bun install --frozen-lockfile --omit=dev --ignore-scripts
 
