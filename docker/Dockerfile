@@ -41,7 +41,7 @@ FROM oven/bun:alpine AS runtime-deps
 
 WORKDIR /app
 
-RUN cp /usr/bin/bun /app/bun && \
+RUN which bun && cp "$(which bun)" /app/bun && \
     cp /etc/ssl/certs/ca-certificates.crt /app/ca-certificates.crt
 
 # =============================================================================
