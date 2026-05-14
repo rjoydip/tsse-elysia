@@ -67,6 +67,25 @@ Core focus:
 - Vector + Graph DB
 - Performance & scaling
 
+### Phase 12 – Comptime Build-Time Computation ✅
+
+**Completed:**
+
+- Integrated `@lukeed/comptime` for build-time value computation
+- Created `src/lib/comptime/` module:
+  - `values.ts` - Raw constant values (role hierarchies, patterns, entities)
+  - `index.ts` - Build-time computed exports using `comptime()`
+- Integrated with Vite via `comptime/vite` plugin (`vite.config.ts`)
+- Consolidated pagination cache (eliminates runtime computation for pages ≤20)
+- Centralized 15+ build-time constants (roles, views, patterns, HTML entities, etc.)
+
+**Benefits:**
+
+- Zero runtime overhead for static values
+- Regex patterns pre-compiled at build time
+- Pagination cache pre-computed for common page counts
+- Type-safe exports with JSDoc documentation
+
 ### Phase 9 – User Management Dashboard ✅
 
 **Completed:**
@@ -98,7 +117,7 @@ Core focus:
 
 **Structure:**
 
-```
+```sh
 src/
 ├── routes/api/         # HTTP Layer (Elysia route definitions)
 ├── controllers/        # Controller Layer (session validation, request parsing)

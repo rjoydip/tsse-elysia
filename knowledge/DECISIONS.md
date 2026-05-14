@@ -1041,6 +1041,62 @@ git push origin "$TARGET_BRANCH"
 
 ---
 
+### 029: Comptime for Build-Time Value Computation
+
+**Status:** Accepted
+
+**Why:**
+
+- Eliminate runtime computation overhead for static values
+- Pre-compile regex patterns at build time
+- Pre-compute pagination ranges for common page counts (≤20)
+- Centralize constant values in one location
+
+**Implementation:**
+
+1. **Dependencies**: Added `comptime` package (`@lukeed/comptime`)
+
+2. **Vite Integration** (`vite.config.ts`):
+
+   ```typescript
+   import { comptime } from "comptime/vite";
+   // ...
+   plugins: [comptime(), ...]
+   ```
+
+3. **Module Structure** (`src/lib/comptime/`):
+
+   ```
+   ├── values.ts    # Raw constant values (source of truth)
+   └── index.ts     # Build-time computed exports via comptime()
+   ```
+
+4. **Values Exported** (15+ constants):
+   - `ROLE_HIERARCHY` - Role permission levels
+   - `ADMIN_ROLES`, `MANAGER_ROLES`, `ALL_ROLES` - Role arrays
+   - `DASHBOARD_VIEWS`, `DASHBOARD_VIEW_LEVELS` - View types and levels
+   - `HTTP_STATUS_TO_ERROR_MAP` - Status code to error class mapping
+   - `HTML_ENTITIES_MAP` - HTML entity encoding
+   - `SUSPICIOUS_PATTERNS` - XSS detection patterns
+   - `DANGEROUS_TAGS_PATTERN`, `EVENT_HANDLER_PATTERN`, `HTML_PATTERN` - Pre-compiled regex
+   - `PAGINATION_MAX_VISIBLE` - Max visible pages
+   - `COMMON_PAGINATION_RANGES` - Pre-computed pagination ranges
+
+5. **Pagination Optimization**:
+   - `COMMON_PAGINATION_RANGES_VALUES` pre-computed for pages 1-20
+   - `utils/index.ts` imports directly from `values.ts` (avoids runtime `comptime()` call)
+   - Fallback to runtime computation for >20 pages
+
+**Tradeoffs:**
+
+- ⚠️ Additional build step (minimal impact)
+- ⚠️ Cannot use in test files without preload (solved by exporting raw values)
+- ✅ Zero runtime overhead
+- ✅ Pre-compiled regex patterns
+- ✅ Centralized constant management
+
+---
+
 ### 028: User Management Dialog with Password Validation
 
 **Status:** Completed

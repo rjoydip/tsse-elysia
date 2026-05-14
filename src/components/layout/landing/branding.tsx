@@ -4,6 +4,9 @@
  * Supports various layouts, sizes, and visibility options.
  */
 
+import { memo } from "react";
+import { useScramble } from "@scrambl/react";
+
 import { Logo } from "~/assets/logo";
 import { APP_NAME } from "~/config";
 
@@ -22,6 +25,38 @@ export interface BrandDescriptionProps {
   /** Maximum width of the description */
   maxWidth?: string;
 }
+
+/**
+ * ScrambledText - Applies scrambl text effect to a word/phrase
+ * @example
+ * <ScrambledText text="TypeScript" />
+ */
+const ScrambledText = memo(function ScrambledText({
+  text,
+  speed = 0.5,
+  duration = 600,
+}: {
+  text: string;
+  speed?: number;
+  duration?: number;
+}) {
+  const { ref, replay } = useScramble({
+    text,
+    chars: "blocks",
+    from: "left",
+    duration: duration,
+    speed: speed,
+    trigger: "hover",
+  });
+
+  return (
+    <span
+      ref={ref}
+      onClick={replay}
+      className="text-primary font-medium cursor-pointer inline-block"
+    />
+  );
+});
 
 export interface BrandingProps {
   /** Custom title props */
@@ -68,7 +103,11 @@ export function BrandTitle({ size = "4xl", children }: BrandTitleProps) {
     <div className={`text-${size} md:text-${getMobileSize()} font-bold tracking-tight`}>
       {children || (
         <>
-          Build faster with <span className="text-primary">{APP_NAME}</span> template
+          Build faster with{" "}
+          <span className="text-primary">
+            <ScrambledText text={APP_NAME} speed={0.2} />
+          </span>{" "}
+          template
         </>
       )}
     </div>
@@ -100,8 +139,9 @@ export function BrandDescription({
     >
       {children || (
         <>
-          The modern full-stack framework combining TypeScript safety with ElysiaJS performance.
-          Ship production-ready applications with confidence.
+          The modern full-stack framework combining <ScrambledText text="TypeScript" /> safety with{" "}
+          <ScrambledText text="ElysiaJS" /> performance. Ship production-ready applications with
+          confidence.
         </>
       )}
     </p>

@@ -11,12 +11,12 @@ import { logger } from "../src/lib/logger";
 /**
  * Prefix used to identify test users/emails.
  */
-const TEST_PREFIX = "test-";
+const TEST_PREFIX = "e2e-";
 
 /**
  * Domain used for test emails.
  */
-const TEST_DOMAIN = "example.com";
+const TEST_DOMAIN = "test.com";
 
 /**
  * Database URL from environment or default file path.

@@ -4,6 +4,7 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import evlog from "evlog/vite";
+import { comptime } from "comptime/vite";
 
 const host = import.meta.env.HOST || "localhost";
 const port = parseInt(import.meta.env.PORT || "3000", 10);
@@ -15,6 +16,7 @@ export default defineConfig(() => ({
       environment: import.meta.env.MODE || "development",
       sourceLocation: import.meta.env.MODE !== "production",
     }),
+    comptime(),
     tanstackStart(),
     viteReact(),
     tailwindcss(),

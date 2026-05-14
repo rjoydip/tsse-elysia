@@ -8,7 +8,7 @@ import { logger } from "~/lib/logger";
 /**
  * HTML entities that need to be escaped to prevent XSS.
  */
-const HTML_ENTITIES: Record<string, string> = {
+export const HTML_ENTITIES: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",
   ">": "&gt;",
@@ -131,7 +131,6 @@ export function stripHtml(text: string): string {
  * @returns True if text appears safe, false otherwise
  */
 export function validateContent(text: string): boolean {
-  // Check for common XSS patterns
   const suspiciousPatterns = [
     /<script/i,
     /javascript:/i,
