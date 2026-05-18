@@ -55,9 +55,9 @@ COPY --from=runtime-deps /app/bun /app/bun
 COPY --from=runtime-deps /app/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-
-RUN /app/bun install --frozen-lockfile --omit=dev --ignore-scripts
+COPY --from=builder /app/bun.lockb ./bun.lockb 2>/dev/null || true
 
 RUN mkdir -p /app/artifacts /app/.artifacts
 
