@@ -57,6 +57,8 @@ Core focus:
 | 13    | Contract Testing | 📅     |
 | Svc   | Service Layer    | ✅     |
 | 11    | API Architecture | ✅     |
+| 12    | Comptime         | ✅     |
+| 14    | Docker Optimize  | ✅     |
 
 ---
 
@@ -85,6 +87,19 @@ Core focus:
 - Regex patterns pre-compiled at build time
 - Pagination cache pre-computed for common page counts
 - Type-safe exports with JSDoc documentation
+
+### Phase 14 – Docker Optimization (Scratch Runtime) ✅
+
+**Completed:**
+
+- Implemented multi-stage Dockerfile using scratch base for production
+- Reduced image size from ~150-200MB to ~70-85MB
+- Eliminated Alpine OS packages (minimal CVE surface)
+- Added decision #030: Scratch-Based Docker Runtime
+- Created Docker parsing utilities:
+  - `src/lib/docker/types.ts` - Type definitions
+  - `src/lib/docker/index.ts` - Parser utilities
+- Unit tests: `test/lib/docker/index.test.ts`
 
 ### Phase 9 – User Management Dashboard ✅
 

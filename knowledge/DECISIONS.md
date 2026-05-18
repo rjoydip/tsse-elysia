@@ -1097,6 +1097,52 @@ git push origin "$TARGET_BRANCH"
 
 ---
 
+### 030: Scratch-Based Docker Runtime for Minimal Attack Surface
+
+**Status:** Accepted
+
+**Why:**
+
+- Reduce Docker image size from ~150-200MB to ~70-85MB
+- Eliminate Alpine OS packages that may contain CVEs
+- Minimal attack surface with no shell, package manager, or OS utilities
+- Reproducible builds without network dependency during extraction
+
+**Implementation:**
+
+Created multi-stage Dockerfile with 4 stages:
+
+| Stage        | Base Image        | Purpose                              |
+| ------------ | ----------------- | ------------------------------------ |
+| `deps`       | `oven/bun:alpine` | Install production dependencies only |
+| `builder`    | `oven/bun:alpine` | Build application (Vite + SSR)       |
+| `extractor`  | `oven/bun:alpine` | Extract Bun binary + CA certs        |
+| `production` | `scratch`         | Minimal runtime (Bun binary + app)   |
+
+**Key Changes:**
+
+1. **Dockerfile (`docker/Dockerfile`)**:
+   - Stage 3 (extractor) extracts `/usr/bin/bun` and CA certificates from Alpine
+   - Stage 4 (production) uses `scratch` base image
+   - Copies Bun binary, app dist, package.json, and CA certs
+   - Runs `bun install --omit=dev` for production deps
+   - No shell available, no health check (wget not in scratch)
+
+2. **Docker Compose (`docker/docker-compose.yml`)**:
+   - Removed health check from app service (wget unavailable in scratch)
+   - App relies on Docker's default restart behavior
+
+**Tradeoffs:**
+
+- ⚠️ No shell available in production container (can't exec in for debugging)
+- ⚠️ No health check (Docker can't auto-restart on crash)
+- ⚠️ Can't run additional commands after container starts
+- ✅ Minimal size (~70-85MB)
+- ✅ No OS vulnerabilities
+- ✅ Fast cold start (~1-2s)
+
+---
+
 ### 028: User Management Dialog with Password Validation
 
 **Status:** Completed
