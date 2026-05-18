@@ -18,20 +18,15 @@ FROM oven/bun:alpine AS builder
 
 WORKDIR /app
 
-# Copy node_modules from deps stage (production only)
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json bun.lock* ./
 
-# Install all dependencies needed for building (vite, tailwind, typescript, etc.)
 RUN bun install --frozen-lockfile --ignore-scripts
 
-# Copy source code
 COPY . .
 
-# Generate Drizzle schema
 RUN bun run db:generate 2>/dev/null || true
 
-# Build the application
 RUN bun run build
 
 # =============================================================================
@@ -55,9 +50,8 @@ COPY --from=runtime-deps /app/bun /app/bun
 COPY --from=runtime-deps /app/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/bun.lockb ./bun.lockb 2>/dev/null || true
 
 RUN mkdir -p /app/artifacts /app/.artifacts
 
@@ -69,7 +63,6 @@ ENV NODE_ENV=production
 ENV BUN_JSC_majorVersion=0
 ENV BUN_JSC_minorVersion=0
 
-# Expose port
 EXPOSE 3000
 
 CMD ["/app/bun", "run", "start"]
