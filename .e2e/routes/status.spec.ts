@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Status Page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/status");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
   });
 
   test("should render the status page heading", async ({ page }) => {
@@ -61,13 +61,13 @@ test.describe("Status Page", () => {
 test.describe("Status Page Layout", () => {
   test("should render header on status page", async ({ page }) => {
     await page.goto("/status");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("header").first()).toBeVisible();
   });
 
   test("should render footer on status page", async ({ page }) => {
     await page.goto("/status");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("footer.py-4").filter({ hasText: "TSS" }).first()).toBeVisible();
   });
 });

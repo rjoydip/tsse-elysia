@@ -3,7 +3,7 @@
  * Handles all ORM (Drizzle) operations for user data.
  */
 
-import { eq, like, and, or, desc } from "drizzle-orm";
+import { eq, like, and, or, desc, sql, count } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
 import type { DbType } from "~/config/db";
@@ -102,8 +102,145 @@ export class UserRepository {
    * This is the most efficient approach available in Drizzle ORM.
    */
   async count(): Promise<number> {
-    const [result] = await this.db.select({ count: users.id }).from(users);
+    const [result] = await this.db.select({ count: count() }).from(users);
     return result?.count ?? 0;
+  }
+
+  /**
+   * Counts users by status.
+   * @param status - User status to filter by ("active", "inactive", "suspended", "invited")
+   * @returns Count of users with the specified status
+   */
+  async countByStatus(status: string): Promise<number> {
+    const [result] = await this.db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.status, status));
+    return result?.count ?? 0;
+  }
+
+  /**
+   * Counts users by role.
+   * @param role - User role to filter by ("user", "cashier", "manager", "admin", "superadmin")
+   * @returns Count of users with the specified role
+   */
+  async countByRole(role: string): Promise<number> {
+    const [result] = await this.db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.role, role));
+    return result?.count ?? 0;
+  }
+
+  /**
+   * Counts users created in the current calendar month (month-to-date).
+   * @returns Count of users created since the start of the current month
+   */
+  async countUsersThisMonth(): Promise<number> {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const [result] = await this.db
+      .select({ count: count() })
+      .from(users)
+      .where(sql`${users.createdAt} >= ${monthStart}`);
+    return result?.count ?? 0;
+  }
+
+  /**
+   * Retrieves the most recently created users.
+   * @param limit - Maximum number of users to return (default: 10)
+   * @returns Array of recent user records
+   */
+  async findRecent(limit: number = 10): Promise<(typeof users.$inferSelect)[]> {
+    return this.db.select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+  }
+
+  /**
+   * Gets user registrations grouped by month for chart display.
+   * Uses SQLite strftime to extract year-month from unix timestamp.
+   * Returns monthly labels ("Jan", "Feb", etc.) with user counts.
+   * @returns Array of monthly registration counts for the current year
+   */
+  async getMonthlyRegistrations(): Promise<Array<{ name: string; total: number }>> {
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1).getTime();
+    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59).getTime();
+
+    const rows = await this.db
+      .select({
+        month:
+          sql`CAST(strftime('%m', ${users.createdAt} / 1000, 'unixepoch') AS INTEGER)`.as<number>(),
+        count: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
+      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`);
+
+    const monthMap = new Map<number, number>();
+    for (const row of rows) {
+      monthMap.set(row.month, row.count);
+    }
+
+    return monthNames.map((name, index) => ({
+      name,
+      total: monthMap.get(index + 1) ?? 0,
+    }));
+  }
+
+  /**
+   * Gets user counts grouped by role for analytics display.
+   * @returns Array of role names with user counts
+   */
+  async getUsersGroupedByRole(): Promise<Array<{ name: string; value: number }>> {
+    const rows: Array<{ name: string | null; value: number }> = await this.db
+      .select({
+        name: users.role,
+        value: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .groupBy(users.role)
+      .orderBy(sql`COUNT(*)`);
+
+    return rows.map((row) => ({
+      name: row.name ?? "user",
+      value: row.value,
+    }));
+  }
+
+  /**
+   * Gets user counts grouped by status for analytics display.
+   * @returns Array of status names with user counts
+   */
+  async getUsersGroupedByStatus(): Promise<Array<{ name: string; value: number }>> {
+    const rows: Array<{ name: string | null; value: number }> = await this.db
+      .select({
+        name: users.status,
+        value: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .groupBy(users.status)
+      .orderBy(sql`COUNT(*)`);
+
+    return rows.map((row) => ({
+      name: row.name ?? "active",
+      value: row.value,
+    }));
   }
 
   /**

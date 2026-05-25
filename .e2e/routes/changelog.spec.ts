@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Changelog Page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/changelog");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
   });
 
   test("should render the changelog page heading", async ({ page }) => {
@@ -61,13 +61,13 @@ test.describe("Changelog Page", () => {
 test.describe("Changelog Page Layout", () => {
   test("should render header on changelog page", async ({ page }) => {
     await page.goto("/changelog");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("header").first()).toBeVisible();
   });
 
   test("should render footer on changelog page", async ({ page }) => {
     await page.goto("/changelog");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("footer").filter({ hasText: "TSS" }).first()).toBeVisible();
   });
 });

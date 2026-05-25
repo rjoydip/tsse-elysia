@@ -315,3 +315,16 @@ export const helmetConfig = {
  *   }
  */
 export const fonts = ["inter", "manrope", "system"] as const;
+
+/**
+ * Currency configuration for dashboard displays.
+ * Controls how monetary values are formatted across the UI.
+ * @property code - ISO 4217 currency code (e.g., "INR", "USD", "EUR")
+ * @property locale - Locale for number formatting (e.g., "en-IN", "en-US", "de-DE")
+ * @property symbol - Currency symbol display character
+ */
+export const currencyConfig = {
+  code: getEnvVar("CURRENCY_CODE", "INR"),
+  locale: getEnvVar("CURRENCY_LOCALE", "en-IN"),
+  symbol: "₹",
+} as const;

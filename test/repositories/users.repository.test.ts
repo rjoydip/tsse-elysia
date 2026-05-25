@@ -89,4 +89,257 @@ describe("User Repository", () => {
       expect(result).toBe(2);
     });
   });
+
+  describe("countByStatus", () => {
+    test("should return count of users with given status", async () => {
+      let capturedWhere: any = null;
+
+      mockDb.select = () => ({
+        from: () => ({
+          where: (condition: any) => {
+            capturedWhere = condition;
+            return Promise.resolve([{ count: 5 }]);
+          },
+        }),
+      });
+
+      const result = await repository.countByStatus("active");
+
+      expect(result).toBe(5);
+      expect(capturedWhere).toBeDefined();
+    });
+
+    test("should return 0 when no users match the status", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: 0 }]),
+        }),
+      });
+
+      const result = await repository.countByStatus("nonexistent");
+
+      expect(result).toBe(0);
+    });
+
+    test("should work for inactive and suspended statuses", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: 3 }]),
+        }),
+      });
+
+      const inactiveCount = await repository.countByStatus("inactive");
+      const suspendedCount = await repository.countByStatus("suspended");
+
+      expect(inactiveCount).toBe(3);
+      expect(suspendedCount).toBe(3);
+    });
+  });
+
+  describe("countByRole", () => {
+    test("should return count of users with given role", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: 10 }]),
+        }),
+      });
+
+      const result = await repository.countByRole("admin");
+
+      expect(result).toBe(10);
+    });
+  });
+
+  describe("countUsersThisMonth", () => {
+    test("should return count of users created this month", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: 15 }]),
+        }),
+      });
+
+      const result = await repository.countUsersThisMonth();
+
+      expect(result).toBe(15);
+    });
+
+    test("should return 0 when no users created this month", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: 0 }]),
+        }),
+      });
+
+      const result = await repository.countUsersThisMonth();
+
+      expect(result).toBe(0);
+    });
+  });
+
+  describe("findRecent", () => {
+    test("should return recent users ordered by createdAt desc", async () => {
+      const mockUsers = [
+        { id: "user-3", email: "c@test.com", createdAt: new Date("2024-03-01") },
+        { id: "user-2", email: "b@test.com", createdAt: new Date("2024-02-01") },
+        { id: "user-1", email: "a@test.com", createdAt: new Date("2024-01-01") },
+      ];
+
+      let orderDirection: any = null;
+
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: (dir: any) => {
+            orderDirection = dir;
+            return {
+              limit: () => Promise.resolve(mockUsers),
+            };
+          },
+        }),
+      });
+
+      const result = await repository.findRecent(3);
+
+      expect(result).toHaveLength(3);
+      expect(result[0].id).toBe("user-3");
+      expect(orderDirection).toBeDefined();
+    });
+
+    test("should default to limit 10", async () => {
+      let capturedLimit = 0;
+
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: (n: number) => {
+              capturedLimit = n;
+              return Promise.resolve([]);
+            },
+          }),
+        }),
+      });
+
+      await repository.findRecent();
+      expect(capturedLimit).toBe(10);
+    });
+  });
+
+  describe("getMonthlyRegistrations", () => {
+    test("should return 12 months with counts", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => ({
+            groupBy: () => ({
+              orderBy: () =>
+                Promise.resolve([
+                  { month: 1, count: 5 },
+                  { month: 6, count: 3 },
+                ]),
+            }),
+          }),
+        }),
+      });
+
+      const result = await repository.getMonthlyRegistrations();
+
+      expect(result).toHaveLength(12);
+      expect(result[0]).toEqual({ name: "Jan", total: 5 });
+      expect(result[5]).toEqual({ name: "Jun", total: 3 });
+      // Months without data should be 0
+      expect(result[1]).toEqual({ name: "Feb", total: 0 });
+      expect(result[11]).toEqual({ name: "Dec", total: 0 });
+    });
+
+    test("should return all zeros when no registrations exist", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => ({
+            groupBy: () => ({
+              orderBy: () => Promise.resolve([]),
+            }),
+          }),
+        }),
+      });
+
+      const result = await repository.getMonthlyRegistrations();
+
+      expect(result).toHaveLength(12);
+      for (const month of result) {
+        expect(month.total).toBe(0);
+      }
+    });
+  });
+
+  describe("getUsersGroupedByRole", () => {
+    test("should return users grouped by role", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          groupBy: () => ({
+            orderBy: () =>
+              Promise.resolve([
+                { name: "user", value: 100 },
+                { name: "admin", value: 5 },
+              ]),
+          }),
+        }),
+      });
+
+      const result = await repository.getUsersGroupedByRole();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ name: "user", value: 100 });
+      expect(result[1]).toEqual({ name: "admin", value: 5 });
+    });
+
+    test("should handle null role with fallback", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          groupBy: () => ({
+            orderBy: () => Promise.resolve([{ name: null, value: 10 }]),
+          }),
+        }),
+      });
+
+      const result = await repository.getUsersGroupedByRole();
+
+      expect(result[0].name).toBe("user");
+    });
+  });
+
+  describe("getUsersGroupedByStatus", () => {
+    test("should return users grouped by status", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          groupBy: () => ({
+            orderBy: () =>
+              Promise.resolve([
+                { name: "active", value: 80 },
+                { name: "inactive", value: 15 },
+                { name: "suspended", value: 5 },
+              ]),
+          }),
+        }),
+      });
+
+      const result = await repository.getUsersGroupedByStatus();
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({ name: "active", value: 80 });
+      expect(result[1]).toEqual({ name: "inactive", value: 15 });
+      expect(result[2]).toEqual({ name: "suspended", value: 5 });
+    });
+
+    test("should handle null status with fallback", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          groupBy: () => ({
+            orderBy: () => Promise.resolve([{ name: null, value: 5 }]),
+          }),
+        }),
+      });
+
+      const result = await repository.getUsersGroupedByStatus();
+
+      expect(result[0].name).toBe("active");
+    });
+  });
 });

@@ -8,7 +8,7 @@ test.describe("Dashboard Users", () => {
     expect(success).toBe(true);
 
     await page.goto(`${E2E_BASE_URL}/dashboard/users`);
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
   });
 

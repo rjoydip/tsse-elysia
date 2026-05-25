@@ -28,7 +28,7 @@ jobs:
         uses: ./.github/actions/setup-environment
 
       - name: Run Fallow analysis
-        uses: fallow-rs/fallow@b1637497a99a00d0b27acee6a0ee0bf50bf15201 # v2.73.0
+        uses: fallow-rs/fallow@017658ea7af7473dcc87c921a092f0bd507457fd # v2.80.0
         with:
           format: sarif
           comment: true
@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           sarif_file: fallow-results.sarif
           category: fallow-analysis-${{ github.run_id }}

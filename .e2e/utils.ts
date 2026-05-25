@@ -16,66 +16,52 @@ export function generateTestEmail(pageName: string): string {
 }
 
 /**
- * Waits for page to be fully ready (network idle + hydration)
- * Works in both CI and local environments
+ * Waits for the DOM to be ready (HTML parsed, DOM tree built).
+ * Uses `domcontentloaded` because TanStack Start SSR uses HTML streaming
+ * (chunked transfer encoding). Both `networkidle` and `load` can timeout
+ * since the streaming connection may stay open indefinitely.
+ *
+ * Playwright's auto-waiting on locator actions (`fill`, `click`,
+ * `toBeVisible`, etc.) handles React hydration automatically.
  *
  * @param page - Playwright page object
  * @param options - Configuration options
  * @param options.timeout - Max wait time in ms (default: 15000ms for CI, 5000ms for local)
- * @param options.waitForIdle - Wait for network idle (default: true)
- * @param options.waitForDomStable - Wait for DOM to stabilize (default: true)
  */
 export async function waitForPageReady(
   page: Page,
   options?: {
     timeout?: number;
-    waitForIdle?: boolean;
-    waitForDomStable?: boolean;
   },
 ): Promise<void> {
   const timeout = options?.timeout ?? (isCI ? 15000 : 5000);
-  const waitForIdle = options?.waitForIdle ?? true;
-  const waitForDomStable = options?.waitForDomStable ?? true;
 
-  if (waitForIdle) {
-    try {
-      await page.waitForLoadState("networkidle", { timeout });
-    } catch {
-      await page.waitForLoadState("domcontentloaded");
-    }
-  } else {
-    await page.waitForLoadState("domcontentloaded");
-  }
-
-  if (waitForDomStable) {
-    try {
-      await page.waitForFunction(
-        () => {
-          return document.readyState === "complete";
-        },
-        { timeout },
-      );
-    } catch {
-      // Fallback: small delay to allow hydration
-      await page.waitForTimeout(isCI ? 1000 : 500);
-    }
-  }
+  // Use domcontentloaded instead of load or networkidle.
+  // TanStack Start streaming SSR uses chunked transfer encoding
+  // which prevents both `load` and `networkidle` from resolving.
+  await page.waitForLoadState("domcontentloaded", { timeout });
 }
 
 /**
- * Navigate to a URL and wait for page to be fully ready
+ * Navigate to a URL and wait for page DOM to be ready.
+ * Uses `domcontentloaded` to avoid hangs with streaming SSR.
+ *
+ * @deprecated Options `waitForIdle` and `waitForDomStable` are deprecated.
+ *             Only `timeout` is used now.
  */
 export async function navigateAndWait(
   page: Page,
   url: string,
   options?: {
     timeout?: number;
+    /** @deprecated No-op — always uses `domcontentloaded` */
     waitForIdle?: boolean;
+    /** @deprecated No-op — uses `domcontentloaded` instead */
     waitForDomStable?: boolean;
   },
 ): Promise<void> {
-  await page.goto(url);
-  await waitForPageReady(page, options);
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await waitForPageReady(page, { timeout: options?.timeout });
 }
 
 /**
@@ -89,8 +75,7 @@ export async function signUpViaUI(
 ): Promise<boolean> {
   const testEmail = email ?? generateTestEmail("auth");
 
-  await page.goto(`${E2E_BASE_URL}/sign-up`);
-  await page.waitForLoadState("domcontentloaded");
+  await navigateAndWait(page, `${E2E_BASE_URL}/sign-up`);
 
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Email").fill(testEmail);
@@ -114,8 +99,7 @@ export async function signInViaUI(
   email: string,
   password = TEST_PASSWORD,
 ): Promise<boolean> {
-  await page.goto(`${E2E_BASE_URL}/sign-in`);
-  await page.waitForLoadState("domcontentloaded");
+  await navigateAndWait(page, `${E2E_BASE_URL}/sign-in`);
 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);

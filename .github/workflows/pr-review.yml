@@ -39,7 +39,7 @@ jobs:
       - uses: ./.github/actions/disable-submodules
 
       - name: Run Code Review
-        uses: anomalyco/opencode/github@4d8ac17c263c0e58fb99c25cc636684dffb45a50 # v1.14.48
+        uses: anomalyco/opencode/github@d74d166acf40e51146f8547216913a4e787a4bc1 # v1.15.10
         timeout-minutes: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

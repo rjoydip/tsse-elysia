@@ -30,34 +30,34 @@ test.describe("Header Navigation", () => {
 test.describe("Footer Navigation (Guest)", () => {
   test("should navigate to Docs from footer", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("footer.py-4 a[href='/docs']")).toBeVisible({
       timeout: 10000,
     });
     await page.locator("footer.py-4 a[href='/docs']").click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*docs/);
   });
 
   test("should navigate to Blog from footer", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("footer.py-4 a[href='/blog']")).toBeVisible({
       timeout: 10000,
     });
     await page.locator("footer.py-4 a[href='/blog']").click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*blog/);
   });
 
   test("should navigate to Status from footer", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("footer.py-4 a[href='/status']")).toBeVisible({
       timeout: 10000,
     });
     await page.locator("footer.py-4 a[href='/status']").click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*status/);
   });
 });
@@ -113,7 +113,7 @@ test.describe("Authenticated UI Visibility", () => {
 
     // 4. Navigate to home
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // 5. Verify header marketing links are hidden (docs, blog, changelog)
     await expect(page.locator("header nav a[href='/docs']")).not.toBeVisible();
@@ -140,11 +140,11 @@ test.describe("Cross-Page Transitions (Guest)", () => {
 
   test("should handle browser back navigation", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.goto("/docs");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.goBack();
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*docs|\/$/);
   });
 
@@ -165,13 +165,13 @@ test.describe("Cross-Page Transitions (Guest)", () => {
 
   test("should handle browser forward navigation", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.goto("/docs");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.goBack();
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await page.goForward();
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*docs/);
   });
 });

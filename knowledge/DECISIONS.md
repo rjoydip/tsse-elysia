@@ -1198,6 +1198,67 @@ Created multi-stage Dockerfile with 4 stages:
 
 ---
 
+### 034: AnimatedNumber Component for Number Transitions
+
+**Status:** Accepted
+
+**Why:**
+
+- Dashboard metric cards needed smooth animated number transitions on value change
+- Existing libraries (calligraph, torph) were over-engineered character-diff approaches
+- Wanted a lightweight, reusable component with configurable animation presets
+
+**Approach:**
+
+- Created `AnimatedNumber` component using `motion` + `AnimatePresence` for enter/exit transitions
+- Initial render shows 0, then transitions to real value via `requestAnimationFrame` for a visible 0→value animation on mount
+- Added `enterDelay` prop to align number transitions with staggered parent card entrance animations (solved race condition where cards with entrance delay > 0 hid the number animation)
+- Configurable animation presets: bounce (default), fadeScale, slideUp, pop, gentle
+
+**Alternatives Considered:**
+
+- `calligraph` and `torph` libraries — removed, were too heavy for simple number transitions
+- Inline `AnimatePresence`/`motion.span` patterns — replaced everywhere with reusable component
+- CSS-only transitions — couldn't achieve key-based enter/exit behavior
+
+**Tradeoffs:**
+
+- ✅ Consistent animation behavior across all dashboard views
+- ✅ Removed 2 unused dependencies (calligraph, torph)
+- ✅ Single source of truth for number animations
+- ⚠️ Requires `motion` library (already a dependency)
+
+---
+
+### 035: Consolidated Metric Cards in Dashboard Overview
+
+**Status:** Accepted
+
+**Why:**
+
+- "Total Revenue" and "Sales" cards displayed fake/mock data (no real revenue tracking in this app)
+- "Active Users", "Inactive Users", "Suspended Users" cards were duplicated between Overview and Analytics tabs
+- User-focused metrics belong on the primary Overview tab, not hidden under Analytics
+
+**Approach:**
+
+- Removed "Total Revenue" and "Sales" cards from Overview
+- Moved "Active Users", "Inactive Users", "Suspended Users" from Analytics to Overview
+- Analytics tab now focuses exclusively on charts (Weekly Registrations, Users by Role, Users by Status)
+- Color-coded each card type: Total Users → purple, Active Users → cyan, Inactive Users → amber, Suspended Users → red, Active Now → emerald
+- Made all cards equal height with `h-full` on Card and motion.div wrappers
+
+**Tradeoffs:**
+
+- ✅ Overview now shows all 5 user-focused metric cards
+- ✅ Analytics tab is cleaner (charts only)
+- ✅ No more fake "revenue/sales" data displayed
+- ⚠️ Overview tab is denser with 5 cards in a row
+
+---
+
+## Rules
+
 ## Rules
 
 - Every major decision MUST be logged

@@ -19,6 +19,12 @@ import { authCoreRoutes } from "./auth/-core";
 import { settingsRoutes } from "./settings/-core";
 import { usersRoutes } from "./users/-core";
 import { rolesRoutes } from "./roles/-core";
+import {
+  metricsRoutes,
+  analyticsRoutes,
+  recentActivityRoutes,
+  overviewChartRoutes,
+} from "./dashboard/-core";
 
 /**
  * Main API application instance factory.
@@ -67,6 +73,10 @@ export const createApiRoutes = () =>
     .use(settingsRoutes)
     .use(usersRoutes)
     .use(rolesRoutes)
+    .use(metricsRoutes)
+    .use(analyticsRoutes)
+    .use(recentActivityRoutes)
+    .use(overviewChartRoutes)
     // Evlog client ingestion endpoint for browser logs
     .use(evlogIngestEndpoint());
 

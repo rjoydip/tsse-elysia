@@ -130,7 +130,18 @@ Detailed documentation available in `docs/`:
 
 The API follows a layered architecture pattern (HTTP → Controller → Service → Repository):
 
-```
+### Dashboard API Example
+
+The dashboard API demonstrates the layered architecture pattern:
+
+- **HTTP Layer**: `src/routes/api/dashboard/-metrics.ts` (route definitions, HTTP handling)
+- **Controller Layer**: Not used for dashboard (business logic in service)
+- **Service Layer**: `src/services/dashboard/dashboard.service.ts` (fetches from API endpoints)
+- **Repository Layer**: Not used for dashboard (service calls HTTP APIs directly)
+
+For dashboard-specific data, the service layer makes HTTP requests to the dashboard API endpoints rather than accessing a repository directly, since the data comes from various microservices and analytics platforms.
+
+```sh
 ┌─────────────────────────────────────────────────────────────┐
 │                     HTTP Layer (routes/)                    │
 │  - Elysia route definitions                                 │
@@ -218,7 +229,7 @@ This enables:
 
 ### Example Flow (Settings API)
 
-```
+```sh
 Request → routes/api/settings/-profile.ts (HTTP)
          ↓
          controllers/settings/controller.ts (session validation)
@@ -232,7 +243,7 @@ Request → routes/api/settings/-profile.ts (HTTP)
 
 ## Project Structure
 
-```bash
+```sh
 src/
 ├── assets/             # Static assets and icons
 │   ├── auth-banner-dark.png
@@ -361,7 +372,7 @@ src/
 
 ## Test Structure
 
-```bash
+```sh
 test/                  # Unit tests (Bun)
 ├── config/           # Configuration tests
 │   ├── db/           # Database config tests
