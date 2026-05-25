@@ -128,19 +128,17 @@ export class DashboardRepository {
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
     const weekAgo = now - oneWeek;
 
-    const recentUsers = await userRepository.findRecent(100);
+    const recentUsers = await userRepository.findRecentSince(weekAgo);
 
     // Count registrations per day of week
     const dayCounts = new Map<number, number>();
     for (const user of recentUsers) {
       const createdAt =
         user.createdAt instanceof Date ? user.createdAt.getTime() : Number(user.createdAt);
-      if (createdAt >= weekAgo) {
-        const day = new Date(createdAt).getDay(); // 0=Sun, 1=Mon, ...
-        // Convert to Mon=0 .. Sun=6
-        const adjustedDay = day === 0 ? 6 : day - 1;
-        dayCounts.set(adjustedDay, (dayCounts.get(adjustedDay) ?? 0) + 1);
-      }
+      const day = new Date(createdAt).getDay(); // 0=Sun, 1=Mon, ...
+      // Convert to Mon=0 .. Sun=6
+      const adjustedDay = day === 0 ? 6 : day - 1;
+      dayCounts.set(adjustedDay, (dayCounts.get(adjustedDay) ?? 0) + 1);
     }
 
     return dayNames.map((name, index) => ({
@@ -203,15 +201,16 @@ export class DashboardRepository {
       "Dec",
     ];
 
-    // For simplicity, use monthly registrations for current year
-    const currentYearData = await userRepository.getMonthlyRegistrations();
-
-    // For previous year, we'd need a similar query filtered by date range
-    // For now, return current year data and an empty previous year
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+    const [currentYearData, previousYearData] = await Promise.all([
+      userRepository.getMonthlyRegistrationsForYear(currentYear),
+      userRepository.getMonthlyRegistrationsForYear(previousYear),
+    ]);
     return monthNames.map((name, index) => ({
       name,
       currentYear: currentYearData[index]?.total ?? 0,
-      previousYear: 0, // Previous year data not available without a date-filtered query
+      previousYear: previousYearData[index]?.total ?? 0,
     }));
   }
 }

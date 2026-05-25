@@ -5,9 +5,9 @@
  */
 
 import { Elysia } from "elysia";
-import { auth } from "~/lib/auth";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
+import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
 
 const analyticsExample = {
   totalUsers: 1248,
@@ -45,16 +45,8 @@ export const analyticsRoutes = new Elysia({
   .get(
     "/overview",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS === "true") {
-        // Skip session check
-      } else {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const [totalUsers, activeUsers, inactiveUsers, suspendedUsers] = await Promise.all([
@@ -100,14 +92,8 @@ export const analyticsRoutes = new Elysia({
   .get(
     "/role-distribution",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const roleDistribution = await userRepository.getUsersGroupedByRole();
@@ -147,14 +133,8 @@ export const analyticsRoutes = new Elysia({
   .get(
     "/status-distribution",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const statusDistribution = await userRepository.getUsersGroupedByStatus();
@@ -194,11 +174,8 @@ export const analyticsRoutes = new Elysia({
   .get(
     "/weekly-registrations",
     async ({ set, request }) => {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (!session?.user) {
-        set.status = 401;
-        return { error: { status: 401, message: "Unauthorized" } };
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -206,19 +183,17 @@ export const analyticsRoutes = new Elysia({
         const oneWeek = 7 * 24 * 60 * 60 * 1000;
         const weekAgo = now - oneWeek;
 
-        const recentUsers = await userRepository.findRecent(100);
+        const recentUsers = await userRepository.findRecentSince(weekAgo);
 
         // Count registrations per day of week
         const dayCounts = new Map<number, number>();
         for (const user of recentUsers) {
           const createdAt =
             user.createdAt instanceof Date ? user.createdAt.getTime() : Number(user.createdAt);
-          if (createdAt >= weekAgo) {
-            const day = new Date(createdAt).getDay(); // 0=Sun, 1=Mon, ...
-            // Convert to Mon=0 .. Sun=6
-            const adjustedDay = day === 0 ? 6 : day - 1;
-            dayCounts.set(adjustedDay, (dayCounts.get(adjustedDay) ?? 0) + 1);
-          }
+          const day = new Date(createdAt).getDay(); // 0=Sun, 1=Mon, ...
+          // Convert to Mon=0 .. Sun=6
+          const adjustedDay = day === 0 ? 6 : day - 1;
+          dayCounts.set(adjustedDay, (dayCounts.get(adjustedDay) ?? 0) + 1);
         }
 
         const weeklyData = dayNames.map((name, index) => ({

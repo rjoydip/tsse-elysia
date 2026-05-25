@@ -5,9 +5,9 @@
  */
 
 import { Elysia } from "elysia";
-import { auth } from "~/lib/auth";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
+import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
 
 const monthlyRegistrationsExample = [
   { name: "Jan", total: 32 },
@@ -28,14 +28,8 @@ export const overviewChartRoutes = new Elysia({
   .get(
     "/monthly-sales",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const monthlyData = await userRepository.getMonthlyRegistrations();
@@ -75,14 +69,8 @@ export const overviewChartRoutes = new Elysia({
   .get(
     "/yearly-comparison",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const monthNames = [

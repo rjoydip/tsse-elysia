@@ -156,6 +156,69 @@ export class UserRepository {
   }
 
   /**
+   * Finds users created since a given timestamp.
+   * Uses DB-level filtering instead of fetching all and filtering in-memory.
+   */
+  async findRecentSince(
+    since: number,
+    limit: number = 100,
+  ): Promise<(typeof users.$inferSelect)[]> {
+    return this.db
+      .select()
+      .from(users)
+      .where(sql`${users.createdAt} >= ${since}`)
+      .orderBy(desc(users.createdAt))
+      .limit(limit);
+  }
+
+  /**
+   * Gets monthly user registrations for a specific year.
+   * Used for yearly comparison chart data.
+   */
+  async getMonthlyRegistrationsForYear(
+    year: number,
+  ): Promise<Array<{ name: string; total: number }>> {
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const yearStart = new Date(year, 0, 1).getTime();
+    const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
+
+    const rows = await this.db
+      .select({
+        month:
+          sql`CAST(strftime('%m', ${users.createdAt} / 1000, 'unixepoch') AS INTEGER)`.as<number>(),
+        count: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
+      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`);
+
+    const monthMap = new Map<number, number>();
+    for (const row of rows) {
+      monthMap.set(row.month, row.count);
+    }
+
+    return monthNames.map((name, index) => ({
+      name,
+      total: monthMap.get(index + 1) ?? 0,
+    }));
+  }
+
+  /**
    * Gets user registrations grouped by month for chart display.
    * Uses SQLite strftime to extract year-month from unix timestamp.
    * Returns monthly labels ("Jan", "Feb", etc.) with user counts.

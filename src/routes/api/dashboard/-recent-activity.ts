@@ -5,9 +5,9 @@
  */
 
 import { Elysia } from "elysia";
-import { auth } from "~/lib/auth";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
+import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
 
 function formatUserForDisplay(user: Awaited<ReturnType<typeof userRepository.findRecent>>[0]) {
   const displayName =
@@ -48,14 +48,8 @@ export const recentActivityRoutes = new Elysia({
   .get(
     "/sales",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const limit = Math.min(
@@ -64,27 +58,11 @@ export const recentActivityRoutes = new Elysia({
         );
         const dbUsers = await userRepository.findRecent(limit);
 
-        // Format recent users with amount as role for the RecentUsers/UserRow component
+        // Format recent users using the shared display helper
         return {
           recentUsers: dbUsers.map((user) => {
-            const displayName =
-              user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown";
-            const nameParts = displayName.split(" ");
-            const fallback =
-              nameParts.length >= 2
-                ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
-                : displayName.charAt(0);
-
-            return {
-              id: user.id,
-              avatarSrc: user.image ?? `/avatars/01.png`,
-              fallback: fallback.toUpperCase(),
-              name: displayName,
-              email: user.email,
-              amount: user.role ?? "user",
-              timestamp:
-                user.createdAt instanceof Date ? user.createdAt.getTime() : Number(user.createdAt),
-            };
+            const formatted = formatUserForDisplay(user);
+            return { ...formatted, amount: formatted.role };
           }),
           timestamp: Date.now(),
         };
@@ -121,14 +99,8 @@ export const recentActivityRoutes = new Elysia({
   .get(
     "/users",
     async ({ set, request }) => {
-      // Bypass authentication in development if TEST_AUTH_BYPASS is set
-      if (process.env.TEST_AUTH_BYPASS !== "true") {
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user) {
-          set.status = 401;
-          return { error: { status: 401, message: "Unauthorized" } };
-        }
-      }
+      const authResult = await validateAuthenticated(request, set);
+      if (authResult.error) return { error: authResult.error.message };
 
       try {
         const limit = Math.min(

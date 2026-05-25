@@ -1,26 +1,22 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useDashboardChartData } from "~/hooks/use-dashboard-chart";
 import { motion } from "motion/react";
-import {
-  BarChartLoadingState,
-  BarChartErrorState,
-  BarChartEmptyState,
-} from "./shared/chart-states";
+import { ChartState } from "./shared/chart-states";
 
 export function Overview() {
   const { monthlyData, loading, error } = useDashboardChartData();
 
   if (loading) {
-    return <BarChartLoadingState />;
+    return <ChartState variant="loading" chartType="bar" />;
   }
 
   if (error) {
-    return <BarChartErrorState />;
+    return <ChartState variant="error" chartType="bar" />;
   }
 
   // If no data, show empty state
   if (!monthlyData || monthlyData.length === 0) {
-    return <BarChartEmptyState />;
+    return <ChartState variant="empty" chartType="bar" />;
   }
 
   return (

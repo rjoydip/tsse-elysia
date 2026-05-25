@@ -3,17 +3,17 @@ import { AnalyticsChart } from "./analytics-chart";
 import { SimpleBarList } from "~/components/shared/simple-bar-list";
 import { useDashboardAnalytics } from "~/hooks/use-dashboard-analytics";
 import { motion } from "motion/react";
-import { AnalyticsLoadingState, AnalyticsErrorState } from "./shared/analytics-states";
+import { AnalyticsState } from "./shared/analytics-states";
 
 export function Analytics() {
   const { roleDistribution, statusDistribution, loading, error } = useDashboardAnalytics();
 
   if (loading) {
-    return <AnalyticsLoadingState />;
+    return <AnalyticsState variant="loading" />;
   }
 
   if (error) {
-    return <AnalyticsErrorState error={error} />;
+    return <AnalyticsState variant="error" error={error} />;
   }
 
   const displayRoleDistribution =

@@ -4,6 +4,16 @@
  * Uses dashboardRepository for data access.
  */
 
+import type {
+  AnalyticsOverview,
+  DashboardMetrics,
+  UserRoleDistribution,
+  UserStatusDistribution,
+  WeeklyRegistrationsItem,
+  RecentUserItem,
+  MonthlyRegistrationsItem,
+  YearlyComparisonItem,
+} from "~/repositories/dashboard";
 import { dashboardRepository } from "~/repositories/dashboard";
 import {
   dashboardService as realtimeDashboardService,
@@ -12,9 +22,9 @@ import {
 import { logger } from "~/lib/logger";
 
 export class DashboardService {
-  private subscriptions: Map<string, (update: any) => void> = new Map();
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
-  private readonly CACHE_TTL_MS = 5000; // 5 seconds
+  private readonly CACHE_TTL_MS = 30000; // 30 seconds — survives page session but resets on refresh
+  private readonly MAX_CACHE_SIZE = 50;
 
   constructor() {
     logger.debug("Dashboard service initialized");
@@ -43,6 +53,13 @@ export class DashboardService {
     logger.debug(`Dashboard service cache miss for key: ${key}`);
     return fetchFn()
       .then((data) => {
+        // Evict oldest entry if cache exceeds max size
+        if (this.cache.size >= this.MAX_CACHE_SIZE) {
+          const oldestKey = this.cache.keys().next().value;
+          if (oldestKey !== undefined) {
+            this.cache.delete(oldestKey);
+          }
+        }
         this.cache.set(key, { data, timestamp: now });
         return data;
       })
@@ -56,7 +73,7 @@ export class DashboardService {
    * Get all dashboard metrics with caching.
    * Returns user metrics: totalUsers, activeUsers, inactiveUsers, suspendedUsers, userGrowth
    */
-  async getMetrics(): Promise<any> {
+  async getMetrics(): Promise<DashboardMetrics> {
     return this.fetchWithCache("dashboard-metrics", async () => {
       return dashboardRepository.getMetrics();
     });
@@ -66,7 +83,7 @@ export class DashboardService {
    * Get analytics overview.
    * Returns user counts: totalUsers, activeUsers, inactiveUsers, suspendedUsers
    */
-  async getAnalyticsOverview(): Promise<any> {
+  async getAnalyticsOverview(): Promise<AnalyticsOverview> {
     return this.fetchWithCache("dashboard-analytics-overview", async () => {
       const metrics = await dashboardRepository.getMetrics();
       return {
@@ -81,7 +98,7 @@ export class DashboardService {
   /**
    * Get user role distribution.
    */
-  async getRoleDistribution(): Promise<any> {
+  async getRoleDistribution(): Promise<UserRoleDistribution[]> {
     return this.fetchWithCache("dashboard-role-distribution", async () => {
       return dashboardRepository.getUserRoleDistribution();
     });
@@ -90,7 +107,7 @@ export class DashboardService {
   /**
    * Get user status distribution.
    */
-  async getStatusDistribution(): Promise<any> {
+  async getStatusDistribution(): Promise<UserStatusDistribution[]> {
     return this.fetchWithCache("dashboard-status-distribution", async () => {
       return dashboardRepository.getUserStatusDistribution();
     });
@@ -99,7 +116,7 @@ export class DashboardService {
   /**
    * Get weekly user registrations.
    */
-  async getWeeklyRegistrations(): Promise<any> {
+  async getWeeklyRegistrations(): Promise<WeeklyRegistrationsItem[]> {
     return this.fetchWithCache("dashboard-weekly-registrations", async () => {
       return dashboardRepository.getWeeklyRegistrations();
     });
@@ -108,7 +125,7 @@ export class DashboardService {
   /**
    * Get recent users.
    */
-  async getRecentUsers(limit: number = 10): Promise<any> {
+  async getRecentUsers(limit: number = 10): Promise<RecentUserItem[]> {
     return this.fetchWithCache(`dashboard-recent-users-${limit}`, async () => {
       return dashboardRepository.getRecentUsers(limit);
     });
@@ -117,14 +134,14 @@ export class DashboardService {
   /**
    * Get recent activity (users).
    */
-  async getRecentActivity(limit: number = 10) {
+  async getRecentActivity(limit: number = 10): Promise<RecentUserItem[]> {
     return this.getRecentUsers(limit);
   }
 
   /**
    * Get monthly user registrations for charts.
    */
-  async getMonthlyRegistrations(): Promise<any> {
+  async getMonthlyRegistrations(): Promise<MonthlyRegistrationsItem[]> {
     return this.fetchWithCache("dashboard-monthly-registrations", async () => {
       return dashboardRepository.getMonthlyRegistrations();
     });
@@ -133,43 +150,37 @@ export class DashboardService {
   /**
    * Get yearly comparison of user registrations.
    */
-  async getYearlyRegistrationsComparison(): Promise<any> {
+  async getYearlyRegistrationsComparison(): Promise<YearlyComparisonItem[]> {
     return this.fetchWithCache("dashboard-yearly-comparison", async () => {
       return dashboardRepository.getYearlyComparison();
     });
   }
 
   /**
-   * Subscribe to real-time dashboard updates
-   * @param callback - Function to call when dashboard data updates
+   * Subscribe to real-time dashboard updates.
+   * The real-time wiring is handled by realtimeDashboardService.subscribe().
+   * The callback parameter is reserved for future use when push events from the
+   * real-time service are dispatched to individual subscribers.
+   *
+   * @param _callback - Reserved: will dispatch updates to subscribers once listener wiring is complete
    * @param resources - Specific resources to subscribe to (optional)
    * @returns Unsubscribe function
    */
   subscribeToUpdates(
-    callback: (update: any) => void,
+    _callback: (update: any) => void,
     resources: string[] = ["stats", "activity", "metrics"],
   ): () => void {
     // Generate a unique ID for this subscription
     const subscriptionId = Math.random().toString(36).substr(2, 9);
 
-    // Create a wrapper callback that handles the update
-    const handleUpdate = (update: any) => {
-      // Only call the callback if the update is for a subscribed resource
-      if (!update.resource || resources.includes(update.resource)) {
-        callback(update);
-      }
-    };
-
     // Subscribe using the real-time dashboard service
     realtimeDashboardService.subscribe(subscriptionId, resources as DashboardResource[]);
 
-    // In a real implementation, we would set up a listener here
-    // For now, we'll simulate by storing the callback and returning an unsubscribe function
-    this.subscriptions.set(subscriptionId, handleUpdate);
+    // TODO: Connect _callback to real-time event listener so push events
+    // are dispatched to individual subscribers via their stored callbacks
 
     // Return unsubscribe function
     return () => {
-      this.subscriptions.delete(subscriptionId);
       realtimeDashboardService.unsubscribe(subscriptionId, resources as any[]);
     };
   }

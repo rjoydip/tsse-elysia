@@ -5,9 +5,10 @@
 
 import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
+import type { RecentUserItem } from "~/repositories/dashboard";
 
 export function useRecentUsers(limit: number = 5) {
-  const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +21,7 @@ export function useRecentUsers(limit: number = 5) {
         setError(null);
         const data = await dashboardService.getRecentUsers(limit);
         if (isMounted) {
-          setRecentUsers(data?.recentUsers ?? []);
+          setRecentUsers(data ?? []);
           setLoading(false);
         }
       } catch (err) {

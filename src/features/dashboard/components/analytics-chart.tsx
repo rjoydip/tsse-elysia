@@ -1,21 +1,21 @@
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useAnalyticsChartData } from "~/hooks/use-analytics-chart";
-import { ChartLoadingState, ChartErrorState, ChartEmptyState } from "./shared/chart-states";
+import { ChartState } from "./shared/chart-states";
 
 export function AnalyticsChart() {
   const { chartData, loading, error } = useAnalyticsChartData();
 
   if (loading) {
-    return <ChartLoadingState />;
+    return <ChartState variant="loading" />;
   }
 
   if (error) {
-    return <ChartErrorState />;
+    return <ChartState variant="error" />;
   }
 
   // If no data, show empty state
   if (!chartData || chartData.length === 0) {
-    return <ChartEmptyState />;
+    return <ChartState variant="empty" />;
   }
 
   return (

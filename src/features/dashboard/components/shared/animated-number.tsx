@@ -42,24 +42,32 @@ export function AnimatedNumber({
   // Force initial render with 0 so AnimatePresence always has a visible transition
   const [displayValue, setDisplayValue] = useState(0);
   const prevRaw = useRef(raw);
+  const hasMounted = useRef(false);
 
   useEffect(() => {
-    // Delay the RAF to align with parent card entrance animations
-    const timer = setTimeout(() => {
-      let raf: number | null = null;
+    // On mount, always animate 0 → raw. On subsequent updates, skip if value hasn't changed.
+    if (hasMounted.current && raw === prevRaw.current) {
+      return;
+    }
 
+    hasMounted.current = true;
+    prevRaw.current = raw;
+
+    // Delay the RAF to align with parent card entrance animations
+    let raf: number | null = null;
+
+    const timer = setTimeout(() => {
       raf = requestAnimationFrame(() => {
         setDisplayValue(raw);
       });
-
-      prevRaw.current = raw;
-      return () => {
-        if (raf !== null) {
-          cancelAnimationFrame(raf);
-        }
-      };
     }, enterDelay);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      if (raf !== null) {
+        cancelAnimationFrame(raf);
+      }
+    };
     // We only want this to re-fire when raw changes (enterDelay is fixed per usage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raw, enterDelay]);

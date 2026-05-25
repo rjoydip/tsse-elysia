@@ -5,34 +5,9 @@
  */
 
 import { Elysia } from "elysia";
-import { auth } from "~/lib/auth";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
-
-interface AuthValidationResult {
-  error?: { status: number; message: string };
-  userId?: string;
-  userRole?: string;
-}
-
-async function validateAuthenticated(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<AuthValidationResult> {
-  // Bypass authentication in development if TEST_AUTH_BYPASS is set
-  if (process.env.TEST_AUTH_BYPASS === "true") {
-    return { userId: "test-user-id", userRole: "admin" };
-  }
-
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session?.user) {
-    set.status = 401;
-    return { error: { status: 401, message: "Unauthorized" } };
-  }
-
-  return { userId: session.user.id };
-}
+import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
 
 const metricsExample = {
   totalUsers: 1248,

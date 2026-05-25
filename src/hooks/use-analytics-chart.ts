@@ -7,8 +7,14 @@ import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
 import type { WeeklyRegistrationsItem } from "~/repositories/dashboard";
 
+interface ChartDataPoint {
+  name: string;
+  clicks: number;
+  uniques: number;
+}
+
 export function useAnalyticsChartData() {
-  const [chartData, setChartData] = useState<WeeklyRegistrationsItem[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
