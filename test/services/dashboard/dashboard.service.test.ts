@@ -1,15 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "bun:test";
 import { DashboardService } from "~/services/dashboard/dashboard.service";
-import { logger } from "~/lib/logger";
 
 // Mock the logger
+const mockLogger = {
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock("~/lib/logger", () => ({
-  logger: {
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
+  logger: mockLogger,
+}));
+
+// Mock the dashboard repository
+const mockDashboardRepository = {
+  getMetrics: vi.fn(),
+  getAnalyticsOverview: vi.fn(),
+  getUserRoleDistribution: vi.fn(),
+  getUserStatusDistribution: vi.fn(),
+  getWeeklyRegistrations: vi.fn(),
+  getRecentUsers: vi.fn(),
+  getMonthlyRegistrations: vi.fn(),
+  getYearlyComparison: vi.fn(),
+};
+
+vi.mock("~/repositories/dashboard", () => ({
+  dashboardRepository: mockDashboardRepository,
 }));
 
 describe("DashboardService", () => {
@@ -25,172 +42,151 @@ describe("DashboardService", () => {
   });
 
   describe("getMetrics", () => {
-    it("should fetch metrics from the API", async () => {
-      const mockData = { totalUsers: 100, activeUsers: 80, usersThisMonth: 15 };
+    it("should fetch metrics from the repository", async () => {
+      const mockData = {
+        totalUsers: 100,
+        activeUsers: 80,
+        inactiveUsers: 10,
+        suspendedUsers: 5,
+        userGrowth: 80,
+        timestamp: Date.now(),
+      };
 
-      const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getMetrics.mockResolvedValueOnce(mockData);
 
       const result = await service.getMetrics();
 
-      expect(fetchSpy).toHaveBeenCalledWith("/api/dashboard/metrics");
+      expect(mockDashboardRepository.getMetrics).toHaveBeenCalled();
       expect(result).toEqual(mockData);
-      expect(logger.debug).toHaveBeenCalledWith(
-        expect.stringContaining("Dashboard service cache miss for key: /api/dashboard/metrics"),
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringContaining("Dashboard service cache miss for key: dashboard-metrics"),
       );
-
-      fetchSpy.mockRestore();
     });
 
-    it("should throw an error when the API returns an error", async () => {
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      } as Response);
+    it("should throw an error when the repository throws an error", async () => {
+      mockDashboardRepository.getMetrics.mockRejectedValueOnce(new Error("Database error"));
 
-      await expect(service.getMetrics()).rejects.toThrow("Failed to fetch dashboard metrics: 500");
+      await expect(service.getMetrics()).rejects.toThrow("Database error");
     });
 
     it("should use cached data when available", async () => {
       const mockData = { totalUsers: 100 };
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getMetrics.mockResolvedValueOnce(mockData);
       await service.getMetrics();
 
-      vi.spyOn(global, "fetch").mockClear();
+      // The cache should prevent a second call to the repository
+      expect(mockDashboardRepository.getMetrics).toHaveBeenCalledTimes(1);
       const result = await service.getMetrics();
-
-      expect(global.fetch).not.toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
 
   describe("getAnalyticsOverview", () => {
-    it("should fetch analytics overview from the API", async () => {
+    it("should fetch analytics overview from the repository", async () => {
       const mockData = { totalUsers: 100, activeUsers: 80, inactiveUsers: 15, suspendedUsers: 5 };
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getMetrics.mockResolvedValueOnce({
+        totalUsers: mockData.totalUsers,
+        activeUsers: mockData.activeUsers,
+        inactiveUsers: mockData.inactiveUsers,
+        suspendedUsers: mockData.suspendedUsers,
+        userGrowth: 80,
+        timestamp: Date.now(),
+      });
 
       const result = await service.getAnalyticsOverview();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/analytics/overview");
-      expect(result).toEqual(mockData);
+      expect(mockDashboardRepository.getMetrics).toHaveBeenCalled();
+      expect(result).toEqual({
+        totalUsers: mockData.totalUsers,
+        activeUsers: mockData.activeUsers,
+        inactiveUsers: mockData.inactiveUsers,
+        suspendedUsers: mockData.suspendedUsers,
+      });
     });
 
-    it("should throw on API error", async () => {
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      } as Response);
+    it("should throw on repository error", async () => {
+      mockDashboardRepository.getMetrics.mockRejectedValueOnce(new Error("Database error"));
 
-      await expect(service.getAnalyticsOverview()).rejects.toThrow(
-        "Failed to fetch analytics overview: 500",
-      );
+      await expect(service.getAnalyticsOverview()).rejects.toThrow("Database error");
     });
   });
 
-  describe("getReferrers", () => {
-    it("should fetch role distribution from the API", async () => {
-      const mockData = { roleDistribution: [{ name: "user", value: 100 }] };
+  describe("getRoleDistribution", () => {
+    it("should fetch role distribution from the repository", async () => {
+      const mockData = [{ name: "user", value: 100 }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getUserRoleDistribution.mockResolvedValueOnce(mockData);
 
-      const result = await service.getReferrers();
+      const result = await service.getRoleDistribution();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/analytics/role-distribution");
+      expect(mockDashboardRepository.getUserRoleDistribution).toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
 
-  describe("getDevices", () => {
-    it("should fetch status distribution from the API", async () => {
-      const mockData = { statusDistribution: [{ name: "active", value: 80 }] };
+  describe("getStatusDistribution", () => {
+    it("should fetch status distribution from the repository", async () => {
+      const mockData = [{ name: "active", value: 80 }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getUserStatusDistribution.mockResolvedValueOnce(mockData);
 
-      const result = await service.getDevices();
+      const result = await service.getStatusDistribution();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/analytics/status-distribution");
+      expect(mockDashboardRepository.getUserStatusDistribution).toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
 
-  describe("getTrafficOverTime", () => {
-    it("should fetch weekly registrations from the API", async () => {
-      const mockData = { weeklyData: [{ name: "Mon", registrations: 5 }] };
+  describe("getWeeklyRegistrations", () => {
+    it("should fetch weekly registrations from the repository", async () => {
+      const mockData = [{ name: "Mon", registrations: 5 }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getWeeklyRegistrations.mockResolvedValueOnce(mockData);
 
-      const result = await service.getTrafficOverTime();
+      const result = await service.getWeeklyRegistrations();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/analytics/weekly-registrations");
+      expect(mockDashboardRepository.getWeeklyRegistrations).toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
 
   describe("getRecentUsers", () => {
-    it("should fetch recent users from the API", async () => {
-      const mockData = {
-        recentUsers: [{ id: "1", name: "John Doe", email: "john@test.com", role: "user" }],
-      };
+    it("should fetch recent users from the repository", async () => {
+      const mockData = [{ id: "1", name: "John Doe", email: "john@test.com", role: "user" }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getRecentUsers.mockResolvedValueOnce(mockData);
 
       const result = await service.getRecentUsers(5);
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/recent-activity/users?limit=5");
+      expect(mockDashboardRepository.getRecentUsers).toHaveBeenCalledWith(5);
       expect(result).toEqual(mockData);
     });
   });
 
-  describe("getMonthlySalesData", () => {
-    it("should fetch monthly registrations from the API", async () => {
-      const mockData = { monthlyData: [{ name: "Jan", total: 10 }] };
+  describe("getMonthlyRegistrations", () => {
+    it("should fetch monthly registrations from the repository", async () => {
+      const mockData = [{ name: "Jan", total: 10 }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getMonthlyRegistrations.mockResolvedValueOnce(mockData);
 
-      const result = await service.getMonthlySalesData();
+      const result = await service.getMonthlyRegistrations();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/overview-chart/monthly-sales");
+      expect(mockDashboardRepository.getMonthlyRegistrations).toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
 
-  describe("getYearlyComparison", () => {
-    it("should fetch yearly comparison from the API", async () => {
-      const mockData = { yearlyData: [{ name: "Jan", currentYear: 10, previousYear: 5 }] };
+  describe("getYearlyRegistrationsComparison", () => {
+    it("should fetch yearly comparison from the repository", async () => {
+      const mockData = [{ name: "Jan", currentYear: 10, previousYear: 5 }];
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockData,
-      } as Response);
+      mockDashboardRepository.getYearlyComparison.mockResolvedValueOnce(mockData);
 
-      const result = await service.getYearlyComparison();
+      const result = await service.getYearlyRegistrationsComparison();
 
-      expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/overview-chart/yearly-comparison");
+      expect(mockDashboardRepository.getYearlyComparison).toHaveBeenCalled();
       expect(result).toEqual(mockData);
     });
   });
@@ -221,8 +217,32 @@ describe("DashboardService", () => {
       expect((service as any).subscriptions.size).toBeGreaterThan(0);
     });
 
-    it("should call the callback when an update is received", () => {
-      expect(true).toBe(true);
+    it("should call the callback when an update is received for a subscribed resource", () => {
+      const callback = vi.fn();
+      const unsubscribe = service.subscribeToUpdates(callback, ["metrics"]);
+
+      // Simulate receiving an update
+      const updateHandler = (service as any).subscriptions.entries().next().value[1];
+      updateHandler({ resource: "metrics", data: { test: "data" } });
+
+      expect(callback).toHaveBeenCalledWith({ resource: "metrics", data: { test: "data" } });
+
+      // Cleanup
+      unsubscribe();
+    });
+
+    it("should not call the callback when an update is received for an unsubscribed resource", () => {
+      const callback = vi.fn();
+      const unsubscribe = service.subscribeToUpdates(callback, ["metrics"]);
+
+      // Simulate receiving an update for a non-subscribed resource
+      const updateHandler = (service as any).subscriptions.entries().next().value[1];
+      updateHandler({ resource: "activity", data: { test: "data" } });
+
+      expect(callback).not.toHaveBeenCalled();
+
+      // Cleanup
+      unsubscribe();
     });
   });
 });

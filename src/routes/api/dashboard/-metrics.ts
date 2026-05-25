@@ -6,6 +6,7 @@
 
 import { Elysia } from "elysia";
 import { auth } from "~/lib/auth";
+import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
 
 interface AuthValidationResult {
@@ -75,7 +76,10 @@ export const metricsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch dashboard metrics:", error);
+        logger.error(
+          "Failed to fetch dashboard metrics:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch dashboard metrics" };
       }
@@ -119,7 +123,10 @@ export const metricsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch user metrics:", error);
+        logger.error(
+          "Failed to fetch user metrics:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch user metrics" };
       }

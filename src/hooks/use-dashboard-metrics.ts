@@ -6,9 +6,10 @@
 
 import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
+import type { DashboardMetrics } from "~/repositories/dashboard";
 
 export function useDashboardMetrics() {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

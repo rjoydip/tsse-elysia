@@ -13,7 +13,16 @@ export interface DashboardMetrics {
   inactiveUsers: number;
   suspendedUsers: number;
   userGrowth: number;
+  usersThisMonth: number;
   timestamp: number;
+  // Additional metrics used in dashboard components
+  totalRevenue?: number;
+  revenueGrowth?: number;
+  salesCount?: number;
+  refundsCount?: number;
+  activeNow?: number;
+  salesGrowth?: number;
+  activeNowGrowth?: number;
 }
 
 export interface UserRoleDistribution {
@@ -24,6 +33,13 @@ export interface UserRoleDistribution {
 export interface UserStatusDistribution {
   name: string;
   value: number;
+}
+
+export interface AnalyticsOverview {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  suspendedUsers: number;
 }
 
 export interface WeeklyRegistrationsItem {
@@ -57,12 +73,14 @@ export class DashboardRepository {
    * Get all dashboard metrics using real user data.
    */
   async getMetrics(): Promise<DashboardMetrics> {
-    const [totalUsers, activeUsers, inactiveUsers, suspendedUsers] = await Promise.all([
-      userRepository.count(),
-      userRepository.countByStatus("active"),
-      userRepository.countByStatus("inactive"),
-      userRepository.countByStatus("suspended"),
-    ]);
+    const [totalUsers, activeUsers, inactiveUsers, suspendedUsers, usersThisMonth] =
+      await Promise.all([
+        userRepository.count(),
+        userRepository.countByStatus("active"),
+        userRepository.countByStatus("inactive"),
+        userRepository.countByStatus("suspended"),
+        userRepository.countUsersThisMonth(),
+      ]);
 
     // Calculate user growth: percentage of active users vs total
     const userGrowth = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
@@ -73,7 +91,16 @@ export class DashboardRepository {
       inactiveUsers,
       suspendedUsers,
       userGrowth,
+      usersThisMonth,
       timestamp: Date.now(),
+      // Additional metrics (not applicable for user-based dashboard)
+      totalRevenue: undefined,
+      revenueGrowth: undefined,
+      salesCount: undefined,
+      refundsCount: undefined,
+      activeNow: undefined,
+      salesGrowth: undefined,
+      activeNowGrowth: undefined,
     };
   }
 

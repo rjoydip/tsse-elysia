@@ -6,6 +6,7 @@
 
 import { Elysia } from "elysia";
 import { auth } from "~/lib/auth";
+import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
 
 function formatUserForDisplay(user: Awaited<ReturnType<typeof userRepository.findRecent>>[0]) {
@@ -64,33 +65,34 @@ export const recentActivityRoutes = new Elysia({
         const dbUsers = await userRepository.findRecent(limit);
 
         // Format recent users with amount as role for the RecentUsers/UserRow component
-        const recentUsers = dbUsers.map((user) => {
-          const displayName =
-            user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown";
-          const nameParts = displayName.split(" ");
-          const fallback =
-            nameParts.length >= 2
-              ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
-              : displayName.charAt(0);
-
-          return {
-            id: user.id,
-            avatarSrc: user.image ?? `/avatars/01.png`,
-            fallback: fallback.toUpperCase(),
-            name: displayName,
-            email: user.email,
-            amount: user.role ?? "user",
-            timestamp:
-              user.createdAt instanceof Date ? user.createdAt.getTime() : Number(user.createdAt),
-          };
-        });
-
         return {
-          recentUsers,
+          recentUsers: dbUsers.map((user) => {
+            const displayName =
+              user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Unknown";
+            const nameParts = displayName.split(" ");
+            const fallback =
+              nameParts.length >= 2
+                ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
+                : displayName.charAt(0);
+
+            return {
+              id: user.id,
+              avatarSrc: user.image ?? `/avatars/01.png`,
+              fallback: fallback.toUpperCase(),
+              name: displayName,
+              email: user.email,
+              amount: user.role ?? "user",
+              timestamp:
+                user.createdAt instanceof Date ? user.createdAt.getTime() : Number(user.createdAt),
+            };
+          }),
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch recent users:", error);
+        logger.error(
+          "Failed to fetch recent users:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch recent users" };
       }
@@ -140,7 +142,10 @@ export const recentActivityRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch recent users:", error);
+        logger.error(
+          "Failed to fetch recent users:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch recent users" };
       }

@@ -6,6 +6,7 @@
 
 import { Elysia } from "elysia";
 import { auth } from "~/lib/auth";
+import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
 
 const analyticsExample = {
@@ -71,7 +72,10 @@ export const analyticsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch analytics overview:", error);
+        logger.error(
+          "Failed to fetch analytics overview:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch analytics overview" };
       }
@@ -112,7 +116,10 @@ export const analyticsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch role distribution:", error);
+        logger.error(
+          "Failed to fetch role distribution:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch role distribution" };
       }
@@ -156,7 +163,10 @@ export const analyticsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch status distribution:", error);
+        logger.error(
+          "Failed to fetch status distribution:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch status distribution" };
       }
@@ -221,7 +231,10 @@ export const analyticsRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch weekly registrations:", error);
+        logger.error(
+          "Failed to fetch weekly registrations:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch weekly registrations" };
       }

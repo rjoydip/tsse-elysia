@@ -15,13 +15,18 @@ import { Search } from "~/components/search";
 import { usePermission } from "~/hooks/use-permission";
 import { useDashboardMetrics } from "~/hooks/use-dashboard-metrics";
 import { dashboardService } from "~/services/dashboard";
-import type { DashboardMetrics } from "~/services/dashboard";
+import type { DashboardMetrics } from "~/repositories/dashboard";
 import { Overview } from "./overview";
 import { RecentUsers } from "./recent-users";
 import { Analytics } from "./analytics";
 import { motion } from "motion/react";
 import { currencyConfig } from "~/config";
 import { AnimatedNumber } from "./shared/animated-number";
+import {
+  RoleViewLoadingState,
+  RoleViewErrorState,
+  RoleViewMetricCard,
+} from "./shared/role-view-states";
 
 /**
  * Props for the role-specific dashboard views.
@@ -34,7 +39,7 @@ export interface RoleBasedDashboardProps {
  * Basic Dashboard - For regular users.
  * Shows minimal metrics and simple interface.
  */
-export function BasicDashboard({ userCount: _userCount = 0 }: RoleBasedDashboardProps) {
+export function BasicDashboard({ userCount = 0 }: RoleBasedDashboardProps) {
   const { role } = usePermission();
   const { metrics, loading, error } = useDashboardMetrics();
 
@@ -45,26 +50,7 @@ export function BasicDashboard({ userCount: _userCount = 0 }: RoleBasedDashboard
           <h2 className="text-lg font-semibold">Welcome, {role}</h2>
           <span className="text-sm text-muted-foreground">Basic View</span>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Your Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-9 w-20" />
-              <p className="text-xs text-muted-foreground">Tasks completed today</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-9 w-20" />
-              <p className="text-xs text-muted-foreground">Tasks waiting for you</p>
-            </CardContent>
-          </Card>
-        </div>
+        <RoleViewLoadingState />
       </div>
     );
   }
@@ -76,26 +62,7 @@ export function BasicDashboard({ userCount: _userCount = 0 }: RoleBasedDashboard
           <h2 className="text-lg font-semibold">Welcome, {role}</h2>
           <span className="text-sm text-muted-foreground">Basic View</span>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Your Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">--</div>
-              <p className="text-xs text-muted-foreground">Tasks completed today</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-destructive">--</div>
-              <p className="text-xs text-muted-foreground">Tasks waiting for you</p>
-            </CardContent>
-          </Card>
-        </div>
+        <RoleViewErrorState />
         <div className="text-center text-muted-foreground mt-4">
           Failed to load dashboard data: {error}
         </div>
@@ -110,24 +77,18 @@ export function BasicDashboard({ userCount: _userCount = 0 }: RoleBasedDashboard
         <span className="text-sm text-muted-foreground">Basic View</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Your Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.salesCount?.toLocaleString() ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Tasks completed today</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics?.refundsCount?.toLocaleString() ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Tasks waiting for you</p>
-          </CardContent>
-        </Card>
+        <RoleViewMetricCard
+          title="Your Activity"
+          value={userCount.toLocaleString() ?? 0}
+          subtitle="Total users"
+          icon={null}
+        />
+        <RoleViewMetricCard
+          title="Pending Tasks"
+          value={metrics?.inactiveUsers?.toLocaleString() ?? 0}
+          subtitle="Inactive users"
+          icon={null}
+        />
       </div>
     </div>
   );
@@ -846,10 +807,13 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
             setUserCount(update.data.userCount);
           }
           if (update.data.totalRevenue !== undefined) {
-            setMetrics((prev: DashboardMetrics | null) => ({
-              ...prev,
-              totalRevenue: update.data.totalRevenue,
-            }));
+            setMetrics((prev: DashboardMetrics | null) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                totalRevenue: update.data.totalRevenue,
+              };
+            });
           }
         }
       },
@@ -1182,7 +1146,9 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                     enterDelay={100}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  {metrics?.userGrowth ?? 0}% from last month
+                </p>
               </CardContent>
             </Card>
           </motion.div>

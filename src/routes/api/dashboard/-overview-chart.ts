@@ -6,6 +6,7 @@
 
 import { Elysia } from "elysia";
 import { auth } from "~/lib/auth";
+import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
 
 const monthlyRegistrationsExample = [
@@ -43,7 +44,10 @@ export const overviewChartRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch monthly registrations:", error);
+        logger.error(
+          "Failed to fetch monthly registrations:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch monthly registrations" };
       }
@@ -109,7 +113,10 @@ export const overviewChartRoutes = new Elysia({
           timestamp: Date.now(),
         };
       } catch (error) {
-        console.error("Failed to fetch yearly comparison:", error);
+        logger.error(
+          "Failed to fetch yearly comparison:",
+          error instanceof Error ? error : new Error(String(error)),
+        );
         set.status = 500;
         return { error: "Failed to fetch yearly comparison" };
       }

@@ -5,9 +5,10 @@
 
 import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
+import type { WeeklyRegistrationsItem } from "~/repositories/dashboard";
 
 export function useAnalyticsChartData() {
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<WeeklyRegistrationsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,11 +21,11 @@ export function useAnalyticsChartData() {
         setError(null);
 
         // Fetch weekly registrations data
-        const weeklyData = await dashboardService.getTrafficOverTime();
+        const weeklyData = await dashboardService.getWeeklyRegistrations();
 
         if (isMounted) {
           // Map the weekly data to the format expected by the chart
-          const mappedData = (weeklyData?.weeklyData ?? []).map((item: any) => ({
+          const mappedData = (weeklyData ?? []).map((item: WeeklyRegistrationsItem) => ({
             name: item.name,
             clicks: item.registrations,
             uniques: item.registrations,

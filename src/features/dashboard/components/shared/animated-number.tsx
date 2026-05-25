@@ -46,11 +46,18 @@ export function AnimatedNumber({
   useEffect(() => {
     // Delay the RAF to align with parent card entrance animations
     const timer = setTimeout(() => {
-      const raf = requestAnimationFrame(() => {
+      let raf: number | null = null;
+
+      raf = requestAnimationFrame(() => {
         setDisplayValue(raw);
       });
+
       prevRaw.current = raw;
-      return () => cancelAnimationFrame(raf);
+      return () => {
+        if (raf !== null) {
+          cancelAnimationFrame(raf);
+        }
+      };
     }, enterDelay);
     return () => clearTimeout(timer);
     // We only want this to re-fire when raw changes (enterDelay is fixed per usage)

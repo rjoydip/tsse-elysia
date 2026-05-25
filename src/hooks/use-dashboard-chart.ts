@@ -5,10 +5,11 @@
 
 import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
+import type { MonthlyRegistrationsItem, YearlyComparisonItem } from "~/repositories/dashboard";
 
 export function useDashboardChartData() {
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [yearlyData, setYearlyData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyRegistrationsItem[]>([]);
+  const [yearlyData, setYearlyData] = useState<YearlyComparisonItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,13 +23,13 @@ export function useDashboardChartData() {
 
         // Fetch both datasets in parallel
         const [monthly, yearly] = await Promise.all([
-          dashboardService.getMonthlySalesData(),
-          dashboardService.getYearlyComparison(),
+          dashboardService.getMonthlyRegistrations(),
+          dashboardService.getYearlyRegistrationsComparison(),
         ]);
 
         if (isMounted) {
-          setMonthlyData(monthly?.monthlyData ?? []);
-          setYearlyData(yearly?.yearlyData ?? []);
+          setMonthlyData(monthly);
+          setYearlyData(yearly);
           setLoading(false);
         }
       } catch (err) {

@@ -118,7 +118,7 @@
     "drizzle-orm": "^0.45.2",
     "elysia": "^1.4.28",
     "elysia-rate-limit": "^4.6.2",
-    "evlog": "^2.17.0",
+    "evlog": "^2.18.1",
     "input-otp": "^1.4.2",
     "ioredis": "^5.10.1",
     "lucide-react": "^1.16.0",

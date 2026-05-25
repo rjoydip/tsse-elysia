@@ -6,12 +6,18 @@
 
 import { useEffect, useState } from "react";
 import { dashboardService } from "~/services/dashboard";
+import type {
+  AnalyticsOverview,
+  UserRoleDistribution,
+  UserStatusDistribution,
+  WeeklyRegistrationsItem,
+} from "~/repositories/dashboard";
 
 export function useDashboardAnalytics() {
-  const [overview, setOverview] = useState<any>(null);
-  const [roleDistribution, setRoleDistribution] = useState<any[]>([]);
-  const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
-  const [weeklyRegistrations, setWeeklyRegistrations] = useState<any[]>([]);
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [roleDistribution, setRoleDistribution] = useState<UserRoleDistribution[]>([]);
+  const [statusDistribution, setStatusDistribution] = useState<UserStatusDistribution[]>([]);
+  const [weeklyRegistrations, setWeeklyRegistrations] = useState<WeeklyRegistrationsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,16 +32,16 @@ export function useDashboardAnalytics() {
         // Fetch all analytics data in parallel
         const [overviewData, roleDistData, statusDistData, weeklyData] = await Promise.all([
           dashboardService.getAnalyticsOverview(),
-          dashboardService.getReferrers(),
-          dashboardService.getDevices(),
-          dashboardService.getTrafficOverTime(),
+          dashboardService.getRoleDistribution(),
+          dashboardService.getStatusDistribution(),
+          dashboardService.getWeeklyRegistrations(),
         ]);
 
         if (isMounted) {
           setOverview(overviewData);
-          setRoleDistribution(roleDistData?.roleDistribution ?? []);
-          setStatusDistribution(statusDistData?.statusDistribution ?? []);
-          setWeeklyRegistrations(weeklyData?.weeklyData ?? []);
+          setRoleDistribution(roleDistData);
+          setStatusDistribution(statusDistData);
+          setWeeklyRegistrations(weeklyData);
           setLoading(false);
         }
       } catch (err) {
