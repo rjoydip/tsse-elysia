@@ -23,12 +23,27 @@ export default defineConfig({
   use: {
     baseURL: E2E_BASE_URL,
     trace: "on-first-retry",
+    actionTimeout: 15 * 1000,
+    navigationTimeout: 30 * 1000,
     // Pass test env to the server via process.env
   },
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: {
+          timeout: 120 * 1000,
+          args: [
+            "--disable-dev-shm-usage",
+            // On Windows, avoid the GPU context crash (`Failed to create shared context
+            // for virtualization`) that occurs in headless mode with `--disable-gpu`
+            // and `--disable-software-rasterizer`. Running headed uses the native GPU
+            // driver instead. See: https://playwright.dev/docs/troubleshooting#on-windows
+            ...(process.platform === "win32" ? [] : ["--disable-gpu"]),
+          ],
+        },
+      },
     },
   ],
   webServer: isCI

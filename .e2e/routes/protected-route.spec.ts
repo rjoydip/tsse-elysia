@@ -42,7 +42,7 @@ test.describe("Authenticated User Access", () => {
 
   test("should allow authenticated users to access apps", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/dashboard/apps`);
-    await page.waitForLoadState("networkidle", { timeout: TIMEOUT });
+    await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT });
     await expect(page).toHaveURL(/.*dashboard\/apps/);
   });
 
@@ -64,7 +64,7 @@ test.describe("AuthGuard Component E2E", () => {
 
     test("should not render protected content for unauthenticated users", async ({ page }) => {
       await page.goto(`${E2E_BASE_URL}/dashboard/settings`);
-      await page.waitForLoadState("networkidle", { timeout: TIMEOUT });
+      await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT });
       const url = page.url();
       expect(url).toMatch(/sign-in|dashboard\/settings/);
     });
@@ -99,16 +99,16 @@ test.describe("Navigation Between Protected Routes", () => {
 
   test("should navigate from dashboard to tasks", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/dashboard`);
-    await page.waitForLoadState("networkidle", { timeout: TIMEOUT });
+    await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT });
 
     const tasksLink = page.getByRole("link", { name: /tasks/i }).first();
     if (await tasksLink.isVisible()) {
       await tasksLink.click();
-      await page.waitForLoadState("networkidle", { timeout: TIMEOUT });
+      await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT });
       await expect(page).toHaveURL(/.*dashboard\/tasks/);
     } else {
       await page.goto(`${E2E_BASE_URL}/dashboard/tasks`);
-      await page.waitForLoadState("networkidle", { timeout: TIMEOUT });
+      await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT });
       const url = page.url();
       expect(url).toMatch(/dashboard\/tasks/);
     }

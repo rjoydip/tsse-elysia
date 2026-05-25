@@ -1,47 +1,26 @@
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
-
-const data = [
-  {
-    name: "Mon",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Tue",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Wed",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Thu",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Fri",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Sat",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: "Sun",
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-];
+import { useAnalyticsChartData } from "~/hooks/use-analytics-chart";
+import { ChartState } from "./shared/chart-states";
 
 export function AnalyticsChart() {
+  const { chartData, loading, error } = useAnalyticsChartData();
+
+  if (loading) {
+    return <ChartState variant="loading" />;
+  }
+
+  if (error) {
+    return <ChartState variant="error" />;
+  }
+
+  // If no data, show empty state
+  if (!chartData || chartData.length === 0) {
+    return <ChartState variant="empty" />;
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data}>
+      <AreaChart data={chartData}>
         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
         <Area

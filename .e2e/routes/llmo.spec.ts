@@ -130,38 +130,38 @@ test.describe("LLMO OpenAPI Documentation", () => {
 test.describe("LLMO Pages Render", () => {
   test("should render home page", async ({ page }) => {
     await page.goto("/");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     const title = await page.title();
     expect(title).toBeDefined();
   });
 
   test("should render blog page", async ({ page }) => {
     await page.goto("/blog");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1")).toBeVisible();
   });
 
   test("should render docs page", async ({ page }) => {
     await page.goto("/docs");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1")).toBeVisible();
   });
 
   test("should render changelog page", async ({ page }) => {
     await page.goto("/changelog");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1")).toBeVisible();
   });
 
   test("should render status page", async ({ page }) => {
     await page.goto("/status");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1")).toBeVisible();
   });
 
   test("should render sign-in page", async ({ page }) => {
     await page.goto("/sign-in");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({
       timeout: 10000,
     });
@@ -169,7 +169,7 @@ test.describe("LLMO Pages Render", () => {
 
   test("should render 404 page", async ({ page }) => {
     await page.goto("/404");
-    await page.waitForLoadState("load");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("h1")).toBeVisible();
   });
 });

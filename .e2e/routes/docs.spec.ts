@@ -55,7 +55,7 @@ test.describe("Docs Sidebar", () => {
       .locator('[data-sidebar="sidebar"]')
       .getByRole("link", { name: "Development", exact: true })
       .click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/.*docs\/getting-started\/development/);
     await expect(
       page
@@ -99,7 +99,7 @@ test.describe("Docs Breadcrumbs", () => {
 
   test("should show Docs label in breadcrumb", async ({ page }) => {
     await page.goto("/docs/getting-started/development");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator('[data-sidebar="sidebar"] a[href="/docs"]').first()).toBeVisible();
   });
 });
@@ -129,7 +129,7 @@ test.describe("Docs Layout", () => {
       .locator('[data-sidebar="sidebar"]')
       .getByRole("link", { name: "Development", exact: true })
       .click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     await expect(page.getByRole("button", { name: "Getting Started" })).toBeVisible();
   });
@@ -171,14 +171,14 @@ test.describe("Docs Theme Toggle", () => {
       .locator('[data-sidebar="sidebar"]')
       .getByRole("link", { name: "Development", exact: true })
       .click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.locator("header").first().getByRole("link", { name: "Login" })).toBeVisible();
   });
 });
 
 test.describe("Docs 404 Handling", () => {
   test("should show error boundary for non-existent doc page", async ({ page }) => {
-    // Navigate to a doc path that doesn't exist — the networkidleer throws an Error
+    // Navigate to a doc path that doesn't exist — the load state will still resolve
     await navigateAndWait(page, "/docs/this-page-does-not-exist", { waitForIdle: true });
     // The root route's errorComponent renders the 500 error page
     // Check for either the error code or message

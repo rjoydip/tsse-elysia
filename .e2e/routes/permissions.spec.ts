@@ -10,14 +10,14 @@ test.describe("Role-Based Access Control", () => {
   test.describe("Unauthenticated Access", () => {
     test("should redirect unauthenticated users from dashboard to sign-in", async ({ page }) => {
       await page.goto(`${E2E_BASE_URL}/dashboard`);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("domcontentloaded");
       const url = page.url();
       expect(url).toMatch(/sign-in|dashboard/);
     });
 
     test("should redirect unauthenticated users from settings to sign-in", async ({ page }) => {
       await page.goto(`${E2E_BASE_URL}/dashboard/settings`);
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("domcontentloaded");
       const url = page.url();
       expect(url).toMatch(/sign-in|dashboard\/settings/);
     });
@@ -106,7 +106,7 @@ test.describe("Role-Based Dashboard Views", () => {
 
   test("should show different dashboard views based on page structure", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/dashboard`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Verify dashboard structure loads
     const url = page.url();
@@ -121,7 +121,7 @@ test.describe("Role-Based Dashboard Views", () => {
 test.describe("Permission-Based UI Elements", () => {
   test("should have proper navigation elements on dashboard", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/dashboard`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const url = page.url();
     if (url.includes("dashboard")) {
@@ -132,7 +132,7 @@ test.describe("Permission-Based UI Elements", () => {
 
   test("should display appropriate sidebar elements when authenticated", async ({ page }) => {
     await page.goto(`${E2E_BASE_URL}/dashboard`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const url = page.url();
     if (url.includes("dashboard")) {

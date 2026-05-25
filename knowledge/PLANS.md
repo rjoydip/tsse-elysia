@@ -46,23 +46,85 @@ Core focus:
 
 ## Roadmap Status
 
-| Phase | Area             | Status |
-| ----- | ---------------- | ------ |
-| 1–3   | Foundations      | ✅     |
-| 4–5   | UI & UX          | ✅     |
-| 7     | Infrastructure   | ✅     |
-| 8     | Real-time        | ✅     |
-| 9     | MCP              | ✅     |
-| 10    | Data Strategy    | 📅     |
-| 13    | Contract Testing | 📅     |
-| Svc   | Service Layer    | ✅     |
-| 11    | API Architecture | ✅     |
-| 12    | Comptime         | ✅     |
-| 14    | Docker Optimize  | ✅     |
+| Phase | Area                | Status |
+| ----- | ------------------- | ------ |
+| 1–3   | Foundations         | ✅     |
+| 4–5   | UI & UX             | ✅     |
+| 6     | Dashboard           | ✅     |
+| 7     | Infrastructure      | ✅     |
+| 8     | Real-time           | ✅     |
+| 9     | MCP                 | ✅     |
+| 10    | Data Strategy       | 📅     |
+| 13    | Contract Testing    | 📅     |
+| Svc   | Service Layer       | ✅     |
+| 11    | API Architecture    | ✅     |
+| 12    | Comptime            | ✅     |
+| 14    | Docker Optimize     | ✅     |
+| 15    | Dashboard Real Data | ✅     |
+| 17    | Dashboard UI Polish | ✅     |
 
 ---
 
 ## Active Focus
+
+### Phase 15 – Dashboard Real User Data ✅
+
+**Completed:**
+
+- Added `countByStatus`, `countByRole`, `findRecent`, `getMonthlyRegistrations`, `getUsersGroupedByRole`, `getUsersGroupedByStatus` methods to `UserRepository`
+- Replaced all `Math.random()` mock data in `DashboardRepository` with real DB queries
+- Rewrote 4 dashboard API route files (`-metrics.ts`, `-analytics.ts`, `-recent-activity.ts`, `-overview-chart.ts`) to use `UserRepository`
+- Updated `DashboardService` to call new endpoint URLs
+- Updated all 5 hooks to handle new response shapes
+- Replaced dashboard UI metric cards (Total Revenue → Total Users, Sales → User counts)
+- Updated analytics component (clicks/visitors → user counts, referrers/devices → role/status distribution)
+- Updated `RecentSales` component to show real users with role as amount
+- Made `UserRow` `amount` prop optional
+- All 1263 unit tests pass, lint clean, typecheck clean
+
+**Benefits:**
+
+- Dashboard now displays real user data from the database
+- Zero `Math.random()` mock data in dashboard layer
+- Consistent data mapping: overview shows user counts, analytics shows role/status distribution, charts show registrations
+
+### Phase 17 – Dashboard UI Polish ✅
+
+**Completed:**
+
+- Created reusable `AnimatedNumber` component with configurable animation presets (bounce, fadeScale, slideUp, pop, gentle) and `enterDelay` alignment with parent entrance animations
+- Replaced all inline `AnimatePresence`/`motion.span` patterns with `<AnimatedNumber>`, removing `calligraph` and `torph` dependencies
+- Fixed bounce animation only playing for first card by making `bounce` the default preset and adding `enterDelay` to align number transitions with staggered card entrance animations
+- Consolidated all metric cards on Overview tab: Total Users, Active Users, Inactive Users, Suspended Users, Active Now (removed duplicate cards from Analytics tab)
+- Removed "Total Revenue" and "Sales" cards from Overview (replaced with user-status cards)
+- Color-coded metric cards: Total Users → purple, Active Users → cyan, Inactive Users → amber, Suspended Users → red, Active Now → emerald
+- Added `currencyConfig` to `src/config/index.ts` for configurable currency symbol/locale via env vars
+- All 1300 unit tests pass, lint clean, typecheck clean
+
+**Benefits:**
+
+- Consistent animated number transitions across all dashboard views
+- No duplicate card types between Overview and Analytics tabs
+- Configurable currency display for different locales
+- Cleaner dependency tree (removed 2 unused animation libraries)
+
+### Phase 6 – Main Dashboard Implementation ✅
+
+**Completed:**
+
+- Created API endpoints for dashboard data (metrics, analytics, recent activity, overview chart)
+- Created dashboard service that fetches data from API endpoints
+- Created custom hooks for dashboard data fetching
+- Updated dashboard components to use data-fetching hooks
+- Integrated real-time updates using existing dashboard service
+- Tested dashboard functionality with real data
+- Verified loading and error states work correctly
+
+**Benefits:**
+
+- Dashboard now displays real-time data from the backend
+- Improved user experience with loading and error states
+- Follows the layered architecture pattern (HTTP → Controller → Service → Repository)
 
 ### Phase 10 – Data Evolution
 
@@ -150,6 +212,7 @@ src/
 - [Phase 5.2: User Management Dashboard](./plans/phase-5.2-user-management-dashboard.md)
 - [Phase 11: Database Refactoring](./plans/phase-11-db0-database-refactoring.md)
 - [Phase 13: Contract Testing](./plans/phase-13-contract-testing-implementation-plan.md)
+- [Phase 15: Replace Fake Dashboard Analytics with Real User Data](./plans/phase-15-dashboard-real-user-data.md)
 
 ---
 
