@@ -482,7 +482,7 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
   // If we have an error, show it
   if (error) {
     return (
-      <DashboardTabs value="overview" onValueChange={() => {}}>
+      <DashboardTabs value="overview">
         <TabsContent value="overview" className="space-y-4">
           <div className="text-center text-muted-foreground py-12">
             Failed to load dashboard data: {error}
@@ -498,7 +498,7 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
   // If loading, show skeletons
   if (loading) {
     return (
-      <DashboardTabs value="overview" onValueChange={() => {}}>
+      <DashboardTabs value="overview">
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card className="h-full border-l-4 border-l-purple-500">

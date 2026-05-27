@@ -9,6 +9,30 @@ import { useSession } from "~/lib/auth/client";
 import { authActions } from "~/lib/stores/auth";
 
 /**
+ * Builds a mapped session object from a user record and the current session.
+ * Extracted to a helper to avoid duplication between the try and catch branches.
+ *
+ * @param user - The user record (possibly enriched with role)
+ * @param session - The current Better Auth session
+ * @returns A mapped session object compatible with the auth store
+ */
+function buildMappedSession(
+  user: Record<string, unknown>,
+  session: NonNullable<ReturnType<typeof useSession>["data"]>,
+) {
+  return {
+    user,
+    expiresAt: session.session?.expiresAt ?? null,
+    id: session.session?.id ?? "",
+    token: session.session?.token ?? "",
+    ipAddress: session.session?.ipAddress ?? undefined,
+    userAgent: session.session?.userAgent ?? undefined,
+    createdAt: session.session?.createdAt ?? undefined,
+    updatedAt: session.session?.updatedAt ?? undefined,
+  };
+}
+
+/**
  * Hook that keeps auth store in sync with Better Auth session.
  * Should be used at the root level of the application.
  */
@@ -62,17 +86,7 @@ export function useAuthSync() {
             };
           }
 
-          const mappedSession = {
-            user: enrichedUser,
-            expiresAt: session.session?.expiresAt ?? null,
-            id: session.session?.id ?? "",
-            token: session.session?.token ?? "",
-            ipAddress: session.session?.ipAddress ?? undefined,
-            userAgent: session.session?.userAgent ?? undefined,
-            createdAt: session.session?.createdAt ?? undefined,
-            updatedAt: session.session?.updatedAt ?? undefined,
-          };
-
+          const mappedSession = buildMappedSession(enrichedUser, session);
           authActions.setSession(mappedSession);
           authActions.setAccessToken(session.session?.token ?? "");
         } catch {
@@ -80,17 +94,7 @@ export function useAuthSync() {
             ...session.user,
             image: session.user.image ?? undefined,
           };
-          const mappedSession = {
-            user: fallbackUser,
-            expiresAt: session.session?.expiresAt ?? null,
-            id: session.session?.id ?? "",
-            token: session.session?.token ?? "",
-            ipAddress: session.session?.ipAddress ?? undefined,
-            userAgent: session.session?.userAgent ?? undefined,
-            createdAt: session.session?.createdAt ?? undefined,
-            updatedAt: session.session?.updatedAt ?? undefined,
-          };
-
+          const mappedSession = buildMappedSession(fallbackUser, session);
           authActions.setSession(mappedSession);
           authActions.setAccessToken(session.session?.token ?? "");
         }

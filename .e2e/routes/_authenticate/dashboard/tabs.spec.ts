@@ -59,6 +59,8 @@ test.describe("Dashboard Tabs", () => {
     const reportsTab = page.getByRole("tab", { name: "Reports" });
     await reportsTab.click();
 
+    // Verify Reports tab remains disabled after attempted click
+    await expect(reportsTab).toBeDisabled();
     // Verify Reports tab did not become active
     await expect(reportsTab).not.toHaveAttribute("aria-selected", "true");
 

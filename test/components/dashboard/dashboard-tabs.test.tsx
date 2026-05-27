@@ -21,11 +21,15 @@ describe("DashboardTabs", () => {
         {children}
       </DashboardTabs>,
     );
-    // Check that Overview tab specifically has active state
+    // Check that Overview tab specifically has active state and Analytics does not
     expect(html).toContain('data-state="active"');
     expect(html).toContain("Overview");
     expect(html).toContain("Analytics");
     expect(html).toContain("Reports");
+    // More specific check: Overview tab button should have active state
+    expect(html).toMatch(/data-state="active"[^>]*>Overview/);
+    // Analytics tab button should not have active state when Overview is active
+    expect(html).not.toMatch(/data-state="active"[^>]*>Analytics/);
   });
 
   it("should render analytics tab and it is active when value is analytics", () => {
@@ -34,11 +38,15 @@ describe("DashboardTabs", () => {
         {children}
       </DashboardTabs>,
     );
-    // Check that Analytics tab specifically has active state
+    // Check that Analytics tab specifically has active state and Overview does not
     expect(html).toContain('data-state="active"');
     expect(html).toContain("Overview");
     expect(html).toContain("Analytics");
     expect(html).toContain("Reports");
+    // More specific check: Analytics tab button should have active state
+    expect(html).toMatch(/data-state="active"[^>]*>Analytics/);
+    // Overview tab button should not have active state when Analytics is active
+    expect(html).not.toMatch(/data-state="active"[^>]*>Overview/);
   });
 
   it("should render overview tab when value is overview", () => {
@@ -101,9 +109,7 @@ describe("DashboardTabs", () => {
 
   it("should render overview tab active by default when no value prop provided", () => {
     const html = renderToString(
-      <DashboardTabs onValueChange={mockOnValueChange}>
-        {children}
-      </DashboardTabs>,
+      <DashboardTabs onValueChange={mockOnValueChange}>{children}</DashboardTabs>,
     );
     // Check that Overview tab specifically has active state (default)
     expect(html).toContain('data-state="active"');
