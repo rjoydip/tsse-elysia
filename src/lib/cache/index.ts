@@ -120,7 +120,7 @@ class StorageCache {
   /**
    * Gets the storage instance.
    */
-  private getStorage() {
+  private getStorageInstance() {
     return getStorage();
   }
 
@@ -130,11 +130,11 @@ class StorageCache {
    * @param key - Cache key
    * @returns Cached value or null if not found
    */
-  async get<T>(key: string): Promise<T | null> {
-    const storage = this.getStorage();
-    if (!storage) {
-      return memoryCache.get<T>(key);
-    }
+   async get<T>(key: string): Promise<T | null> {
+     const storage = this.getStorageInstance();
+     if (!storage) {
+       return memoryCache.get<T>(key);
+     }
 
     try {
       const storeKey = `${this.prefix}${key}`;
@@ -161,14 +161,14 @@ class StorageCache {
    * @param value - Value to cache
    * @param ttlSeconds - Time to live in seconds
    */
-  async set<T>(key: string, value: T, ttlSeconds: number = DEFAULT_TTL): Promise<void> {
-    const ttlSecondsInt = ttlSeconds > 0 ? Math.floor(ttlSeconds) : DEFAULT_TTL;
+   async set<T>(key: string, value: T, ttlSeconds: number = DEFAULT_TTL): Promise<void> {
+     const ttlSecondsInt = ttlSeconds > 0 ? Math.floor(ttlSeconds) : DEFAULT_TTL;
 
-    const storage = this.getStorage();
-    if (!storage) {
-      memoryCache.set(key, value, ttlSecondsInt);
-      return;
-    }
+     const storage = this.getStorageInstance();
+     if (!storage) {
+       memoryCache.set(key, value, ttlSecondsInt);
+       return;
+     }
 
     try {
       const storeKey = `${this.prefix}${key}`;
@@ -185,12 +185,12 @@ class StorageCache {
    *
    * @param key - Cache key to delete
    */
-  async delete(key: string): Promise<void> {
-    const storage = this.getStorage();
-    if (!storage) {
-      memoryCache.delete(key);
-      return;
-    }
+   async delete(key: string): Promise<void> {
+     const storage = this.getStorageInstance();
+     if (!storage) {
+       memoryCache.delete(key);
+       return;
+     }
 
     try {
       const storeKey = `${this.prefix}${key}`;
@@ -203,12 +203,12 @@ class StorageCache {
   /**
    * Clears all keys in the namespace.
    */
-  async clear(): Promise<void> {
-    const storage = this.getStorage();
-    if (!storage) {
-      await memoryCache.clear();
-      return;
-    }
+   async clear(): Promise<void> {
+     const storage = this.getStorageInstance();
+     if (!storage) {
+       await memoryCache.clear();
+       return;
+     }
 
     try {
       const keys = await storage.getKeys(this.prefix);
@@ -224,11 +224,11 @@ class StorageCache {
    * @param key - Cache key
    * @returns True if key exists
    */
-  async has(key: string): Promise<boolean> {
-    const storage = this.getStorage();
-    if (!storage) {
-      return memoryCache.has(key);
-    }
+   async has(key: string): Promise<boolean> {
+     const storage = this.getStorageInstance();
+     if (!storage) {
+       return memoryCache.has(key);
+     }
 
     try {
       const storeKey = `${this.prefix}${key}`;

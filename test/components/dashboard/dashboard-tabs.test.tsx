@@ -66,7 +66,7 @@ describe("DashboardTabs", () => {
       </DashboardTabs>,
     );
     expect(html).toContain("Reports");
-    // Check that Reports tab has disabled attribute
+    // Check that Reports tab has disabled attribute (more specific)
     expect(html).toContain('disabled=""');
   });
 

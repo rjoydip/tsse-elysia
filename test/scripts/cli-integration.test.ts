@@ -68,7 +68,8 @@ describe("CLI Integration", () => {
       encoding: "utf-8",
     });
 
-    // The warning messages go to stdout, not stderr
+    // The warning messages go to stdout because the logger in new-decision.ts
+    // uses console.warn which writes to stdout in Bun's implementation
     expect(result.status).toBe(1);
     expect(result.stdout).toContain("Decision with similar title already exists");
 
