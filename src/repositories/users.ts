@@ -265,13 +265,14 @@ export class UserRepository {
 
     const rows = await this.getDb()
       .select({
-        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
+        month:
+          sql`CAST(strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch') AS INTEGER)`.as<number>(),
         count: sql`COUNT(*)`.as<number>(),
       })
       .from(users)
       .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
+      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`);
 
     const monthMap = new Map<number, number>();
     for (const row of rows) {

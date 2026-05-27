@@ -522,18 +522,12 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <Skeleton className="h-9 w-20" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">
-                      <AnimatedNumber value={metrics?.totalUsers ?? 0} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      +{(metrics?.userGrowth ?? 0).toFixed(1)}% active rate
-                    </p>
-                  </>
-                )}
+                <div className="text-2xl font-bold">
+                  <AnimatedNumber value={metrics?.totalUsers ?? 0} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  +{(metrics?.userGrowth ?? 0).toFixed(1)}% active rate
+                </p>
               </CardContent>
             </Card>
             <Card className="h-full border-l-4 border-l-emerald-500">

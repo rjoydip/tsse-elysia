@@ -62,13 +62,24 @@ export function useAuthSync() {
       }
       syncedSessionId.current = sessionId;
 
+      // Use AbortController to cancel stale fetch on unmount/session change
+      const abortController = new AbortController();
+      const { signal } = abortController;
+
       // Fetch user role from our database to preserve custom role.
       // We must resolve the role BEFORE updating the auth store, otherwise
       // the store's user object will temporarily lack the role array and
       // cause a flash of the wrong dashboard (e.g., "basic" before "full").
       const syncSession = async () => {
         try {
-          const res = await fetch("/api/users/me", { credentials: "include" });
+          const res = await fetch("/api/users/me", {
+            credentials: "include",
+            signal,
+          });
+
+          // Ignore stale responses if the effect was cleaned up
+          if (signal.aborted) return;
+
           let enrichedUser: Record<string, unknown>;
 
           if (res.ok) {
@@ -86,10 +97,16 @@ export function useAuthSync() {
             };
           }
 
+          // Ignore stale responses if the effect was cleaned up
+          if (signal.aborted) return;
+
           const mappedSession = buildMappedSession(enrichedUser, session);
           authActions.setSession(mappedSession);
           authActions.setAccessToken(session.session?.token ?? "");
         } catch {
+          // Ignore stale responses if the effect was cleaned up
+          if (signal.aborted) return;
+
           const fallbackUser = {
             ...session.user,
             image: session.user.image ?? undefined,
@@ -101,6 +118,11 @@ export function useAuthSync() {
       };
 
       syncSession();
+
+      // Cleanup: abort stale fetch on unmount or session change
+      return () => {
+        abortController.abort();
+      };
     } else if (!session) {
       // Clear synced ref so a future login session will re-sync
       syncedSessionId.current = null;

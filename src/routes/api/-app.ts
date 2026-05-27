@@ -116,8 +116,9 @@ export const handle = async ({ request }: { request: Request }): Promise<Respons
     return await apiRoutes.fetch(request);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";
+    const status = ((error as Record<string, unknown>)?.status as number) ?? 500;
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status,
       headers: { "Content-Type": "application/json; charset=utf-8" },
     });
   }
