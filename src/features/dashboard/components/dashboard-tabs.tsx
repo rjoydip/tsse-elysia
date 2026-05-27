@@ -5,7 +5,8 @@
 
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
-const tabTriggerClassName = "data-[state=active]:!text-purple-600 data-[state=active]:hover:!text-purple-700 dark:data-[state=active]:!text-purple-400 dark:data-[state=active]:hover:!text-purple-300";
+const tabTriggerClassName =
+  "data-[state=active]:!text-purple-600 data-[state=active]:hover:!text-purple-700 dark:data-[state=active]:!text-purple-400 dark:data-[state=active]:hover:!text-purple-300";
 
 export function DashboardTabs({
   value,
@@ -26,23 +27,13 @@ export function DashboardTabs({
     >
       <div className="w-full overflow-x-auto pb-2">
         <TabsList>
-          <TabsTrigger
-            value="overview"
-            className={tabTriggerClassName}
-          >
+          <TabsTrigger value="overview" className={tabTriggerClassName}>
             Overview
           </TabsTrigger>
-          <TabsTrigger
-            value="analytics"
-            className={tabTriggerClassName}
-          >
+          <TabsTrigger value="analytics" className={tabTriggerClassName}>
             Analytics
           </TabsTrigger>
-          <TabsTrigger
-            value="reports"
-            className={tabTriggerClassName}
-            disabled
-          >
+          <TabsTrigger value="reports" className={tabTriggerClassName} disabled>
             Reports
           </TabsTrigger>
         </TabsList>
