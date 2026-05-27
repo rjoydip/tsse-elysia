@@ -10,11 +10,11 @@ const tabTriggerClassName =
 
 export function DashboardTabs({
   value,
-  onValueChange,
+  onValueChange = () => {},
   children,
 }: {
-  value: string;
-  onValueChange: (value: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
 }) {
   return (
