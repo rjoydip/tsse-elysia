@@ -49,12 +49,12 @@ export default defineConfig({
   webServer: isCI
     ? undefined
     : {
-        command:
-          process.platform === "win32"
-            ? `set NODE_ENV=test && bun run preview --host=${E2E_HOST} --port=${E2E_PORT}`
-            : `NODE_ENV=test bun run preview --host=${E2E_HOST} --port=${E2E_PORT}`,
+        command: `bun run preview --host=${E2E_HOST} --port=${E2E_PORT}`,
         url: E2E_BASE_URL,
         reuseExistingServer: !isCI,
         timeout: 120 * 1000,
+        env: {
+          NODE_ENV: "test",
+        },
       },
 });
