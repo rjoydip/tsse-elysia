@@ -50,4 +50,20 @@ test.describe("Dashboard Tabs", () => {
     const overviewTab = page.getByRole("tab", { name: "Overview" });
     await expect(overviewTab).not.toHaveAttribute("aria-selected", "true");
   });
+
+  test("should not activate Reports tab when clicked (negative test)", async ({ page }) => {
+    await page.goto(`${E2E_BASE_URL}/dashboard`);
+    await page.waitForLoadState("domcontentloaded");
+
+    // Click on disabled Reports tab
+    const reportsTab = page.getByRole("tab", { name: "Reports" });
+    await reportsTab.click();
+
+    // Verify Reports tab did not become active
+    await expect(reportsTab).not.toHaveAttribute("aria-selected", "true");
+
+    // Verify Overview tab remains active (default)
+    const overviewTab = page.getByRole("tab", { name: "Overview" });
+    await expect(overviewTab).toHaveAttribute("aria-selected", "true");
+  });
 });
