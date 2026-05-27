@@ -25,7 +25,7 @@ import { RecentUsers } from "./recent-users";
 import { Analytics } from "./analytics";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { currencyConfig, RECENT_USERS_COUNT } from "~/config";
+import { currencyConfig } from "~/config";
 import { AnimatedNumber } from "./shared/animated-number";
 import { DashboardState, DashboardMetricCard } from "./shared/role-view-states";
 
@@ -436,6 +436,7 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fullDashTab, setFullDashTab] = useState("overview");
+  const [loadedUserCount, setLoadedUserCount] = useState(0);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -665,13 +666,16 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
             </Card>
             <Card className="col-span-1 lg:col-span-3 bg-gradient-to-br from-emerald-50/60 to-background dark:from-emerald-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Recent Users (Max {RECENT_USERS_COUNT})</CardTitle>
+                <CardTitle>Recent Users</CardTitle>
                 <CardDescription>
                   You made {metrics?.usersThisMonth?.toLocaleString() ?? 0} users this month.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentUsers />
+                <RecentUsers
+                  onLoadCountChange={setLoadedUserCount}
+                  max={metrics?.usersThisMonth ?? undefined}
+                />
               </CardContent>
             </Card>
           </div>
@@ -881,13 +885,16 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
           >
             <Card className="col-span-1 lg:col-span-3 bg-gradient-to-br from-emerald-50/60 to-background dark:from-emerald-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Recent Users (Max {RECENT_USERS_COUNT})</CardTitle>
+                <CardTitle>Recent Users</CardTitle>
                 <CardDescription>
                   You made {metrics?.usersThisMonth?.toLocaleString() ?? 0} users this month.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentUsers />
+                <RecentUsers
+                  onLoadCountChange={setLoadedUserCount}
+                  max={metrics?.usersThisMonth ?? undefined}
+                />
               </CardContent>
             </Card>
           </motion.div>

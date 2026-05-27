@@ -104,12 +104,14 @@ export const recentActivityRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
+        const url = new URL(request.url);
         const limit = Math.min(
           50,
-          Math.max(1, Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10")),
+          Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "10")),
         );
+        const offset = Math.max(0, Number.parseInt(url.searchParams.get("offset") ?? "0"));
         // Only show users with the "user" role (exclude admins, managers, etc.)
-        const recentUsers = await userRepository.findRecent(limit, "user");
+        const recentUsers = await userRepository.findRecent(limit, "user", offset);
 
         return {
           recentUsers: recentUsers.map(formatUserForDisplay),
@@ -127,7 +129,8 @@ export const recentActivityRoutes = new Elysia({
     {
       detail: {
         summary: "Get recent users",
-        description: "Returns a feed of recently registered users with role info.",
+        description:
+          "Returns a feed of recently registered users with role info. Supports pagination via limit and offset.",
         tags: ["dashboard", "activity"],
         responses: {
           200: {

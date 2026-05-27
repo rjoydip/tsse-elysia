@@ -192,13 +192,22 @@ export class UserRepository {
   }
 
   /**
-   * Retrieves the most recently created users.
+   * Retrieves the most recently created users with optional pagination.
    * @param limit - Maximum number of users to return (default: 10)
    * @param role - Optional role filter (e.g., "user" to show only regular users)
+   * @param offset - Optional number of records to skip (for pagination)
    * @returns Array of recent user records
    */
-  async findRecent(limit: number = 10, role?: string): Promise<(typeof users.$inferSelect)[]> {
+  async findRecent(
+    limit: number = 10,
+    role?: string,
+    offset?: number,
+  ): Promise<(typeof users.$inferSelect)[]> {
     let query = this.getDb().select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+
+    if (typeof offset === "number" && offset > 0) {
+      query = query.offset(offset);
+    }
 
     if (role) {
       query = query.where(eq(users.role, role));

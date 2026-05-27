@@ -18,6 +18,23 @@ vi.mock("../../../src/hooks/use-recent-users", () => ({
     recentUsers: mockRecentUsers,
     loading: mockLoading,
     error: mockError,
+    hasMore: true,
+    loadMore: vi.fn(),
+  }),
+}));
+
+// Mock TanStack Virtual so the virtualizer returns all items as visible (SSR-safe)
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: (config: any) => ({
+    getVirtualItems: () =>
+      Array.from({ length: config.count }, (_, i) => ({
+        key: i,
+        index: i,
+        size: 72,
+        start: i * 72,
+      })),
+    getTotalSize: () => config.count * 72,
+    measure: vi.fn(),
   }),
 }));
 

@@ -14,9 +14,30 @@ vi.mock("~/services/dashboard", () => ({
   dashboardService: mockDashboardService,
 }));
 
-// Mock the logger
+// Mock the logger — must export all named exports used by transitive dependencies
 vi.mock("~/lib/logger", () => ({
   logger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+  dbLogger: {
+    log: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+  apiLogger: {
+    log: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+  cacheLogger: {
+    log: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
