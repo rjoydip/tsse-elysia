@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { navigateAndWait } from "../utils";
+import { navigateAndWait } from "./utils";
 
 test.describe("Dashboard Page", () => {
   test.beforeEach(async ({ page }) => {

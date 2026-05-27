@@ -26,7 +26,7 @@
 import { existsSync, copyFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { scriptLogger as logger } from "../src/lib/logger";
+import { scriptLogger as logger } from "~/lib/logger";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, "..");

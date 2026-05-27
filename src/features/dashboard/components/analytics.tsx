@@ -6,7 +6,8 @@ import { motion } from "motion/react";
 import { AnalyticsState } from "./shared/analytics-states";
 
 export function Analytics() {
-  const { roleDistribution, statusDistribution, loading, error } = useDashboardAnalytics();
+  const { roleDistribution, statusDistribution, weeklyRegistrations, loading, error } =
+    useDashboardAnalytics();
 
   if (loading) {
     return <AnalyticsState variant="loading" />;
@@ -41,7 +42,7 @@ export function Analytics() {
             <CardDescription>New users registered per day this week</CardDescription>
           </CardHeader>
           <CardContent className="px-6">
-            <AnalyticsChart />
+            <AnalyticsChart weeklyRegistrations={weeklyRegistrations ?? []} />
           </CardContent>
         </Card>
       </motion.div>

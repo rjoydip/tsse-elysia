@@ -29,14 +29,21 @@ export const metricsRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
-        const [totalUsers, activeUsers, inactiveUsers, suspendedUsers, usersThisMonth] =
-          await Promise.all([
-            userRepository.count(),
-            userRepository.countByStatus("active"),
-            userRepository.countByStatus("inactive"),
-            userRepository.countByStatus("suspended"),
-            userRepository.countUsersThisMonth(),
-          ]);
+        const [
+          totalUsers,
+          activeUsers,
+          inactiveUsers,
+          suspendedUsers,
+          usersThisMonth,
+          activeNowCount,
+        ] = await Promise.all([
+          userRepository.count(),
+          userRepository.countByStatus("active"),
+          userRepository.countByStatus("inactive"),
+          userRepository.countByStatus("suspended"),
+          userRepository.countUsersThisMonth(),
+          userRepository.countUsersUpdatedLastHour(),
+        ]);
 
         const userGrowth =
           totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100 * 10) / 10 : 0;
@@ -48,6 +55,8 @@ export const metricsRoutes = new Elysia({
           suspendedUsers,
           usersThisMonth,
           userGrowth,
+          activeNow: activeNowCount,
+          activeNowGrowth: 0,
           timestamp: Date.now(),
         };
       } catch (error) {

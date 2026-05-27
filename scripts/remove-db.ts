@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync } from "fs";
 import { resolve } from "path";
 import { Client } from "pg";
-import { scriptLogger as logger } from "../src/lib/logger";
+import { scriptLogger as logger } from "~/lib/logger";
 
 async function removePostgresDatabase() {
   const host = process.env.POSTGRES_HOST || "localhost";

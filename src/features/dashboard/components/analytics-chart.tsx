@@ -1,9 +1,15 @@
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { useAnalyticsChartData } from "~/hooks/use-analytics-chart";
 import { ChartState } from "./shared/chart-states";
+import type { WeeklyRegistrationsItem } from "~/repositories/dashboard";
 
-export function AnalyticsChart() {
-  const { chartData, loading, error } = useAnalyticsChartData();
+interface AnalyticsChartProps {
+  /** Pre-fetched weekly registrations from parent Analytics component. */
+  weeklyRegistrations?: WeeklyRegistrationsItem[];
+}
+
+export function AnalyticsChart({ weeklyRegistrations }: AnalyticsChartProps) {
+  const { chartData, loading, error } = useAnalyticsChartData(weeklyRegistrations);
 
   if (loading) {
     return <ChartState variant="loading" />;

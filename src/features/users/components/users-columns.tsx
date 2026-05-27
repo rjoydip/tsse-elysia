@@ -37,7 +37,9 @@ export const usersColumns: ColumnDef<User>[] = [
   {
     accessorKey: "username",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Username" />,
-    cell: ({ row }) => <LongText className="max-w-36 ps-3">{row.getValue("username")}</LongText>,
+    cell: ({ row }) => (
+      <LongText className="max-w-36 ps-3">{row.getValue("username") ?? "-"}</LongText>
+    ),
     meta: {
       className: cn(
         "drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)]",
@@ -51,7 +53,7 @@ export const usersColumns: ColumnDef<User>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => {
       const { firstName, lastName } = row.original;
-      const fullName = `${firstName} ${lastName}`;
+      const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Unknown";
       return <LongText className="max-w-36">{fullName}</LongText>;
     },
     meta: { className: "w-36" },

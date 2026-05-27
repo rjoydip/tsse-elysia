@@ -176,7 +176,7 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<void, DatabaseError | NotFoundError | ValidationError>> {
     const existing = await this.findPermissionById(id);
     if (Result.isError(existing)) {
-      return existing;
+      return Result.err(existing.error);
     }
 
     const normalizedName = data.name?.toLowerCase().trim();
@@ -215,7 +215,7 @@ export class RolesRepository implements IRolesRepository {
   async deletePermission(id: string): Promise<Result<void, DatabaseError | NotFoundError>> {
     const existing = await this.findPermissionById(id);
     if (Result.isError(existing)) {
-      return existing;
+      return Result.err(existing.error);
     }
 
     return withDatabaseError(async () => {
@@ -315,7 +315,7 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<void, DatabaseError | NotFoundError | ValidationError>> {
     const existing = await this.findRoleById(id);
     if (Result.isError(existing)) {
-      return existing;
+      return Result.err(existing.error);
     }
 
     const normalizedName = data.name?.toLowerCase().trim();
@@ -356,7 +356,7 @@ export class RolesRepository implements IRolesRepository {
   async deleteRole(id: string): Promise<Result<void, DatabaseError | NotFoundError>> {
     const existing = await this.findRoleById(id);
     if (Result.isError(existing)) {
-      return existing;
+      return Result.err(existing.error);
     }
 
     return withDatabaseError(async () => {
@@ -372,7 +372,7 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<Permission[], DatabaseError | NotFoundError>> {
     const roleExists = await this.findRoleById(roleId);
     if (Result.isError(roleExists)) {
-      return roleExists;
+      return Result.err(roleExists.error);
     }
 
     return withDatabaseError(async () => {
@@ -394,12 +394,12 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<void, DatabaseError | NotFoundError>> {
     const roleExists = await this.findRoleById(roleId);
     if (Result.isError(roleExists)) {
-      return roleExists;
+      return Result.err(roleExists.error);
     }
 
     const permExists = await this.findPermissionById(permissionId);
     if (Result.isError(permExists)) {
-      return permExists;
+      return Result.err(permExists.error);
     }
 
     return withDatabaseError(async () => {
@@ -426,7 +426,7 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<void, DatabaseError | NotFoundError>> {
     const roleExists = await this.findRoleById(roleId);
     if (Result.isError(roleExists)) {
-      return roleExists;
+      return Result.err(roleExists.error);
     }
 
     return withDatabaseError(async () => {
@@ -447,7 +447,7 @@ export class RolesRepository implements IRolesRepository {
   ): Promise<Result<void, DatabaseError | NotFoundError>> {
     const roleExists = await this.findRoleById(roleId);
     if (Result.isError(roleExists)) {
-      return roleExists;
+      return Result.err(roleExists.error);
     }
 
     return withDatabaseError(async () => {

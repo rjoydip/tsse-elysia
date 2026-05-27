@@ -7,6 +7,29 @@ description: All notable changes to this project
 
 ### 🚀 Enhancements
 
+- Add production-aware seed script with `--prod` flag and graph seed data (monthly/weekly registration timestamps)
+- Add full-page skeleton for role-based dashboard (replaces spinner during auth resolution)
+- Add lazy getter pattern to all 4 settings repositories (prevents client-side crashes)
+- Add `syncedSessionId` ref to deduplicate React StrictMode invocations in auth sync
+- Add `--fresh`, `--count`, `--seed` CLI flags to seed script for better dev ergonomics
+
+### 🩹 Fixes
+
+- Fix dashboard crash on Vite HMR by guarding `initializeDatabase()` behind `globalThis` flags
+- Fix dashboard "0" metrics by replacing direct `dashboardService` imports with `fetch()` calls (server-only modules no longer bundled client-side)
+- Fix unhandled Elysia HTTP errors — all errors now return proper JSON response
+- Fix role-based dashboard flash by deferring `authActions.setSession()` until after `/api/users/me` resolves
+- Fix auth sync race condition exposed by React StrictMode double-invocation
+- Fix cache storage re-initialization on HMR by persisting reference on `globalThis`
+- Fix `usePermission.isPending` to return `true` when auth store lags behind session
+- Fix client bundle including `pg`/`drizzle-orm/node-postgres` by making them dynamic imports
+- Fix seed script env type errors (`SQLITE_URL`, `SQLITE_AUTH_TOKEN` type casting)
+
+### 💅 Refactors
+
+- Rename `ADMIN_CREDENTIALS` to `ESSENTIAL_USERS`/`DEV_USERS` in seed script for clarity
+- Rewrite 5 dashboard hooks to use `fetch()` instead of server-side service imports
+
 - Add user create/edit dialog with password validation and matching indicator
 - Add password strength requirements indicator (8 chars, lowercase, number)
 - Improve username generation from name (handles special characters)
@@ -82,6 +105,8 @@ description: All notable changes to this project
 
 ### ✅ Tests
 
+- Add unit tests for dashboard tabs component
+- Add E2E tests for dashboard tabs functionality
 - Add unit tests for PostgreSQL replica configuration ([#17](https://github.com/rjoydip/tsse-elysia/pull/17))
 
 ### 🏗️ Infrastructure

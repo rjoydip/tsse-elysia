@@ -2,10 +2,12 @@
  * Hook for fetching dashboard metrics.
  * Provides loading states and error handling for dashboard data.
  * Returns user metrics: totalUsers, activeUsers, inactiveUsers, suspendedUsers, userGrowth.
+ *
+ * Uses AbortController to cancel in-flight requests on unmount,
+ * preventing duplicate requests under React StrictMode.
  */
 
 import { useEffect, useState } from "react";
-import { dashboardService } from "~/services/dashboard";
 import type { DashboardMetrics } from "~/repositories/dashboard";
 
 export function useDashboardMetrics() {
@@ -14,20 +16,25 @@ export function useDashboardMetrics() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
     const fetchMetrics = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await dashboardService.getMetrics();
-        if (isMounted) {
-          // data is the full response from /api/dashboard/metrics
+        const response = await fetch("/api/dashboard/metrics", {
+          signal: abortController.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch dashboard metrics: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (!abortController.signal.aborted) {
           setMetrics(data);
           setLoading(false);
         }
       } catch (err) {
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           setError(err instanceof Error ? err.message : "Failed to fetch dashboard metrics");
           setLoading(false);
         }
@@ -36,9 +43,8 @@ export function useDashboardMetrics() {
 
     fetchMetrics();
 
-    // Cleanup function
     return () => {
-      isMounted = false;
+      abortController.abort();
     };
   }, []);
 

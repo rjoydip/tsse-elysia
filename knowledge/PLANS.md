@@ -46,22 +46,24 @@ Core focus:
 
 ## Roadmap Status
 
-| Phase | Area                | Status |
-| ----- | ------------------- | ------ |
-| 1–3   | Foundations         | ✅     |
-| 4–5   | UI & UX             | ✅     |
-| 6     | Dashboard           | ✅     |
-| 7     | Infrastructure      | ✅     |
-| 8     | Real-time           | ✅     |
-| 9     | MCP                 | ✅     |
-| 10    | Data Strategy       | 📅     |
-| 13    | Contract Testing    | 📅     |
-| Svc   | Service Layer       | ✅     |
-| 11    | API Architecture    | ✅     |
-| 12    | Comptime            | ✅     |
-| 14    | Docker Optimize     | ✅     |
-| 15    | Dashboard Real Data | ✅     |
-| 17    | Dashboard UI Polish | ✅     |
+| Phase | Area                                | Status |
+| ----- | ----------------------------------- | ------ |
+| 1–3   | Foundations                         | ✅     |
+| 4–5   | UI & UX                             | ✅     |
+| 6     | Dashboard                           | ✅     |
+| 7     | Infrastructure                      | ✅     |
+| 8     | Real-time                           | ✅     |
+| 9     | MCP                                 | ✅     |
+| 10    | Data Strategy                       | 📅     |
+| 13    | Contract Testing                    | 📅     |
+| Svc   | Service Layer                       | ✅     |
+| 11    | API Architecture                    | ✅     |
+| 12    | Comptime                            | ✅     |
+| 14    | Docker Optimize                     | ✅     |
+| 15    | Dashboard Real Data                 | ✅     |
+| 17    | Dashboard UI Polish                 | ✅     |
+| 18    | Dashboard Stability & HMR Fixes     | ✅     |
+| 19    | Production Seed & Env-Aware Seeding | ✅     |
 
 ---
 
@@ -107,6 +109,47 @@ Core focus:
 - No duplicate card types between Overview and Analytics tabs
 - Configurable currency display for different locales
 - Cleaner dependency tree (removed 2 unused animation libraries)
+
+### Phase 18 – Dashboard Stability & HMR Fixes ✅
+
+**Completed:**
+
+- **HMR-safe database init**: Used `globalThis` flags to prevent re-execution of `initializeDatabase()` on Vite HMR module re-evaluation. Persisted `db`, `sqliteClient`, `pgPoolPrimary`, `pgPoolsReplicas` on `globalThis` and restored them on re-import.
+- **HMR-safe cache init**: Guarded `src/lib/cache/index.ts` storage initialization behind a `globalThis` reference; `closeStorage()` clears the global key.
+- **Client-safe dashboard hooks**: Rewrote 5 hooks (`use-dashboard-metrics`, `use-dashboard-analytics`, `use-dashboard-chart`, `use-recent-users`, `use-analytics-chart`) to use `fetch()` calls instead of directly importing server-side `dashboardService` (which required node-only `db`).
+- **Server-only import isolation**: Made `pg` and `drizzle-orm/node-postgres` imports dynamic (inside `createPostgresConnection()`) to prevent Vite from bundling them client-side. Changed `import { Pool } from "pg"` to `import type { Pool } from "pg"` for type-only usage.
+- **Lazy getter pattern**: Added `private getDb()` to all 4 repositories to read `defaultDb` at method-call time instead of module init time, preventing client-side crashes.
+- **Unhandled error responses**: Wrapped `-app.ts` `handle()` in try-catch to return proper JSON error responses instead of Elysia's default `{"status":500,"unhandled":true,"message":"HTTPError"}`. Made `errorFn` in middlewares more robust with inner try-catch fallback.
+- **Role-based dashboard flash fix**: Fixed auth sync race in `src/lib/auth/sync.ts` by moving `authActions.setSession(mappedSession)` inside the `/api/users/me` fetch callback, so the auth store is never written with a stale user object (lacking `role` array). Added `syncedSessionId` ref to deduplicate React StrictMode invocations.
+- **Full-page skeleton**: Replaced spinner in `RoleBasedDashboard` with a layout-accurate full-page skeleton (skeleton tabs, 5 metric cards, chart + recent users).
+- All 1341 unit tests pass, lint clean, formatter clean.
+
+**Benefits:**
+
+- Dashboard no longer crashes on HMR file-save during development
+- Client-side code never imports server-only Node modules
+- Auth store is never written with a partial session (no role flash)
+- All errors return proper JSON error responses
+- Faster UX with skeleton instead of spinner
+
+### Phase 19 – Production Seed & Environment-Aware Seeding ✅
+
+**Completed:**
+
+- **Production-mode seeding**: Added `--prod` CLI flag and `NODE_ENV=production` detection to seed script. Production mode seeds only 2 essential accounts (superadmin + admin). No fake users.
+- **Dev-mode seeding**: Seeds 5 static users (superadmin, admin, manager, cashier, user) plus 100 fake users with graph-friendly timestamps.
+- **Graph seed data**: 80% of fake users (80 users) spread across all 12 months of the current year for the monthly bar chart. 20% (20 users) spread across the last 7 days for the weekly registrations chart.
+- **Deterministic output**: Uses `faker.seed()` for reproducible fake user generation.
+- **CLI flags**: `--fresh` (reset DB before seeding), `--count=N` (override fake user count), `--seed=N` (override faker seed), `--prod` (production mode).
+- Renamed `ADMIN_CREDENTIALS` → `ESSENTIAL_USERS` (superadmin + admin) and `DEV_USERS` (manager, cashier, user).
+- All 1341 unit tests pass, lint clean, formatter clean.
+
+**Benefits:**
+
+- Production deployment seeds only admin accounts (no fake data)
+- Dev environment has meaningful chart data out of the box
+- Deterministic seeds for reproducible testing
+- `--fresh` flag enables clean reseeding
 
 ### Phase 6 – Main Dashboard Implementation ✅
 

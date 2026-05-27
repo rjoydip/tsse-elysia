@@ -95,29 +95,37 @@ export const traceFn: TraceHandler = async ({
  * .onError(errorFn)
  */
 export const errorFn = ({ code, error }: any) => {
-  // Determine if running in production to control error detail exposure
-  const isProduction = typeof process !== "undefined" && process.env.NODE_ENV === "production";
+  try {
+    // Determine if running in production to control error detail exposure
+    const isProduction = typeof process !== "undefined" && process.env.NODE_ENV === "production";
 
-  // Sanitize error message: show full details in dev, generic message in prod
-  const errorMessage = isProduction
-    ? "An unexpected error occurred"
-    : error instanceof Error
-      ? error.message
-      : String(error);
+    // Sanitize error message: show full details in dev, generic message in prod
+    const errorMessage = isProduction
+      ? "An unexpected error occurred"
+      : error instanceof Error
+        ? error.message
+        : String(error);
 
-  // Format response based on error type
-  const responseBody =
-    code === "NOT_FOUND"
-      ? JSON.stringify({ error: "Endpoint not found" })
-      : JSON.stringify({ error: errorMessage });
+    // Format response based on error type
+    const responseBody =
+      code === "NOT_FOUND"
+        ? JSON.stringify({ error: "Endpoint not found" })
+        : JSON.stringify({ error: errorMessage });
 
-  // Return appropriate status code (404 for not found, 500 for other errors)
-  return new Response(responseBody, {
-    status: code === "NOT_FOUND" ? 404 : 500,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-    },
-  });
+    // Return appropriate status code (404 for not found, 500 for other errors)
+    return new Response(responseBody, {
+      status: code === "NOT_FOUND" ? 404 : 500,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  } catch {
+    // Last-resort fallback if the error handler itself throws
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+    });
+  }
 };
 
 /**

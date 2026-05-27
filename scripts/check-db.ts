@@ -1,4 +1,5 @@
 import { createClient } from "@libsql/client";
+import { dbLogger } from "~/lib/logger";
 
 const client = createClient({
   url: "file:.artifacts/tsse-elysia.db",
@@ -6,10 +7,10 @@ const client = createClient({
 
 try {
   const result = await client.execute("SELECT * FROM __drizzle_migrations");
-  console.log("Migrations table:", JSON.stringify(result.rows));
+  dbLogger.log(`Migrations table: ${JSON.stringify(result.rows)}`);
 } catch (e) {
-  console.log("Error:", e);
+  dbLogger.log(`Error: ${e}`);
 }
 
 const tables = await client.execute("SELECT name FROM sqlite_master WHERE type='table'");
-console.log("Tables:", JSON.stringify(tables.rows, null, 2));
+dbLogger.log(`Tables: ${JSON.stringify(tables.rows, null, 2)}`);

@@ -1,10 +1,12 @@
 /**
  * Hook for fetching recent users.
  * Provides loading states and error handling for recent user data.
+ *
+ * Uses AbortController to cancel in-flight requests on unmount,
+ * preventing duplicate requests under React StrictMode.
  */
 
 import { useEffect, useState } from "react";
-import { dashboardService } from "~/services/dashboard";
 import type { RecentUserItem } from "~/repositories/dashboard";
 
 export function useRecentUsers(limit: number = 5) {
@@ -13,19 +15,25 @@ export function useRecentUsers(limit: number = 5) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
     const fetchRecentUsers = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await dashboardService.getRecentUsers(limit);
-        if (isMounted) {
-          setRecentUsers(data ?? []);
+        const response = await fetch(`/api/dashboard/recent-activity/users?limit=${limit}`, {
+          signal: abortController.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recent users: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (!abortController.signal.aborted) {
+          setRecentUsers(data.recentUsers ?? []);
           setLoading(false);
         }
       } catch (err) {
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           setError(err instanceof Error ? err.message : "Failed to fetch recent users");
           setLoading(false);
         }
@@ -34,9 +42,8 @@ export function useRecentUsers(limit: number = 5) {
 
     fetchRecentUsers();
 
-    // Cleanup function
     return () => {
-      isMounted = false;
+      abortController.abort();
     };
   }, [limit]);
 

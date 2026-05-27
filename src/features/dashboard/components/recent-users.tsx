@@ -4,17 +4,18 @@
  * Uses real user data from the dashboard API.
  */
 
-import { UserRow } from "./shared/user-row";
-import { useRecentUsers } from "~/hooks/use-recent-users";
 import { motion } from "motion/react";
+import { useRecentUsers } from "~/hooks/use-recent-users";
+import { RECENT_USERS_COUNT } from "~/config";
+import { UserRow } from "./shared/user-row";
 
 export function RecentUsers() {
-  const { recentUsers, loading, error } = useRecentUsers(5);
+  const { recentUsers, loading, error } = useRecentUsers(RECENT_USERS_COUNT);
 
   if (loading) {
     return (
       <div className="space-y-8">
-        {[1, 2, 3, 4, 5].map((_, index) => (
+        {Array.from({ length: RECENT_USERS_COUNT }, (_, i) => i + 1).map((_, index) => (
           <UserRow
             key={index}
             avatarSrc="/avatars/01.png"
@@ -45,10 +46,10 @@ export function RecentUsers() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="h-[350px] space-y-8 overflow-y-auto pr-2">
       {recentUsers.map((user, index) => (
         <motion.div
-          key={index}
+          key={user.id ?? index}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}

@@ -7,11 +7,12 @@
  */
 
 import { readFileSync, appendFileSync, existsSync } from "fs";
+import { logger } from "~/lib/logger";
 
 const FILE = "knowledge/DECISIONS.md";
 
 if (!existsSync(FILE)) {
-  console.error(`❌ ${FILE} not found`);
+  logger.error(`❌ ${FILE} not found`);
   process.exit(1);
 }
 
@@ -28,8 +29,8 @@ const title = process.argv[2] || "New Decision";
 // Check for duplicate title
 const titleLower = title.toLowerCase();
 if (content.toLowerCase().includes(titleLower)) {
-  console.warn(`⚠️ Decision with similar title already exists: "${title}"`);
-  console.warn("Use a unique title or check DECISIONS.md");
+  logger.warn(`⚠️ Decision with similar title already exists: "${title}"`);
+  logger.warn("Use a unique title or check DECISIONS.md");
   process.exit(1);
 }
 
@@ -54,4 +55,4 @@ const entry = `
 
 appendFileSync(FILE, entry);
 
-console.log(`✅ Decision ${nextId} created`);
+logger.log(`✅ Decision ${nextId} created`);

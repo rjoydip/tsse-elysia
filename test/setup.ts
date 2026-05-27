@@ -7,7 +7,7 @@ export async function setup() {
   process.env.SQLITE_URL = ":memory:";
 
   // Initialize database connection
-  initializeDatabase();
+  await initializeDatabase();
 
   const pools = getDatabasePools();
 

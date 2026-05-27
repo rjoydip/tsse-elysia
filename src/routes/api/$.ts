@@ -1,99 +1,23 @@
 /**
  * Main API route handler (Splat Route).
- * Handles all requests under `/api/*` and routes them to the Elysia application.
- * Sets up the core API application with middleware and routes.
+ * Catches all requests under `/api/*` and delegates to Elysia.
+ * Server-only code is dynamically imported to prevent bundling Elysia + pg into the client.
  */
 
-import { Elysia } from "elysia";
-import { treaty } from "@elysiajs/eden";
 import { createFileRoute } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
-import { API_PREFIX, APP_NAME, HOST, PORT, isBrowser } from "~/config";
-import { composedMiddleware, errorFn, traceFn } from "~/middlewares";
-import { websocketPlugin } from "~/plugins/websocket";
-import { evlogPlugin, evlogIngestEndpoint } from "~/plugins/evlog-plugin";
-import { monitoringPlugin } from "~/plugins/monitoring";
-import { coreRoutes } from "./root/-core";
-import { mcpCoreRoutes } from "./mcp/-core";
-import { authCoreRoutes } from "./auth/-core";
-import { settingsRoutes } from "./settings/-core";
-import { usersRoutes } from "./users/-core";
-import { rolesRoutes } from "./roles/-core";
-import {
-  metricsRoutes,
-  analyticsRoutes,
-  recentActivityRoutes,
-  overviewChartRoutes,
-} from "./dashboard/-core";
+import { treaty } from "@elysiajs/eden";
+import { isBrowser, HOST, PORT } from "~/config";
+import type { apiRoutes } from "./-app";
 
 /**
- * Main API application instance factory.
- * Allows creating isolated instances for testing to avoid shared state race conditions.
+ * Dynamically imports the Elysia handler from the server-only module.
+ * This prevents Elysia (and its transitive deps like pg) from being bundled into the client.
  */
-export const createApiRoutes = () =>
-  new Elysia({
-    name: "root.api",
-    prefix: API_PREFIX,
-  })
-    // Disable caching for all API responses to ensure fresh data
-    .onRequest(({ set }) => {
-      set.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
-      set.headers["Pragma"] = "no-cache";
-      set.headers["Expires"] = "0";
-      set.headers["Surrogate-Control"] = "no-store";
-    })
-    // Apply composed middleware (CORS, Helmet, Rate Limit, OpenTelemetry)
-    .use(
-      composedMiddleware({
-        OPENAPI_NAME: APP_NAME,
-      }),
-    )
-    // Custom evlog plugin for request/response logging
-    .use(
-      evlogPlugin({
-        logRequests: true,
-        logTiming: true,
-        logErrors: true,
-        excludePaths: ["/_evlog"],
-      }),
-    )
-    // Request tracing for performance monitoring
-    .trace(traceFn)
-    // Custom error handler for JSON error responses
-    .onError(errorFn)
-    /**
-     * Compose modular route groups so endpoint ownership is explicit and maintainable.
-     */
-    // Mount realtime websocket plugin so /api/ws and /api/ws/health are reachable.
-    .use(websocketPlugin)
-    .use(monitoringPlugin)
-    .use(coreRoutes)
-    .use(authCoreRoutes)
-    .use(mcpCoreRoutes)
-    .use(settingsRoutes)
-    .use(usersRoutes)
-    .use(rolesRoutes)
-    .use(metricsRoutes)
-    .use(analyticsRoutes)
-    .use(recentActivityRoutes)
-    .use(overviewChartRoutes)
-    // Evlog client ingestion endpoint for browser logs
-    .use(evlogIngestEndpoint());
-
-/**
- * Main API application instance (singleton).
- * Prefix: /api (configurable via API_PREFIX)
- * Includes all security middleware, tracing, and error handling.
- * Includes WebSocket endpoint registration for real-time features.
- */
-export const apiRoutes = createApiRoutes();
-
-/**
- * Request handler wrapper for TanStack Start integration.
- * Adapts Elysia handler to TanStack Start's server handler interface.
- */
-// fallow-ignore-next-line
-export const handle = ({ request }: { request: Request }) => apiRoutes.fetch(request);
+const getHandler = async ({ request }: { request: Request }) => {
+  const { handle } = await import("./-app");
+  return handle({ request });
+};
 
 /**
  * TanStack Start splat route definition.
@@ -102,12 +26,12 @@ export const handle = ({ request }: { request: Request }) => apiRoutes.fetch(req
 export const Route = createFileRoute("/api/$")({
   server: {
     handlers: {
-      GET: handle,
-      POST: handle,
-      PUT: handle,
-      PATCH: handle,
-      DELETE: handle,
-      OPTIONS: handle,
+      GET: getHandler,
+      POST: getHandler,
+      PUT: getHandler,
+      PATCH: getHandler,
+      DELETE: getHandler,
+      OPTIONS: getHandler,
     },
   },
 });
@@ -129,7 +53,11 @@ export const Route = createFileRoute("/api/$")({
 // fallow-ignore-next-line
 export const getAPI = createIsomorphicFn()
   // Server: Use in-process Elysia handler (no HTTP overhead)
-  .server(() => treaty(apiRoutes).api)
+  .server(async () => {
+    const { treaty: serverTreaty } = await import("@elysiajs/eden");
+    const { apiRoutes } = await import("./-app");
+    return serverTreaty(apiRoutes).api;
+  })
   // Client: Make HTTP requests to server
   .client(() => {
     const url =

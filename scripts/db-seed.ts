@@ -5,17 +5,23 @@
  *
  * Creates deterministic demo data for local development and testing.
  * Seeds admin users, subscription plans, and fake users.
+ *
+ * Seeding modes:
+ * - Production (NODE_ENV=production or --prod flag): only seeds essential
+ *   admin accounts (superadmin + admin). No fake users or graph data.
+ * - Dev/Default: seeds all admin accounts + fake users with graph-friendly
+ *   createdAt timestamps spanning current year months and last 7 days.
  */
 
+import { faker } from "@faker-js/faker";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { reset } from "drizzle-seed";
-import { scriptLogger as logger } from "../src/lib/logger";
-import { subscriptionPlans } from "../src/lib/db/schema/subscriptions";
-import { users } from "../src/lib/db/schema/auth";
+import { scriptLogger as logger } from "~/lib/logger";
+import { subscriptionPlans } from "~/lib/db/schema/subscriptions";
+import { users } from "~/lib/db/schema/auth";
 import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
-import { faker } from "@faker-js/faker";
 
 /**
  * User roles for user management.
@@ -28,12 +34,13 @@ type UserRole = "superadmin" | "admin" | "manager" | "cashier" | "user";
 type UserStatus = "active" | "inactive" | "invited" | "suspended";
 
 /**
- * Admin credentials for static admin accounts.
+ * Essential seed accounts always created (superadmin + admin).
+ * These are the minimum needed for any deployment.
  */
-const ADMIN_CREDENTIALS = [
+const ESSENTIAL_USERS = [
   {
-    email: "admin@tsse.local",
-    password: "admin123",
+    email: "super.admin@tsse.local",
+    password: "superadmin123",
     name: "Super Admin",
     firstName: "Super",
     lastName: "Admin",
@@ -42,6 +49,22 @@ const ADMIN_CREDENTIALS = [
     status: "active" as UserStatus,
   },
   {
+    email: "admin@tsse.local",
+    password: "admin123",
+    name: "Test Admin",
+    firstName: "Test",
+    lastName: "Admin",
+    username: "admin",
+    role: "admin" as UserRole,
+    status: "active" as UserStatus,
+  },
+];
+
+/**
+ * Additional seed accounts created only in dev mode (manager, cashier, user).
+ */
+const DEV_USERS = [
+  {
     email: "manager@tsse.local",
     password: "manager123",
     name: "Test Manager",
@@ -49,6 +72,26 @@ const ADMIN_CREDENTIALS = [
     lastName: "Manager",
     username: "manager",
     role: "manager" as UserRole,
+    status: "active" as UserStatus,
+  },
+  {
+    email: "cashier@tsse.local",
+    password: "cashier123",
+    name: "Test Cashier",
+    firstName: "Test",
+    lastName: "Cashier",
+    username: "cashier",
+    role: "cashier" as UserRole,
+    status: "active" as UserStatus,
+  },
+  {
+    email: "user@tsse.local",
+    password: "user123",
+    name: "Test User",
+    firstName: "Test",
+    lastName: "User",
+    username: "testuser",
+    role: "user" as UserRole,
     status: "active" as UserStatus,
   },
 ];
@@ -60,15 +103,17 @@ export interface SeedOptions {
   count: number;
   seed: number;
   fresh: boolean;
+  prod: boolean;
 }
 
 /**
  * Default CLI options.
  */
 export const DEFAULT_SEED_OPTIONS: SeedOptions = {
-  count: 10,
+  count: 250,
   seed: 20260409,
   fresh: false,
+  prod: false,
 };
 
 /**
@@ -92,6 +137,10 @@ export function parseSeedOptions(argv: string[]): SeedOptions {
       options.fresh = true;
       continue;
     }
+    if (argument === "--prod") {
+      options.prod = true;
+      continue;
+    }
     if (argument.startsWith("--count=")) {
       options.count = parsePositiveInteger(argument.slice("--count=".length), "--count");
       continue;
@@ -106,11 +155,18 @@ export function parseSeedOptions(argv: string[]): SeedOptions {
 }
 
 /**
+ * Returns true if running in production mode (either by NODE_ENV or --prod flag).
+ */
+function isProductionMode(options: SeedOptions): boolean {
+  return options.prod || process.env.NODE_ENV === "production";
+}
+
+/**
  * Resolves the database URL for seeding.
  */
 function resolveDatabaseUrl(): string {
   if (env.SQLITE_URL) {
-    return env.SQLITE_URL;
+    return String(env.SQLITE_URL);
   }
   return "file:.artifacts/tsse-elysia.db";
 }
@@ -212,16 +268,15 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
 }
 
 /**
- * Seeds static admin users via HTTP API to the running server.
+ * Seeds static users via HTTP API to the running server.
  * This ensures proper password hashing and account creation.
  */
-async function seedAdminUsers(): Promise<void> {
+async function seedUsers(userList: typeof ESSENTIAL_USERS): Promise<void> {
   const BASE_URL = "http://localhost:3000";
 
-  for (const admin of ADMIN_CREDENTIALS) {
-    logger.info(`Creating admin user: ${admin.email}`);
+  for (const admin of userList) {
+    logger.info(`Creating user: ${admin.email}`);
 
-    // Create user via HTTP API - use encoded password like client does
     const { encodePassword } = await import("../src/lib/utils/encryption");
     const encodedPassword = await encodePassword(admin.password);
 
@@ -239,17 +294,16 @@ async function seedAdminUsers(): Promise<void> {
       if (!response.ok) {
         const err = await response.json();
         if (err.error?.code === "USER_ALREADY_EXISTS" || err.message?.includes("already exists")) {
-          logger.info(`Admin ${admin.email} already exists, updating role`);
+          logger.info(`User ${admin.email} already exists, updating role`);
         } else {
-          logger.warn(`Could not create admin ${admin.email}: ${JSON.stringify(err)}`);
+          logger.warn(`Could not create user ${admin.email}: ${JSON.stringify(err)}`);
           continue;
         }
       } else {
         const data = await response.json();
-        logger.info(`Created admin user: ${admin.email} with ID: ${data.user?.id}`);
+        logger.info(`Created user: ${admin.email} with ID: ${data.user?.id}`);
       }
 
-      // Update the user's role in the database
       const { db } = await import("../src/config/db");
       const { users } = await import("../src/lib/db/schema/auth");
       const { eq } = await import("drizzle-orm");
@@ -266,14 +320,16 @@ async function seedAdminUsers(): Promise<void> {
 
       logger.info(`Updated role to ${admin.role} for ${admin.email}`);
     } catch (error) {
-      // Server might not be running - skip admin creation
-      logger.info(`Could not create admin ${admin.email} (server may not be running): ${error}`);
+      logger.info(`Could not create user ${admin.email} (server may not be running): ${error}`);
     }
   }
 }
 
 /**
  * Generates fake users compatible with the extended schema.
+ * In dev mode, creates users with createdAt spread across current year months
+ * and the last 7 days — so the dashboard overview chart (monthly bar chart)
+ * and weekly registrations chart show meaningful data.
  */
 function generateFakeUsers(
   count: number,
@@ -295,27 +351,66 @@ function generateFakeUsers(
   status: UserStatus;
 }> {
   faker.seed(seed);
-  const now = new Date();
+  const now = Date.now();
+  const currentYear = new Date().getFullYear();
 
-  return Array.from({ length: count }, () => {
+  // Distribute users across:
+  // - 80% across current year months (for monthly bar chart)
+  // - 20% across the last 7 days (for weekly registrations chart)
+  const monthlyCount = Math.floor(count * 0.8);
+  const weeklyCount = count - monthlyCount;
+
+  const users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    image: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    subscriptionTier: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+    phoneNumber: string;
+    role: UserRole;
+    status: UserStatus;
+  }> = [];
+
+  for (let i = 0; i < monthlyCount; i++) {
+    // Spread evenly across all 12 months of the current year with varying daily offsets
+    const month = i % 12; // 0=Jan .. 11=Dec
+    const dayOfMonth = Math.min(28, Math.floor(i / 12) + 1); // distribute within the month
+    const yearStart = new Date(currentYear, month, dayOfMonth).getTime();
+    const monthEnd = new Date(currentYear, month + 1, 0).getTime();
+    // Add random hours within the day to avoid collisions
+    const ms = yearStart + faker.number.int({ max: Math.max(0, monthEnd - yearStart) });
+    const createdAt = new Date(ms);
+
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({ firstName }).toLocaleLowerCase();
 
-    return {
+    users.push({
       id: faker.string.uuid(),
       name: `${firstName} ${lastName}`,
       email,
       emailVerified: faker.datatype.boolean(),
       image: faker.image.avatar(),
-      createdAt: faker.date.past({ years: 2, refDate: now }),
+      createdAt,
       updatedAt: faker.date.recent({ days: 30 }),
       subscriptionTier: faker.helpers.arrayElement(["free", "contributor", "enterprise"]),
       firstName,
       lastName,
       username: faker.internet.username({ firstName, lastName }).toLocaleLowerCase(),
       phoneNumber: faker.phone.number({ style: "international" }),
-      role: faker.helpers.arrayElement(["admin", "manager", "cashier", "user"] as UserRole[]),
+      role: faker.helpers.arrayElement([
+        "user",
+        "user",
+        "user",
+        "cashier",
+        "manager",
+      ] as UserRole[]),
       status: faker.helpers.arrayElement([
         "active",
         "active",
@@ -324,8 +419,57 @@ function generateFakeUsers(
         "invited",
         "suspended",
       ] as UserStatus[]),
-    };
-  });
+    });
+  }
+
+  for (let i = 0; i < weeklyCount; i++) {
+    // Skew heavily toward the last 2 days so data stays visible longer
+    // after seeding. 60% in last 24h, 25% in 24-48h, 15% in 48h-7d.
+    const skew = faker.number.int({ max: 99 });
+    let daysAgo: number;
+    if (skew < 60) {
+      daysAgo = faker.number.int({ max: 0 }); // today only
+    } else if (skew < 85) {
+      daysAgo = faker.number.int({ max: 1, min: 1 }); // yesterday
+    } else {
+      daysAgo = faker.number.int({ max: 6, min: 2 }); // 2-6 days ago
+    }
+    const hoursOffset = faker.number.int({ max: 23 });
+    const minutesOffset = faker.number.int({ max: 59 });
+    const createdAt = new Date(
+      now - daysAgo * 86400000 - hoursOffset * 3600000 - minutesOffset * 60000,
+    );
+
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const email = faker.internet.email({ firstName }).toLocaleLowerCase();
+
+    users.push({
+      id: faker.string.uuid(),
+      name: `${firstName} ${lastName}`,
+      email,
+      emailVerified: faker.datatype.boolean(),
+      image: faker.image.avatar(),
+      createdAt,
+      updatedAt: faker.date.recent({ days: 1 }),
+      subscriptionTier: faker.helpers.arrayElement(["free", "contributor", "enterprise"]),
+      firstName,
+      lastName,
+      username: faker.internet.username({ firstName, lastName }).toLocaleLowerCase(),
+      phoneNumber: faker.phone.number({ style: "international" }),
+      role: faker.helpers.arrayElement(["user", "user", "user", "cashier"] as UserRole[]),
+      status: faker.helpers.arrayElement([
+        "active",
+        "active",
+        "active",
+        "active",
+        "inactive",
+        "suspended",
+      ] as UserStatus[]),
+    });
+  }
+
+  return users;
 }
 
 /**
@@ -333,15 +477,18 @@ function generateFakeUsers(
  */
 async function main(): Promise<void> {
   const options = parseSeedOptions(process.argv.slice(2));
+  const isProd = isProductionMode(options);
 
   const dbUrl = resolveDatabaseUrl();
 
-  const client = createClient({ url: dbUrl, authToken: env.SQLITE_AUTH_TOKEN });
+  const authToken = env.SQLITE_AUTH_TOKEN ? String(env.SQLITE_AUTH_TOKEN) : undefined;
+  const client = createClient({ url: dbUrl, authToken });
   const db = drizzle(client, { schema });
 
   try {
     logger.section("Database Seeding");
     logger.step(1, `Seeding database at ${dbUrl}`);
+    logger.info(`Mode: ${isProd ? "PRODUCTION" : "DEVELOPMENT"}`);
     logger.info(`Options: count=${options.count}, seed=${options.seed}, fresh=${options.fresh}`);
 
     await ensureRequiredTablesExist(client);
@@ -354,25 +501,33 @@ async function main(): Promise<void> {
     logger.step(2, "Seeding subscription plans...");
     await seedPlans(db);
 
-    logger.step(3, "Seeding admin users...");
-    await seedAdminUsers();
+    // In production, only seed essential admin accounts
+    const usersToSeed = isProd ? ESSENTIAL_USERS : [...ESSENTIAL_USERS, ...DEV_USERS];
+    logger.step(3, `Seeding ${usersToSeed.length} static user(s)...`);
+    await seedUsers(usersToSeed);
 
-    logger.step(4, "Seeding fake users...");
-    const fakeUsers = generateFakeUsers(options.count, options.seed);
-    logger.info(`Generated ${fakeUsers.length} fake users`);
+    if (!isProd) {
+      // Dev mode: seed fake users with graph-friendly timestamps
+      logger.step(4, "Seeding fake users for charts...");
+      const fakeUsers = generateFakeUsers(options.count, options.seed);
+      logger.info(`Generated ${fakeUsers.length} fake users`);
 
-    logger.info("Inserting fake users into database (skipping duplicates)...");
-    for (const user of fakeUsers) {
-      try {
-        await db.insert(users).values(user);
-      } catch {
-        // Skip duplicates
+      logger.info("Inserting fake users into database (skipping duplicates)...");
+      let inserted = 0;
+      for (const user of fakeUsers) {
+        try {
+          await db.insert(users).values(user);
+          inserted++;
+        } catch {
+          // Skip duplicates
+        }
       }
-    }
+      logger.info(`Inserted ${inserted} of ${fakeUsers.length} fake users`);
 
-    logger.success(
-      `Database seeded with ${ADMIN_CREDENTIALS.length} admin + ${options.count} fake users.`,
-    );
+      logger.success(`Database seeded with ${usersToSeed.length} static + ${inserted} fake users.`);
+    } else {
+      logger.success(`Database seeded with ${usersToSeed.length} static users (production mode).`);
+    }
   } catch (error) {
     logger.error(error instanceof Error ? error.message : `Unknown seed failure: ${error}`);
     process.exitCode = 1;

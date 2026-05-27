@@ -1,4 +1,5 @@
 import { createClient } from "@libsql/client";
+import { dbLogger } from "~/lib/logger";
 
 const client = createClient({
   url: "file:.artifacts/tsse-elysia.db",
@@ -13,7 +14,7 @@ await client.execute({
   args: [],
 });
 
-console.log("Ensured __drizzle_migrations table exists");
+dbLogger.log("Ensured __drizzle_migrations table exists");
 
 const migrations = [
   ["0000", "init"],
@@ -30,11 +31,11 @@ for (const [id, hash] of migrations) {
     args: [Number(id), hash, Date.now()],
   });
   if (result.rowsAffected && result.rowsAffected > 0) {
-    console.log(`Inserted migration: ${id}`);
+    dbLogger.log(`Inserted migration: ${id}`);
   } else {
-    console.log(`Migration ${id} already exists, skipping`);
+    dbLogger.log(`Migration ${id} already exists, skipping`);
   }
 }
 
 const result = await client.execute("SELECT * FROM __drizzle_migrations ORDER BY id");
-console.log("Current migrations:", JSON.stringify(result.rows));
+dbLogger.log(`Current migrations: ${JSON.stringify(result.rows)}`);

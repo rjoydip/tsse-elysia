@@ -5,7 +5,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { scriptLogger as logger } from "../src/lib/logger";
+import { scriptLogger as logger } from "~/lib/logger";
 
 const serverPath = join(process.cwd(), "dist/server/server.js");
 

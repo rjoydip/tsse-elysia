@@ -56,7 +56,8 @@ export const recentActivityRoutes = new Elysia({
           50,
           Math.max(1, Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10")),
         );
-        const dbUsers = await userRepository.findRecent(limit);
+        // Only show users with the "user" role (exclude admins, managers, etc.)
+        const dbUsers = await userRepository.findRecent(limit, "user");
 
         // Format recent users using the shared display helper
         return {
@@ -107,7 +108,8 @@ export const recentActivityRoutes = new Elysia({
           50,
           Math.max(1, Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10")),
         );
-        const recentUsers = await userRepository.findRecent(limit);
+        // Only show users with the "user" role (exclude admins, managers, etc.)
+        const recentUsers = await userRepository.findRecent(limit, "user");
 
         return {
           recentUsers: recentUsers.map(formatUserForDisplay),

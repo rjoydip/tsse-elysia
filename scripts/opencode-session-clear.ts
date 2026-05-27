@@ -2,7 +2,7 @@
 
 import { exec } from "child_process";
 import { promisify } from "util";
-import { scriptLogger as logger } from "../src/lib/logger";
+import { scriptLogger as logger } from "~/lib/logger";
 
 const execAsync = promisify(exec);
 
