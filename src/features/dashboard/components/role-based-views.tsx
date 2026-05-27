@@ -3,7 +3,8 @@
  * Renders different dashboard components based on user permissions and role.
  */
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { DashboardTabs } from "./dashboard-tabs";
+import { TabsContent } from "~/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Header } from "~/components/layout/header";
@@ -14,14 +15,17 @@ import { ThemeSwitch } from "~/components/theme-switch";
 import { Search } from "~/components/search";
 import { usePermission } from "~/hooks/use-permission";
 import { useDashboardMetrics } from "~/hooks/use-dashboard-metrics";
-import { dashboardService } from "~/services/dashboard";
+import {
+  dashboardService as realtimeDashboardService,
+  DashboardResource,
+} from "~/services/dashboard/main";
 import type { DashboardMetrics } from "~/repositories/dashboard";
-import { Overview } from "./overview";
+import { MonthlyUsersOverview } from "./monthly-user-overview";
 import { RecentUsers } from "./recent-users";
 import { Analytics } from "./analytics";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { currencyConfig } from "~/config";
+import { currencyConfig, RECENT_USERS_COUNT } from "~/config";
 import { AnimatedNumber } from "./shared/animated-number";
 import { DashboardState, DashboardMetricCard } from "./shared/role-view-states";
 
@@ -261,7 +265,7 @@ export function TeamDashboard(_props: RoleBasedDashboardProps) {
               <CardTitle>Team Overview</CardTitle>
             </CardHeader>
             <CardContent className="ps-2">
-              <Overview />
+              <MonthlyUsersOverview />
             </CardContent>
           </Card>
           <Card className="col-span-1 lg:col-span-3">
@@ -289,7 +293,7 @@ export function TeamDashboard(_props: RoleBasedDashboardProps) {
               <CardTitle>Team Overview</CardTitle>
             </CardHeader>
             <CardContent className="ps-2">
-              <Overview />
+              <MonthlyUsersOverview />
             </CardContent>
           </Card>
           <Card className="col-span-1 lg:col-span-3">
@@ -406,7 +410,7 @@ export function TeamDashboard(_props: RoleBasedDashboardProps) {
             <CardTitle>Team Overview</CardTitle>
           </CardHeader>
           <CardContent className="ps-2">
-            <Overview />
+            <MonthlyUsersOverview />
           </CardContent>
         </Card>
         <Card className="col-span-1 lg:col-span-3">
@@ -427,118 +431,58 @@ export function TeamDashboard(_props: RoleBasedDashboardProps) {
  * Full Dashboard - For admins and superadmins.
  * Shows all metrics and management options.
  */
-export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDashboardProps) {
-  const [userCount, setUserCount] = useState(initialUserCount);
-  const [loading, setLoading] = useState(!initialUserCount);
+export function FullDashboard(_props: RoleBasedDashboardProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fullDashTab, setFullDashTab] = useState("overview");
 
   useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
-    // Fetch initial data
-    async function fetchInitialData() {
+    async function fetchMetrics() {
       try {
         setLoading(true);
-        setMetricsLoading(true);
 
-        // Fetch user count
-        const userResponse = await fetch("/api/users?limit=1");
-        let userCountValue = initialUserCount;
-        if (userResponse.ok) {
-          const userData = (await userResponse.json()) as { pagination: { total: number } };
-          userCountValue = userData.pagination?.total ?? 0;
-        }
+        // Fetch metrics — the single source of truth for all counts
+        const metricsResponse = await fetch("/api/dashboard/metrics", {
+          signal: abortController.signal,
+        });
+        const metricsData = metricsResponse.ok ? await metricsResponse.json() : null;
 
-        // Fetch metrics
-        const metricsData = await dashboardService.getMetrics();
-
-        if (isMounted) {
-          setUserCount(userCountValue);
+        if (!abortController.signal.aborted) {
           setMetrics(metricsData);
           setLoading(false);
-          setMetricsLoading(false);
         }
       } catch (err) {
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           console.error("Failed to fetch dashboard data:", err);
           setError(err instanceof Error ? err.message : "Failed to fetch dashboard data");
           setLoading(false);
-          setMetricsLoading(false);
         }
       }
     }
 
     // Set up real-time updates
-    const unsubscribe = dashboardService.subscribeToUpdates(
-      (update) => {
-        if (!isMounted) return;
+    const subscriptionId = Math.random().toString(36).substr(2, 9);
+    realtimeDashboardService.subscribe(subscriptionId, ["metrics", "stats"] as DashboardResource[]);
+    const unsubscribe = () => {
+      realtimeDashboardService.unsubscribe(subscriptionId, ["metrics", "stats"] as any[]);
+    };
 
-        // Handle different types of updates
-        if (update.resource === "metrics") {
-          setMetrics((prev: DashboardMetrics | null) => ({
-            ...prev,
-            ...(update.data as DashboardMetrics),
-          }));
-        } else if (update.resource === "stats" && update.action === "update") {
-          // Handle specific stat updates
-          if (update.data.userCount !== undefined) {
-            setUserCount(update.data.userCount);
-          }
-          if (update.data.totalRevenue !== undefined) {
-            setMetrics((prev: DashboardMetrics | null) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                totalRevenue: update.data.totalRevenue,
-              };
-            });
-          }
-        }
-      },
-      ["metrics", "stats"],
-    );
-
-    // Initial fetch
-    if (!initialUserCount) {
-      fetchInitialData();
-    }
+    fetchMetrics();
 
     // Cleanup
     return () => {
-      isMounted = false;
+      abortController.abort();
       unsubscribe();
     };
-  }, [initialUserCount]);
+  }, []);
 
   // If we have an error, show it
   if (error) {
     return (
-      <Tabs orientation="vertical" defaultValue="overview" className="space-y-4">
-        <div className="w-full overflow-x-auto pb-2">
-          <TabsList>
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400"
-            >
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" disabled>
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="notifications" disabled>
-              Notifications
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <DashboardTabs value="overview" onValueChange={() => {}}>
         <TabsContent value="overview" className="space-y-4">
           <div className="text-center text-muted-foreground py-12">
             Failed to load dashboard data: {error}
@@ -547,36 +491,14 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
         <TabsContent value="analytics" className="space-y-4">
           <Analytics />
         </TabsContent>
-      </Tabs>
+      </DashboardTabs>
     );
   }
 
   // If loading, show skeletons
-  if (loading || metricsLoading) {
+  if (loading) {
     return (
-      <Tabs orientation="vertical" defaultValue="overview" className="space-y-4">
-        <div className="w-full overflow-x-auto pb-2">
-          <TabsList>
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400"
-            >
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" disabled>
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="notifications" disabled>
-              Notifications
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <DashboardTabs value="overview" onValueChange={() => {}}>
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card className="h-full border-l-4 border-l-purple-500">
@@ -605,14 +527,10 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 ) : (
                   <>
                     <div className="text-2xl font-bold">
-                      <AnimatedNumber
-                        value={userCount}
-                        format={(n) => `+${n.toLocaleString()}`}
-                        enterDelay={100}
-                      />
+                      <AnimatedNumber value={metrics?.totalUsers ?? 0} />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      +{(metrics?.salesGrowth ?? 0).toFixed(1)}% from last month
+                      +{(metrics?.userGrowth ?? 0).toFixed(1)}% active rate
                     </p>
                   </>
                 )}
@@ -637,7 +555,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 </div>
               </CardHeader>
               <CardContent>
-                {metricsLoading ? (
+                {loading ? (
                   <Skeleton className="h-9 w-20" />
                 ) : (
                   <div className="text-2xl font-bold">
@@ -666,7 +584,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 </div>
               </CardHeader>
               <CardContent>
-                {metricsLoading ? (
+                {loading ? (
                   <Skeleton className="h-9 w-20" />
                 ) : (
                   <div className="text-2xl font-bold">
@@ -695,7 +613,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 </div>
               </CardHeader>
               <CardContent>
-                {metricsLoading ? (
+                {loading ? (
                   <Skeleton className="h-9 w-20" />
                 ) : (
                   <div className="text-2xl font-bold">
@@ -723,14 +641,14 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 </div>
               </CardHeader>
               <CardContent>
-                {metricsLoading ? (
+                {loading ? (
                   <Skeleton className="h-9 w-20" />
                 ) : (
                   <>
                     <div className="text-2xl font-bold">
                       <AnimatedNumber
                         value={metrics?.activeNow ?? 0}
-                        format={(n) => `+${n.toLocaleString()}`}
+                        format={(n) => `${n.toLocaleString()}`}
                         enterDelay={300}
                       />
                     </div>
@@ -745,15 +663,15 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
             <Card className="col-span-1 lg:col-span-4 bg-gradient-to-br from-purple-50/60 to-background dark:from-purple-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Overview</CardTitle>
+                <CardTitle>Monthly Users</CardTitle>
               </CardHeader>
               <CardContent className="ps-2">
-                <Overview />
+                <MonthlyUsersOverview />
               </CardContent>
             </Card>
             <Card className="col-span-1 lg:col-span-3 bg-gradient-to-br from-emerald-50/60 to-background dark:from-emerald-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Recent Users</CardTitle>
+                <CardTitle>Recent Users (Max {RECENT_USERS_COUNT})</CardTitle>
                 <CardDescription>
                   You made {metrics?.usersThisMonth?.toLocaleString() ?? 0} users this month.
                 </CardDescription>
@@ -767,30 +685,13 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
         <TabsContent value="analytics" className="space-y-4">
           <Analytics />
         </TabsContent>
-      </Tabs>
+      </DashboardTabs>
     );
   }
 
   // Display the actual data
   return (
-    <Tabs
-      orientation="vertical"
-      value={fullDashTab}
-      onValueChange={setFullDashTab}
-      className="space-y-4"
-    >
-      <div className="w-full overflow-x-auto pb-2">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports" disabled>
-            Reports
-          </TabsTrigger>
-          <TabsTrigger value="notifications" disabled>
-            Notifications
-          </TabsTrigger>
-        </TabsList>
-      </div>
+    <DashboardTabs value={fullDashTab} onValueChange={setFullDashTab}>
       <TabsContent key={`overview-${fullDashTab}`} value="overview" className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <motion.div
@@ -821,14 +722,10 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  <AnimatedNumber
-                    value={userCount}
-                    format={(n) => `+${n.toLocaleString()}`}
-                    enterDelay={100}
-                  />
+                  <AnimatedNumber value={metrics?.totalUsers ?? 0} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics?.userGrowth ?? 0}% from last month
+                  +{metrics?.userGrowth ?? 0}% from last month
                 </p>
               </CardContent>
             </Card>
@@ -956,7 +853,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
                 <div className="text-2xl font-bold">
                   <AnimatedNumber
                     value={metrics?.activeNow ?? 0}
-                    format={(n) => `+${n.toLocaleString()}`}
+                    format={(n) => `${n.toLocaleString()}`}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -975,10 +872,10 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
           >
             <Card className="col-span-1 lg:col-span-4 bg-gradient-to-br from-purple-50/60 to-background dark:from-purple-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Overview</CardTitle>
+                <CardTitle>Monthly Users</CardTitle>
               </CardHeader>
               <CardContent className="ps-2">
-                <Overview />
+                <MonthlyUsersOverview />
               </CardContent>
             </Card>
           </motion.div>
@@ -990,7 +887,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
           >
             <Card className="col-span-1 lg:col-span-3 bg-gradient-to-br from-emerald-50/60 to-background dark:from-emerald-950/20 dark:to-background">
               <CardHeader>
-                <CardTitle>Recent Users</CardTitle>
+                <CardTitle>Recent Users (Max {RECENT_USERS_COUNT})</CardTitle>
                 <CardDescription>
                   You made {metrics?.usersThisMonth?.toLocaleString() ?? 0} users this month.
                 </CardDescription>
@@ -1005,7 +902,7 @@ export function FullDashboard({ userCount: initialUserCount = 0 }: RoleBasedDash
       <TabsContent key={`analytics-${fullDashTab}`} value="analytics" className="space-y-4">
         <Analytics />
       </TabsContent>
-    </Tabs>
+    </DashboardTabs>
   );
 }
 
@@ -1026,7 +923,82 @@ export function AnalyticsDashboard(_props: RoleBasedDashboardProps) {
  * Returns the appropriate dashboard component based on user role.
  */
 export function RoleBasedDashboard(props: RoleBasedDashboardProps) {
-  const { dashboardView } = usePermission();
+  const { dashboardView, isPending } = usePermission();
+
+  // Show full-page skeleton while session/role is being resolved to prevent
+  // a flash of the wrong dashboard view (e.g., user dashboard before admin)
+  if (isPending) {
+    return (
+      <>
+        <Header>
+          <div className="ms-auto flex items-center space-x-4">
+            <Search />
+            <ThemeSwitch />
+            <ConfigDrawer />
+            <ProfileDropdown />
+          </div>
+        </Header>
+        <Main>
+          <div className="space-y-4">
+            {/* Skeleton tabs */}
+            <div className="w-full overflow-x-auto pb-2">
+              <div className="flex gap-2">
+                <Skeleton className="h-9 w-24 rounded-md" />
+                <Skeleton className="h-9 w-24 rounded-md" />
+                <Skeleton className="h-9 w-24 rounded-md" />
+                <Skeleton className="h-9 w-24 rounded-md" />
+              </div>
+            </div>
+            {/* Skeleton metric cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Card key={i} className="h-full">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="mb-2 h-9 w-20" />
+                    <Skeleton className="h-3 w-28" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            {/* Skeleton overview + recent users row */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
+              <Card className="col-span-1 lg:col-span-4">
+                <CardHeader>
+                  <Skeleton className="h-5 w-20" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-48 w-full" />
+                </CardContent>
+              </Card>
+              <Card className="col-span-1 lg:col-span-3">
+                <CardHeader>
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="mt-1 h-3 w-40" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <div key={j} className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="flex-1 space-y-1">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </Main>
+      </>
+    );
+  }
 
   const DashboardComponent = (() => {
     switch (dashboardView) {
@@ -1039,8 +1011,13 @@ export function RoleBasedDashboard(props: RoleBasedDashboardProps) {
       case "analytics":
         return AnalyticsDashboard;
       case "basic":
-      default:
         return BasicDashboard;
+      default:
+        return () => (
+          <div className="text-center text-muted-foreground py-12">
+            No dashboard view available for your role.
+          </div>
+        );
     }
   })();
 

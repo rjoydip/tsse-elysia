@@ -181,8 +181,8 @@ export const roleDashboardView: Record<UserRole, DashboardView> = {
  * @param role - User role
  * @returns Dashboard view type
  */
-export function getDashboardView(role: UserRole): DashboardView {
-  return roleDashboardView[role] || "basic";
+export function getDashboardView(role: UserRole): DashboardView | null {
+  return roleDashboardView[role] || null;
 }
 
 /**

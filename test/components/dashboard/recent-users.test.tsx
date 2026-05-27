@@ -6,6 +6,7 @@
 import { describe, expect, it, vi, beforeEach } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { RecentUsers } from "../../../src/features/dashboard/components/recent-users";
+import { RECENT_USERS_COUNT } from "~/config";
 
 // Track mock state so we can test each scenario
 let mockRecentUsers: any[] = [];
@@ -27,14 +28,14 @@ describe("RecentUsers", () => {
     mockError = null;
   });
 
-  it("should show loading state with 5 skeleton rows", () => {
+  it(`should show loading state with ${RECENT_USERS_COUNT} skeleton rows`, () => {
     const html = renderToString(<RecentUsers />);
-    // Loading state renders 5 placeholder UserRows
+    // Loading state renders ${RECENT_USERS_COUNT} placeholder UserRows
     expect(html).toContain("Loading...");
     expect(html).toContain("loading@example.com");
-    // Should have 5 skeleton entries
+    // Should have ${RECENT_USERS_COUNT} skeleton entries
     const matches = html.match(/Loading\.\.\./g);
-    expect(matches).toHaveLength(5);
+    expect(matches).toHaveLength(RECENT_USERS_COUNT);
   });
 
   it("should show error state when fetch fails", () => {

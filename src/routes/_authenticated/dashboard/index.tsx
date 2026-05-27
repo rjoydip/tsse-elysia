@@ -1,10 +1,12 @@
 /**
  * Dashboard Route
  * Protected route that loads dashboard data and renders role-based view.
+ * Total Users count is fetched client-side from /api/dashboard/metrics,
+ * which returns the true total without role-based filtering.
  */
 
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { BASE_URL, APP_NAME } from "~/config";
+import { APP_NAME } from "~/config";
 import { RoleBasedDashboard } from "~/features/dashboard/components/role-based-views";
 
 interface DashboardLoaderData {
@@ -12,17 +14,12 @@ interface DashboardLoaderData {
 }
 
 async function dashboardLoader(): Promise<DashboardLoaderData> {
-  try {
-    const response = await fetch(`${BASE_URL}/api/users?limit=1`);
-    if (!response.ok) {
-      return { userCount: 0 };
-    }
-    const data = (await response.json()) as { pagination: { total: number } };
-    return { userCount: data.pagination?.total || 0 };
-  } catch (error) {
-    console.error("Failed to load dashboard data:", error);
-    return { userCount: 0 };
-  }
+  // Total Users is fetched client-side via /api/dashboard/metrics
+  // which requires only a valid session — no admin role needed.
+  // The SSR loader no longer fetches /api/users?limit=1 because that
+  // endpoint applies role hierarchy filtering, excluding admins/superadmins
+  // from the count.
+  return { userCount: 0 };
 }
 
 const route = getRouteApi("/_authenticated/dashboard/");

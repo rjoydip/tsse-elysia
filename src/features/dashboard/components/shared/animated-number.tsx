@@ -5,7 +5,7 @@
  * Forces an initial 0→value animation on mount so the transition is always visible.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, type Transition } from "motion/react";
 
 /** Animation presets for number transitions. */
@@ -41,19 +41,12 @@ export function AnimatedNumber({
 }: AnimatedNumberProps) {
   // Force initial render with 0 so AnimatePresence always has a visible transition
   const [displayValue, setDisplayValue] = useState(0);
-  const prevRaw = useRef(raw);
-  const hasMounted = useRef(false);
 
   useEffect(() => {
-    // On mount, always animate 0 → raw. On subsequent updates, skip if value hasn't changed.
-    if (hasMounted.current && raw === prevRaw.current) {
-      return;
-    }
-
-    hasMounted.current = true;
-    prevRaw.current = raw;
-
-    // Delay the RAF to align with parent card entrance animations
+    // Animate from 0 → raw whenever the value changes (or on mount).
+    // No hasMounted guard: under React StrictMode, the ref would persist across
+    // double-mount, causing the effect to bail on the second mount and leaving
+    // displayValue stuck at 0.
     let raf: number | null = null;
 
     const timer = setTimeout(() => {
@@ -68,8 +61,6 @@ export function AnimatedNumber({
         cancelAnimationFrame(raf);
       }
     };
-    // We only want this to re-fire when raw changes (enterDelay is fixed per usage)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raw, enterDelay]);
 
   // Resolve the transition config from preset or custom; default is bounce

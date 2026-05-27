@@ -115,7 +115,7 @@ export class ProfileRepository implements IProfileRepository {
     // First check if profile exists
     const findResult = await this.findProfileByUserId(userId);
     if (Result.isError(findResult)) {
-      return findResult; // Propagate NotFoundError or DatabaseError
+      return Result.err(findResult.error);
     }
 
     return Result.tryPromise({

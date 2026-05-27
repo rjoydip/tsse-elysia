@@ -457,7 +457,7 @@ function createStorageInstance(): Storage | null {
       case "postgres": {
         const db0 = createDatabase(
           postgresql({
-            url: env.POSTGRES_URL,
+            url: env.POSTGRES_URL ?? "",
           }),
         );
         storageInstance = createStorage({
@@ -481,6 +481,8 @@ function createStorageInstance(): Storage | null {
     }
 
     storage = storageInstance;
+    // Persist across Vite HMR cycles
+    (globalThis as unknown as Record<string, Storage | null>)[STORAGE_GLOBAL_KEY] = storageInstance;
     cacheLogger.info(`Storage initialized with ${config.backend} backend`);
     return storageInstance;
   } catch (error) {
@@ -492,15 +494,31 @@ function createStorageInstance(): Storage | null {
 }
 
 /**
+ * Key used to persist the storage instance across Vite HMR cycles
+ * where module-level state is reset on every file save.
+ */
+const STORAGE_GLOBAL_KEY = "___tsse_elysia_storage_instance";
+
+/**
  * Returns the storage singleton.
  * Creates the storage on first call (lazy initialization).
  *
+ * Uses a globalThis reference to survive Vite HMR module reloads.
  * Returns null if no storage backend is configured, allowing the app
  * to run gracefully without storage.
  *
  * @returns Storage instance or null if unavailable
  */
 export function getStorage(): Storage | null {
+  // Check globalThis first to survive HMR module re-evaluation
+  const globalStorage = (globalThis as unknown as Record<string, Storage | null>)[
+    STORAGE_GLOBAL_KEY
+  ];
+  if (globalStorage) {
+    storage = globalStorage;
+    return storage;
+  }
+
   if (!initialized) {
     createStorageInstance();
   }
@@ -596,8 +614,9 @@ export async function getStorageStatus(): Promise<StorageStatus> {
 export function closeStorage(): void {
   if (storage) {
     cacheLogger.info(`Closing ${cacheType} storage`);
-    // Clear the storage instance
+    // Clear the storage instance and HMR persistence key
     storage = null;
+    delete (globalThis as Record<string, unknown>)[STORAGE_GLOBAL_KEY];
     initialized = false;
     cacheType = null;
   }

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { apiRoutes } from "~/routes/api/$";
+import { apiRoutes } from "~/routes/api/-app";
 
 const baseUrl = "http://localhost";
 

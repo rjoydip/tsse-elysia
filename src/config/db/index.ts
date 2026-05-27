@@ -16,9 +16,8 @@
  */
 
 import { createClient, type Client } from "@libsql/client";
-import { Pool } from "pg";
+import type { Pool } from "pg";
 import { drizzle as drizzleLibsql } from "drizzle-orm/libsql";
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import * as schema from "~/lib/db/schema";
 import { env } from "~/config/env";
 import { isCI, isDev, isStage, isQA, isProduction } from "~/config";
@@ -138,15 +137,22 @@ function createSQLiteConnection(): {
  *
  * @returns PostgreSQL pools and Drizzle ORM instances
  */
-function createPostgresConnection(): {
+async function createPostgresConnection(): Promise<{
   pgPoolPrimary: Pool;
   pgPoolsReplicas: Pool[];
   db: typeof db;
-} {
+}> {
   const connectionString = env.POSTGRES_URL || buildPostgresConnectionString();
 
+  /**
+   * Dynamically import `pg` Pool only on the server side.
+   * Static import at the top-level would cause Vite to bundle `pg`
+   * into the client bundle, which fails because `pg` is a Node.js module.
+   */
+  const { Pool: PgPool } = await import("pg");
+
   // Primary (write) pool
-  pgPoolPrimary = new Pool({
+  pgPoolPrimary = new PgPool({
     connectionString,
     max: 20,
     idleTimeoutMillis: 30000,
@@ -156,13 +162,16 @@ function createPostgresConnection(): {
   // Dynamic read replicas from POSTGRES_REPLICAS env var (JSON array)
   const replicaUrls: string[] = env.POSTGRES_REPLICAS || [];
   pgPoolsReplicas = replicaUrls.map((url: string) => {
-    return new Pool({
+    return new PgPool({
       connectionString: url,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     });
   });
+
+  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
+  const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
   // Primary (write) Drizzle instance
   db = drizzlePg(pgPoolPrimary, {
@@ -204,7 +213,7 @@ export function getWriteDb() {
  *
  * @returns A read Drizzle ORM instance (from replica or primary)
  */
-export function getReadDb() {
+export async function getReadDb() {
   // No replicas configured, use primary
   if (pgPoolsReplicas.length === 0) {
     return db;
@@ -214,6 +223,9 @@ export function getReadDb() {
   const index = replicaRoundRobinIndex % pgPoolsReplicas.length;
   replicaRoundRobinIndex++;
   const selectedPool = pgPoolsReplicas[index];
+
+  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
+  const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
   return drizzlePg(selectedPool, {
     schema,
@@ -280,7 +292,7 @@ export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
  *
  * @returns The initialized Drizzle ORM instance
  */
-export function initializeDatabase() {
+export async function initializeDatabase() {
   if (db) return db; // Return existing instance if already initialized
 
   const dbType = getDatabaseType();
@@ -294,7 +306,7 @@ export function initializeDatabase() {
   switch (dbType) {
     case "postgres":
       dbLogger.log("[DB] Using PostgreSQL");
-      createPostgresConnection();
+      await createPostgresConnection();
       break;
     case "sqlite":
     default:
@@ -305,9 +317,38 @@ export function initializeDatabase() {
   return db;
 }
 
-// Initialize database on module load (server-side only)
+// Initialize database on module load (server-side only).
+// Top-level await ensures db is initialized before any dependent module resolves.
+// Uses a globalThis key to persist the db instance across Vite HMR cycles
+// where module-level state is reset on every file save.
+const DB_INIT_KEY = "___tsse_elysia_db_init";
+const DB_INSTANCE_KEY = "___tsse_elysia_db_instance";
+const DB_SQLITE_KEY = "___tsse_elysia_sqlite_client";
+const DB_PG_PRIMARY_KEY = "___tsse_elysia_pg_primary";
+const DB_PG_REPLICAS_KEY = "___tsse_elysia_pg_replicas";
+
 if (typeof window === "undefined") {
-  initializeDatabase();
+  const globalStore = globalThis as Record<string, unknown>;
+
+  // Restore persisted instances after HMR module re-evaluation
+  if (globalStore[DB_INSTANCE_KEY]) {
+    db = globalStore[DB_INSTANCE_KEY] as typeof db;
+    sqliteClient = globalStore[DB_SQLITE_KEY] as typeof sqliteClient;
+    pgPoolPrimary = globalStore[DB_PG_PRIMARY_KEY] as typeof pgPoolPrimary;
+    pgPoolsReplicas = globalStore[DB_PG_REPLICAS_KEY] as typeof pgPoolsReplicas;
+  }
+
+  // Initialize only once per process
+  if (!globalStore[DB_INIT_KEY]) {
+    globalStore[DB_INIT_KEY] = true;
+    await initializeDatabase();
+
+    // Persist instances to survive HMR
+    globalStore[DB_INSTANCE_KEY] = db;
+    globalStore[DB_SQLITE_KEY] = sqliteClient;
+    globalStore[DB_PG_PRIMARY_KEY] = pgPoolPrimary;
+    globalStore[DB_PG_REPLICAS_KEY] = pgPoolsReplicas;
+  }
 }
 
 // Export for use in other modules (auth, migrations, etc.)

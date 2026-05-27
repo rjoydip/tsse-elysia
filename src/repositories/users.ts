@@ -3,7 +3,7 @@
  * Handles all ORM (Drizzle) operations for user data.
  */
 
-import { eq, like, and, or, desc, sql, count } from "drizzle-orm";
+import { eq, ne, like, and, or, desc, sql, count, inArray } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
 import type { DbType } from "~/config/db";
@@ -13,8 +13,12 @@ import type { DbType } from "~/config/db";
  */
 export interface UserFilters {
   role?: string;
+  /** Array of roles for IN-based filtering (e.g., hierarchy-based visibility) */
+  roles?: string[];
   status?: string;
   search?: string;
+  /** Exclude a specific user ID (e.g., the currently logged-in user) */
+  excludeId?: string;
 }
 
 /**
@@ -29,13 +33,23 @@ export interface PaginationOptions {
  * User repository for user management database operations.
  */
 export class UserRepository {
-  private db: DbType;
+  private db: DbType | undefined;
 
   /**
    * Creates a new UserRepository instance.
    */
   constructor(db?: DbType) {
-    this.db = db ?? defaultDb;
+    // Capture db at construction time for DI/testing, but fall back to live binding
+    this.db = db;
+  }
+
+  /**
+   * Returns the database instance, using the live binding from the db module.
+   * This ensures that even if db is initialized asynchronously after this
+   * repository is constructed, method calls will still get the initialized db.
+   */
+  private getDb(): DbType {
+    return this.db ?? defaultDb;
   }
 
   /**
@@ -48,12 +62,16 @@ export class UserRepository {
     const limit = pagination?.limit ?? 50;
     const offset = pagination?.offset ?? 0;
 
-    let query = this.db.select().from(users);
+    let query = this.getDb().select().from(users);
 
     const conditions = [];
 
     if (filters?.role) {
       conditions.push(eq(users.role, filters.role));
+    }
+
+    if (filters?.roles && filters.roles.length > 0) {
+      conditions.push(inArray(users.role, filters.roles));
     }
 
     if (filters?.status) {
@@ -71,6 +89,10 @@ export class UserRepository {
       );
     }
 
+    if (filters?.excludeId) {
+      conditions.push(ne(users.id, filters.excludeId));
+    }
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
@@ -84,7 +106,7 @@ export class UserRepository {
    * Finds a user by ID.
    */
   async findById(id: string): Promise<typeof users.$inferSelect | null> {
-    const results = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    const results = await this.getDb().select().from(users).where(eq(users.id, id)).limit(1);
     return results[0] ?? null;
   }
 
@@ -92,17 +114,36 @@ export class UserRepository {
    * Finds a user by email.
    */
   async findByEmail(email: string): Promise<typeof users.$inferSelect | null> {
-    const results = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
+    const results = await this.getDb().select().from(users).where(eq(users.email, email)).limit(1);
     return results[0] ?? null;
   }
 
   /**
    * Counts total users using SQL COUNT aggregate.
-   * Note: Drizzle's { count: users.id } translates to SQL COUNT(users.id) internally.
-   * This is the most efficient approach available in Drizzle ORM.
+   * Supports optional filters (e.g., role array, excludeId) for pagination accuracy.
    */
-  async count(): Promise<number> {
-    const [result] = await this.db.select({ count: count() }).from(users);
+  async count(filters?: UserFilters): Promise<number> {
+    let query = this.getDb().select({ count: count() }).from(users);
+
+    const conditions = [];
+
+    if (filters?.roles && filters.roles.length > 0) {
+      conditions.push(inArray(users.role, filters.roles));
+    }
+
+    if (filters?.excludeId) {
+      conditions.push(ne(users.id, filters.excludeId));
+    }
+
+    if (filters?.status) {
+      conditions.push(eq(users.status, filters.status));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const [result] = await query;
     return result?.count ?? 0;
   }
 
@@ -112,7 +153,7 @@ export class UserRepository {
    * @returns Count of users with the specified status
    */
   async countByStatus(status: string): Promise<number> {
-    const [result] = await this.db
+    const [result] = await this.getDb()
       .select({ count: count() })
       .from(users)
       .where(eq(users.status, status));
@@ -125,7 +166,7 @@ export class UserRepository {
    * @returns Count of users with the specified role
    */
   async countByRole(role: string): Promise<number> {
-    const [result] = await this.db
+    const [result] = await this.getDb()
       .select({ count: count() })
       .from(users)
       .where(eq(users.role, role));
@@ -138,37 +179,63 @@ export class UserRepository {
    */
   async countUsersThisMonth(): Promise<number> {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const [result] = await this.db
+    // Use UTC to avoid timezone issues
+    // Timestamps are stored as milliseconds, so no conversion needed
+    const monthStart = Date.UTC(now.getFullYear(), now.getMonth(), 1);
+    // Calculate start of next month for upper bound
+    const nextMonthStart = Date.UTC(now.getFullYear(), now.getMonth() + 1, 1);
+    const [result] = await this.getDb()
       .select({ count: count() })
       .from(users)
-      .where(sql`${users.createdAt} >= ${monthStart}`);
+      .where(sql`${users.createdAt} >= ${monthStart} AND ${users.createdAt} < ${nextMonthStart}`);
     return result?.count ?? 0;
   }
 
   /**
    * Retrieves the most recently created users.
    * @param limit - Maximum number of users to return (default: 10)
+   * @param role - Optional role filter (e.g., "user" to show only regular users)
    * @returns Array of recent user records
    */
-  async findRecent(limit: number = 10): Promise<(typeof users.$inferSelect)[]> {
-    return this.db.select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+  async findRecent(limit: number = 10, role?: string): Promise<(typeof users.$inferSelect)[]> {
+    let query = this.getDb().select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+
+    if (role) {
+      query = query.where(eq(users.role, role));
+    }
+
+    return query;
   }
 
   /**
    * Finds users created since a given timestamp.
    * Uses DB-level filtering instead of fetching all and filtering in-memory.
+   * Timestamps are stored as milliseconds since epoch.
    */
   async findRecentSince(
     since: number,
     limit: number = 100,
   ): Promise<(typeof users.$inferSelect)[]> {
-    return this.db
+    // Both the stored timestamps and the 'since' parameter are in milliseconds
+    return this.getDb()
       .select()
       .from(users)
       .where(sql`${users.createdAt} >= ${since}`)
       .orderBy(desc(users.createdAt))
       .limit(limit);
+  }
+
+  /**
+   * Counts users updated in the last hour.
+   * @returns Count of users updated in the last hour
+   */
+  async countUsersUpdatedLastHour(): Promise<number> {
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const [result] = await this.getDb()
+      .select({ count: count() })
+      .from(users)
+      .where(sql`${users.updatedAt} >= ${oneHourAgo}`);
+    return result?.count ?? 0;
   }
 
   /**
@@ -193,19 +260,18 @@ export class UserRepository {
       "Dec",
     ];
 
-    const yearStart = new Date(year, 0, 1).getTime();
-    const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
+    const yearStart = Date.UTC(year, 0, 1);
+    const yearEnd = Date.UTC(year, 11, 31, 23, 59, 59);
 
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
-        month:
-          sql`CAST(strftime('%m', ${users.createdAt} / 1000, 'unixepoch') AS INTEGER)`.as<number>(),
+        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
         count: sql`COUNT(*)`.as<number>(),
       })
       .from(users)
       .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`);
+      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
 
     const monthMap = new Map<number, number>();
     for (const row of rows) {
@@ -241,19 +307,19 @@ export class UserRepository {
     ];
 
     const currentYear = new Date().getFullYear();
-    const yearStart = new Date(currentYear, 0, 1).getTime();
-    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59).getTime();
+    const yearStart = Date.UTC(currentYear, 0, 1);
+    const yearEnd = Date.UTC(currentYear, 11, 31, 23, 59, 59);
 
-    const rows = await this.db
+    const rows = await this.getDb()
       .select({
         month:
-          sql`CAST(strftime('%m', ${users.createdAt} / 1000, 'unixepoch') AS INTEGER)`.as<number>(),
+          sql`CAST(strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch') AS INTEGER)`.as<number>(),
         count: sql`COUNT(*)`.as<number>(),
       })
       .from(users)
       .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000, 'unixepoch')`);
+      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`);
 
     const monthMap = new Map<number, number>();
     for (const row of rows) {
@@ -271,7 +337,7 @@ export class UserRepository {
    * @returns Array of role names with user counts
    */
   async getUsersGroupedByRole(): Promise<Array<{ name: string; value: number }>> {
-    const rows: Array<{ name: string | null; value: number }> = await this.db
+    const rows: Array<{ name: string | null; value: number }> = await this.getDb()
       .select({
         name: users.role,
         value: sql`COUNT(*)`.as<number>(),
@@ -291,7 +357,7 @@ export class UserRepository {
    * @returns Array of status names with user counts
    */
   async getUsersGroupedByStatus(): Promise<Array<{ name: string; value: number }>> {
-    const rows: Array<{ name: string | null; value: number }> = await this.db
+    const rows: Array<{ name: string | null; value: number }> = await this.getDb()
       .select({
         name: users.status,
         value: sql`COUNT(*)`.as<number>(),
@@ -310,7 +376,7 @@ export class UserRepository {
    * Updates a user by ID.
    */
   async update(id: string, data: Partial<typeof users.$inferInsert>): Promise<void> {
-    await this.db.update(users).set(data).where(eq(users.id, id));
+    await this.getDb().update(users).set(data).where(eq(users.id, id));
   }
 }
 

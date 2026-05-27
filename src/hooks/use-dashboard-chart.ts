@@ -1,10 +1,12 @@
 /**
  * Hook for fetching dashboard chart data.
  * Provides loading states and error handling for monthly user registration chart data.
+ *
+ * Uses AbortController to cancel in-flight requests on unmount,
+ * preventing duplicate requests under React StrictMode.
  */
 
 import { useEffect, useState } from "react";
-import { dashboardService } from "~/services/dashboard";
 import type { MonthlyRegistrationsItem, YearlyComparisonItem } from "~/repositories/dashboard";
 
 export function useDashboardChartData() {
@@ -14,26 +16,37 @@ export function useDashboardChartData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    const abortController = new AbortController();
 
     const fetchChartData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch both datasets in parallel
-        const [monthly, yearly] = await Promise.all([
-          dashboardService.getMonthlyRegistrations(),
-          dashboardService.getYearlyRegistrationsComparison(),
+        const [monthlyRes, yearlyRes] = await Promise.all([
+          fetch("/api/dashboard/overview-chart/monthly-sales", {
+            signal: abortController.signal,
+          }),
+          fetch("/api/dashboard/overview-chart/yearly-comparison", {
+            signal: abortController.signal,
+          }),
         ]);
 
-        if (isMounted) {
-          setMonthlyData(monthly);
-          setYearlyData(yearly);
+        if (abortController.signal.aborted) return;
+
+        if (!monthlyRes.ok || !yearlyRes.ok) {
+          throw new Error("Failed to fetch chart data");
+        }
+
+        const [monthlyJson, yearlyJson] = await Promise.all([monthlyRes.json(), yearlyRes.json()]);
+
+        if (!abortController.signal.aborted) {
+          setMonthlyData(monthlyJson.monthlyData ?? []);
+          setYearlyData(yearlyJson.yearlyData ?? []);
           setLoading(false);
         }
       } catch (err) {
-        if (isMounted) {
+        if (!abortController.signal.aborted) {
           setError(err instanceof Error ? err.message : "Failed to fetch dashboard chart data");
           setLoading(false);
         }
@@ -42,9 +55,8 @@ export function useDashboardChartData() {
 
     fetchChartData();
 
-    // Cleanup function
     return () => {
-      isMounted = false;
+      abortController.abort();
     };
   }, []);
 

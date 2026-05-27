@@ -73,7 +73,7 @@ export const sidebarData: SidebarData = {
         {
           title: "Chats",
           url: "/dashboard/chats",
-          badge: "3",
+          badge: "0",
           icon: MessagesSquare,
           roles: ["superadmin", "admin", "manager"],
           disabled: true,

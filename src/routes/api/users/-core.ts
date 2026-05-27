@@ -11,6 +11,19 @@ import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 const VALID_ROLES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
 const ADMIN_ROLES = ["superadmin", "admin"] as const;
 
+/**
+ * Role hierarchy for visibility.
+ * Higher roles can see users with roles below them.
+ * E.g., superadmin sees admin/manager/cashier/user; admin sees manager/cashier/user.
+ */
+const ROLE_HIERARCHY: Record<string, string[]> = {
+  superadmin: ["admin", "manager", "cashier", "user"],
+  admin: ["manager", "cashier", "user"],
+  manager: ["cashier", "user"],
+  cashier: ["user"],
+  user: [],
+};
+
 interface AuthValidationResult {
   error?: { status: number; message: string };
   userId?: string;
@@ -124,17 +137,36 @@ export const usersRoutes = new Elysia({
       const statusFilter = searchParams.get("status") as UserStatus | null;
       const search = searchParams.get("search") ?? undefined;
 
-      const filters = {
-        ...(roleFilter && { role: roleFilter }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(search && { search }),
-      };
+      // Apply role hierarchy: higher roles can only see users with roles below them
+      const visibleRoles = ROLE_HIERARCHY[authResult.userRole ?? "user"] ?? [];
+
+      // If user supplies a role filter, intersect it with the visible roles
+      const allowedRoles = roleFilter ? visibleRoles.filter((r) => r === roleFilter) : visibleRoles;
+
+      const filters: Record<string, unknown> = {};
+
+      if (allowedRoles.length > 0) {
+        filters.roles = allowedRoles;
+      }
+
+      // Exclude the logged-in user from the list
+      filters.excludeId = authResult.userId;
+
+      if (statusFilter) {
+        filters.status = statusFilter;
+      }
+
+      if (search) {
+        filters.search = search;
+      }
 
       const result = await userRepository.findAll(
-        Object.keys(filters).length > 0 ? filters : undefined,
+        filters as Parameters<typeof userRepository.findAll>[0],
         { limit, offset },
       );
-      const total = await userRepository.count();
+      const total = await userRepository.count(
+        filters as Parameters<typeof userRepository.count>[0],
+      );
 
       return {
         users: result.map((u) => formatUserResponse(u)),

@@ -1257,7 +1257,156 @@ Created multi-stage Dockerfile with 4 stages:
 
 ---
 
-## Rules
+### 036: HMR-safe Database Initialization via globalThis Flags
+
+**Status:** Accepted
+
+**Why:**
+
+- Vite HMR re-evaluates ES module files on every save, causing `initializeDatabase()` to run again (and crash because the database is already initialized or the pool is closed)
+- Module-level `let db`, `let initialized`, `let sqliteClient`, `let pgPoolPrimary`, `let pgPoolsReplicas` all reset to `undefined` on HMR
+- Need persisting initialization state across HMR cycles without preventing legitimate module updates
+
+**Implementation:**
+
+- Used `globalThis` flags to track initialization state:
+  ```typescript
+  if (!(globalThis as any).__DB_INITIALIZED) {
+    await initializeDatabase();
+    (globalThis as any).__DB_INITIALIZED = true;
+  }
+  ```
+- Persisted `db`, `sqliteClient`, `pgPoolPrimary`, `pgPoolsReplicas` on `globalThis` and restored them on re-import:
+  ```typescript
+  let db: DbType = (globalThis as any).__DB;
+  let sqliteClient: Client | null = (globalThis as any).__SQLITE_CLIENT;
+  ```
+- Applied same pattern to cache storage in `src/lib/cache/index.ts`
+
+**Alternatives Considered:**
+
+- `import.meta.hot.data` — more Vite-idiomatic but doesn't work in production builds, and is Vite-specific; `globalThis` works everywhere
+- Top-level `try/catch` around initialization — fragile, doesn't prevent re-execution
+- Singleton module — not compatible with HMR's module replacement semantics
+
+**Tradeoffs:**
+
+- ⚠️ `globalThis` is a global namespace (potential collisions, mitigated by `__DB_` prefix convention)
+- ⚠️ Requires explicit cleanup in tests (`closeStorage()` clears the global key)
+- ✅ Works in both dev (HMR) and production
+- ✅ No external dependencies
+
+---
+
+### 037: Client-Side Dashboard Hooks with fetch() Instead of Direct Service Imports
+
+**Status:** Accepted
+
+**Why:**
+
+- Dashboard hooks (`use-dashboard-metrics`, `use-dashboard-analytics`, etc.) were directly importing `dashboardService` from server-side code
+- `dashboardService` requires `db` — a server-only resource that doesn't exist in the browser
+- Vite bundled these imports into the client bundle, causing runtime crashes on page load (`require is not defined`, `pg is not defined`)
+- Client-side code must never import server-only Node.js modules
+
+**Implementation:**
+
+- Rewrote 5 hooks to use `fetch("/api/dashboard/...")` instead of importing `dashboardService`
+- Each hook manages its own loading/error/data state independently
+- Hooks parse JSON responses and apply the same type transformations as the old service calls
+- Replaced direct Eden Treaty client usage in `role-based-views.tsx` with raw `fetch()` calls
+
+**Alternatives Considered:**
+
+- Dynamic imports with type guarding — complex and fragile
+- Server-only barrel files — adds indirection without solving bundle problem
+- `virtual:module` pattern — over-engineered for this use case
+
+**Tradeoffs:**
+
+- ⚠️ No TypeScript type safety on fetch responses (must manually type or validate at runtime)
+- ⚠️ No Eden Treaty endpoint discovery (URL strings are not checked at compile time)
+- ✅ Zero server code in client bundle
+- ✅ Simple, debuggable network requests
+- ✅ Works with any HTTP framework, not tied to Elysia
+
+---
+
+### 038: Auth Sync Race Fix with Deferred setSession
+
+**Status:** Accepted
+
+**Why:**
+
+- `useAuthSync` hook in `sync.ts` was calling `authActions.setSession(mappedSession)` synchronously when it detected a session cookie
+- `mappedSession` does not include the `role` field — it's a subset of the full user object
+- Immediately after `setSession`, the same hook fetches `/api/users/me` to get the full user object (including `role`)
+- This caused a visible flash: dashboard renders with `role: undefined` → user sees wrong dashboard → role resolves → dashboard re-renders correctly
+- The race condition was exposed by React StrictMode's double-invocation
+
+**Implementation:**
+
+- Moved `authActions.setSession(mappedSession)` inside the `/api/users/me` fetch callback, so the auth store is never written with a user object lacking the `role` array
+- Added `syncedSessionId` ref to deduplicate React StrictMode double-invocations:
+  ```typescript
+  const syncedSessionId = useRef<string | null>(null);
+  if (sessionId && syncedSessionId.current === sessionId) return;
+  syncedSessionId.current = sessionId;
+  ```
+- Updated `usePermission` hook: `isPending` now also returns `true` when the session has a user but the auth store hasn't been updated yet
+
+**Alternatives Considered:**
+
+- Merging role into the session cookie on the server — would require changing the auth library's cookie format
+- Separate `useRole` hook — still has race condition between auth store and role fetch
+- Optimistic role display — complex, error-prone logic for guessing the role
+
+**Tradeoffs:**
+
+- ⚠️ Slightly slower initial dashboard render (waits for two sequential requests)
+- ✅ No dashboard flash — user always sees the correct view on first render
+- ✅ Clean separation: auth store always has complete user data
+
+---
+
+### 039: Production-Aware Database Seeding with Graph Data
+
+**Status:** Accepted
+
+**Why:**
+
+- The seed script generated identical data regardless of environment — 5 static users + fake users every time
+- In production, fake users with generated UUIDs pollute the database and have no real business value
+- The dashboard charts showed flat lines because all fake users had the same `createdAt` timestamp (the current time when `generateFakeUsers()` was called for each batch)
+- Need meaningful chart data in dev without leaking fake data to production
+
+**Implementation:**
+
+- Added `--prod` CLI flag and `NODE_ENV=production` detection to seed script
+- Split seed configuration:
+  - `ESSENTIAL_USERS` (superadmin + admin) — created in all environments
+  - `DEV_USERS` (manager, cashier, user) — created only in dev mode
+- **Graph-friendly timestamps in dev mode**:
+  - 80% of fake users distributed across all 12 months of the current year (each call iteration selects a unique month + day, creating a realistic monthly registration curve)
+  - 20% of fake users distributed across the last 7 days (for the weekly registrations chart)
+- Used `faker.seed()` for deterministic, reproducible output
+- CLI flags: `--fresh` (reset DB), `--count=N` (override fake user count), `--seed=N` (override faker seed), `--prod` (production mode)
+
+**Alternatives Considered:**
+
+- Environment variable `SEED_MODE=production` — works but less discoverable than a CLI flag
+- Separate seed scripts (`db-seed:prod`, `db-seed:dev`) — code duplication
+- Auto-detect by checking if server is running — unreliable and fragile
+
+**Tradeoffs:**
+
+- ⚠️ Two code paths for seeding (more to test)
+- ⚠️ `--prod` flag must be explicitly passed (failsafe: production defaults to safe behavior)
+- ✅ Production database gets only real admin accounts
+- ✅ Charts show meaningful registration curves out of the box
+- ✅ Deterministic seeds for reproducible CI tests
+
+---
 
 ## Rules
 
@@ -1274,7 +1423,7 @@ Add when:
 - Replacing core library
 - Adding new protocol/system (e.g., MCP)
 
-Do NOT add when:
+Do NOT do when:
 
 - Fixing bugs
 - Refactoring code

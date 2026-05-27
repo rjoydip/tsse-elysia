@@ -60,7 +60,7 @@ export interface UsePermissionReturn {
   /** Whether user is a manager or higher */
   isManager: boolean;
   /** User's default dashboard view based on role */
-  dashboardView: DashboardView;
+  dashboardView: DashboardView | null;
   /** Whether loading */
   isPending: boolean;
 }
@@ -82,9 +82,18 @@ export interface UsePermissionReturn {
  */
 export function usePermission(): UsePermissionReturn {
   const authState = useAuthStore();
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending: sessionPending } = useSession();
 
-  const role = getUserRole(authState);
+  // The auth store (populated from cookie) may lag behind the Better Auth
+  // session. If the session has resolved with a user but the store hasn't
+  // been updated yet via authActions.setSession(), keep loading to prevent
+  // a flash of the wrong dashboard (e.g., user/basic dashboard before admin).
+  const storeHasUser = Boolean(authState.user);
+  const sessionHasUser = Boolean(session?.user);
+  const isPending = sessionPending || (sessionHasUser && !storeHasUser);
+
+  // Only resolve the role when both session and store are consistent
+  const role = isPending ? ("user" as UserRole) : getUserRole(authState);
   const isAuthenticated = Boolean(session?.user) || Boolean(authState.user);
 
   return {

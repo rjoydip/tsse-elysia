@@ -49,14 +49,22 @@ export interface INotificationsRepository {
  * Uses Result types for explicit error handling.
  */
 export class NotificationsRepository implements INotificationsRepository {
-  private db: DbType;
+  private db: DbType | undefined;
 
   /**
    * Creates a new NotificationsRepository instance.
    * @param db - Optional database instance (defaults to the global db)
    */
   constructor(db?: DbType) {
-    this.db = db ?? defaultDb;
+    this.db = db;
+  }
+
+  /**
+   * Returns the database instance using the live binding.
+   * This ensures async initialization completes before any method call.
+   */
+  private getDb(): DbType {
+    return this.db ?? defaultDb;
   }
 
   /**
@@ -67,7 +75,7 @@ export class NotificationsRepository implements INotificationsRepository {
   ): Promise<Result<typeof userSettingsNotifications.$inferSelect, DatabaseError | NotFoundError>> {
     const result = await Result.tryPromise({
       try: () =>
-        this.db
+        this.getDb()
           .select()
           .from(userSettingsNotifications)
           .where(eq(userSettingsNotifications.userId, userId))
@@ -77,7 +85,7 @@ export class NotificationsRepository implements INotificationsRepository {
     });
 
     if (Result.isError(result)) {
-      return result;
+      return Result.err(result.error);
     }
 
     const records = result.value as any[];
@@ -107,7 +115,7 @@ export class NotificationsRepository implements INotificationsRepository {
   }): Promise<Result<void, DatabaseError>> {
     return Result.tryPromise({
       try: () =>
-        this.db.insert(userSettingsNotifications).values({
+        this.getDb().insert(userSettingsNotifications).values({
           id: nanoid(),
           userId: data.userId,
           type: data.type,
@@ -142,12 +150,12 @@ export class NotificationsRepository implements INotificationsRepository {
     // First check if notifications settings exist
     const findResult = await this.findNotificationsByUserId(userId);
     if (Result.isError(findResult)) {
-      return findResult; // Propagate NotFoundError or DatabaseError
+      return Result.err(findResult.error);
     }
 
     return Result.tryPromise({
       try: () =>
-        this.db
+        this.getDb()
           .update(userSettingsNotifications)
           .set({
             type: data.type,

@@ -171,7 +171,7 @@ export class McpApiKeyService implements IMcpApiKeyService {
       if (ownerResult.error instanceof NotFoundError) {
         return Result.ok("not_found" as const);
       }
-      return ownerResult; // Propagate DatabaseError
+      return Result.err(ownerResult.error);
     }
 
     // Check ownership
@@ -181,7 +181,7 @@ export class McpApiKeyService implements IMcpApiKeyService {
 
     const revokeResult = await this.revokeApiKey(keyId, userId);
     if (Result.isError(revokeResult)) {
-      return revokeResult; // DatabaseError
+      return Result.err(revokeResult.error);
     }
 
     return Result.ok("revoked" as const);

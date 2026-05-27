@@ -47,16 +47,26 @@ This document lists all available npm scripts in `package.json`.
 
 ## Database
 
-| Script        | Command                                                   | Description                 |
-| ------------- | --------------------------------------------------------- | --------------------------- |
-| `db:generate` | `drizzle-kit generate`                                    | Generate Drizzle migrations |
-| `db:migrate`  | `drizzle-kit migrate`                                     | Run database migrations     |
-| `db:push`     | `drizzle-kit push`                                        | Push schema to database     |
-| `db:studio`   | `drizzle-kit studio`                                      | Open Drizzle Studio         |
-| `db:seed`     | `bun run ./scripts/db-seed.ts`                            | Seed the database           |
-| `db:setup`    | `bun run db:remove && bun run db:push && bun run db:seed` | Full database setup         |
-| `db:reset`    | `bun run db:remove && bun run db:push`                    | Reset database              |
-| `db:remove`   | `bun run ./scripts/remove-db.ts`                          | Remove database             |
+| Script           | Command                                                   | Description                   |
+| ---------------- | --------------------------------------------------------- | ----------------------------- |
+| `db:generate`    | `drizzle-kit generate`                                    | Generate Drizzle migrations   |
+| `db:migrate`     | `drizzle-kit migrate`                                     | Run database migrations       |
+| `db:push`        | `drizzle-kit push`                                        | Push schema to database       |
+| `db:studio`      | `drizzle-kit studio`                                      | Open Drizzle Studio           |
+| `db:seed`        | `bun run ./scripts/db-seed.ts`                            | Seed the database             |
+| `db:seed --prod` | `bun run ./scripts/db-seed.ts --prod`                     | Seed production (admins only) |
+| `db:setup`       | `bun run db:remove && bun run db:push && bun run db:seed` | Full database setup           |
+| `db:reset`       | `bun run db:remove && bun run db:push`                    | Reset database                |
+| `db:remove`      | `bun run ./scripts/remove-db.ts`                          | Remove database               |
+
+**Seed Script Options:**
+
+| Flag        | Default    | Description                                  |
+| ----------- | ---------- | -------------------------------------------- |
+| `--fresh`   | `false`    | Reset database tables before seeding         |
+| `--prod`    | `false`    | Production mode (admins only, no fake users) |
+| `--count=N` | `100`      | Number of fake users (dev mode only)         |
+| `--seed=N`  | `20260409` | Faker seed for deterministic output          |
 
 ---
 

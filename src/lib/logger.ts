@@ -200,9 +200,7 @@ const srptLg = createEvlogLogger({
 export const scriptLogger = {
   section: (title: string) => {
     srptLg.info("scripts", {
-      message: `${colors.bright}${colors.blue}${title}${colors.reset} \n ${
-        colors.blue + "=".repeat(title.length) + colors.reset
-      }`,
+      message: `${colors.blue}${colors.blue}${title}${colors.reset}`,
     });
   },
   step: (stepNumber: number, title: string) => {

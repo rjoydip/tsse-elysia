@@ -8,7 +8,7 @@ import { existsSync, unlinkSync, readFileSync, writeFileSync, mkdirSync } from "
 import { spawnSync } from "child_process";
 import { join } from "path";
 
-const TEST_DIR = "test-integration";
+const TEST_DIR = "test-results";
 const DECISIONS_FILE = join(TEST_DIR, "DECISIONS.md");
 
 describe("CLI Integration", () => {
@@ -68,8 +68,9 @@ describe("CLI Integration", () => {
       encoding: "utf-8",
     });
 
+    // The warning messages go to stdout, not stderr
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("already exists");
+    expect(result.stdout).toContain("Decision with similar title already exists");
 
     unlinkSync(tempScript);
   });

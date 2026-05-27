@@ -13,7 +13,7 @@ import { E2E_BASE_URL, E2E_HOST, E2E_PORT } from "./.e2e/config";
 
 export default defineConfig({
   testDir: "./.e2e",
-  fullyParallel: true,
+  fullyParallel: isCI,
   forbidOnly: !!isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,

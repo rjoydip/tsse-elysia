@@ -78,7 +78,7 @@ function mockUsePermission(session: unknown): MockUsePermissionReturn {
     permissions: getPermissions(role),
     isAdmin: isAdminRole(role),
     isManager: isManagerRole(role),
-    dashboardView: getDashboardView(role),
+    dashboardView: getDashboardView(role) ?? "basic",
     isPending: false,
   };
 }

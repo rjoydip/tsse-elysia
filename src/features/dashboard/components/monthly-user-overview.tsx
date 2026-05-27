@@ -3,7 +3,7 @@ import { useDashboardChartData } from "~/hooks/use-dashboard-chart";
 import { motion } from "motion/react";
 import { ChartState } from "./shared/chart-states";
 
-export function Overview() {
+export function MonthlyUsersOverview() {
   const { monthlyData, loading, error } = useDashboardChartData();
 
   if (loading) {
@@ -14,8 +14,8 @@ export function Overview() {
     return <ChartState variant="error" chartType="bar" />;
   }
 
-  // If no data, show empty state
-  if (!monthlyData || monthlyData.length === 0) {
+  // If no data or all values are zero, show empty state
+  if (!monthlyData || monthlyData.every((item) => item.total === 0)) {
     return <ChartState variant="empty" chartType="bar" />;
   }
 

@@ -20,7 +20,7 @@ function getEnvVar(key: string, fallback: string): string {
  * Application version from package.json.
  * Automatically synced with the root package.json version.
  */
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "0.0.0";
 
 /**
  * API route prefix - defaults to /api.
@@ -184,6 +184,17 @@ export const AUTH_ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE"];
  * Canonical auth service name used by root/health payloads.
  */
 export const AUTH_SERVICE_NAME = "Auth";
+
+/**
+ * Number of recent users to display in the dashboard component.
+ * Should be consistent with the number of users fetched from the API.
+ * Can be adjusted based on UI design and performance considerations.
+ * @example
+ * // Set to 10 for a concise list, or 20 for more visibility.
+ * const RECENT_USERS_COUNT = 10;
+ * Make sure to update the API endpoint to fetch the same number of users.
+ */
+export const RECENT_USERS_COUNT = 10;
 
 /**
  * Navigation items for the header component.

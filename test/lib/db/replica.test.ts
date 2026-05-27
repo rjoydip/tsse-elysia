@@ -114,46 +114,46 @@ describe("getDatabasePools", () => {
 });
 
 describe("getReadDb round-robin selection", () => {
-  it("should return consistent db instance on multiple calls in test environment", () => {
+  it("should return consistent db instance on multiple calls in test environment", async () => {
     // In test environment with SQLite, getReadDb always returns the same instance
     // This verifies the function is stable and doesn't throw errors
-    const result1 = getReadDb();
-    const result2 = getReadDb();
-    const result3 = getReadDb();
+    const result1 = await getReadDb();
+    const result2 = await getReadDb();
+    const result3 = await getReadDb();
 
     // All calls should return the same instance in test environment
     expect(result1).toBe(result2);
     expect(result2).toBe(result3);
   });
 
-  it("should return db with select method", () => {
-    const readDb = getReadDb();
+  it("should return db with select method", async () => {
+    const readDb = await getReadDb();
     expect(readDb).toHaveProperty("select");
     expect(typeof readDb.select).toBe("function");
   });
 
-  it("should return db with insert method", () => {
-    const readDb = getReadDb();
+  it("should return db with insert method", async () => {
+    const readDb = await getReadDb();
     expect(readDb).toHaveProperty("insert");
     expect(typeof readDb.insert).toBe("function");
   });
 });
 
 describe("getReadDb", () => {
-  it("should return a database instance", () => {
-    const readDb = getReadDb();
+  it("should return a database instance", async () => {
+    const readDb = await getReadDb();
 
     // Returns the Drizzle instance with schema and query methods
     expect(readDb).toBeDefined();
     expect(typeof readDb.select).toBe("function");
   });
 
-  it("should return primary db when no replicas configured", () => {
+  it("should return primary db when no replicas configured", async () => {
     // The key behavior: when pgPoolsReplicas.length === 0, getReadDb returns db (primary)
     // We can verify this by checking that getReadDb returns the same instance as getWriteDb
     // when there are no replica pools
 
-    const readDb = getReadDb();
+    const readDb = await getReadDb();
     const writeDb = getWriteDb();
 
     // In test/CI environment with SQLite, both should return the same db
@@ -191,12 +191,12 @@ describe("POSTGRES_REPLICAS env parsing", () => {
 });
 
 describe("Empty POSTGRES_REPLICAS behavior", () => {
-  it("should verify getReadDb returns primary when pgPoolsReplicas is empty", () => {
+  it("should verify getReadDb returns primary when pgPoolsReplicas is empty", async () => {
     // This tests the main behavior change:
     // "When POSTGRES_REPLICAS is empty, primary now handles both reads and writes"
 
     const pools = getDatabasePools();
-    const readDb = getReadDb();
+    const readDb = await getReadDb();
     const writeDb = getWriteDb();
 
     // In test environment (SQLite), there are no replica pools
