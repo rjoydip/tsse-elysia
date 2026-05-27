@@ -49,13 +49,7 @@ const ScrambledText = memo(function ScrambledText({
     trigger: "hover",
   });
 
-  return (
-    <span
-      ref={ref}
-      onClick={replay}
-      className="text-primary font-medium cursor-pointer inline-block"
-    />
-  );
+  return <span ref={ref} onClick={replay} className="text-primary" />;
 });
 
 export interface BrandingProps {
@@ -104,9 +98,9 @@ export function BrandTitle({ size = "4xl", children }: BrandTitleProps) {
       {children || (
         <>
           Build faster with{" "}
-          <span className="text-primary">
+          <div className="text-primary align-middle">
             <ScrambledText text={APP_NAME} speed={0.2} />
-          </span>{" "}
+          </div>{" "}
           template
         </>
       )}

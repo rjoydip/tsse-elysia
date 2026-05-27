@@ -73,6 +73,7 @@ export const overviewChartRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
+        const now = new Date();
         const monthNames = [
           "Jan",
           "Feb",
@@ -86,7 +87,7 @@ export const overviewChartRoutes = new Elysia({
           "Oct",
           "Nov",
           "Dec",
-        ];
+        ].slice(0, now.getMonth() + 1);
 
         const currentYearData = await userRepository.getMonthlyRegistrations();
 

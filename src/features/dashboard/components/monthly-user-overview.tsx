@@ -1,4 +1,4 @@
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDashboardChartData } from "~/hooks/use-dashboard-chart";
 import { motion } from "motion/react";
 import { ChartState } from "./shared/chart-states";
@@ -29,6 +29,17 @@ export function MonthlyUsersOverview() {
         <BarChart data={monthlyData}>
           <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
           <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.05)" }}
+            content={({ active, payload }) =>
+              active && payload?.length ? (
+                <div className="rounded-lg border bg-background px-3 py-2 text-sm shadow-md">
+                  <span className="font-medium">{payload[0].payload.name}: </span>
+                  <span>{payload[0].value?.toLocaleString()} users</span>
+                </div>
+              ) : null
+            }
+          />
           <Bar dataKey="total" fill="currentColor" radius={[4, 4, 0, 0]} className="fill-primary" />
         </BarChart>
       </ResponsiveContainer>
