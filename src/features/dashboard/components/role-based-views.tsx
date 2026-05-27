@@ -436,7 +436,6 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fullDashTab, setFullDashTab] = useState("overview");
-  const [loadedUserCount, setLoadedUserCount] = useState(0);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -672,10 +671,7 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentUsers
-                  onLoadCountChange={setLoadedUserCount}
-                  max={metrics?.usersThisMonth ?? undefined}
-                />
+                <RecentUsers max={metrics?.usersThisMonth ?? undefined} />
               </CardContent>
             </Card>
           </div>
@@ -891,10 +887,7 @@ export function FullDashboard(_props: RoleBasedDashboardProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RecentUsers
-                  onLoadCountChange={setLoadedUserCount}
-                  max={metrics?.usersThisMonth ?? undefined}
-                />
+                <RecentUsers max={metrics?.usersThisMonth ?? undefined} />
               </CardContent>
             </Card>
           </motion.div>
