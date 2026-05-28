@@ -29,14 +29,14 @@ export interface RecentUsersProps {
 export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
   const {
     recentUsers,
-    loading: isLoading,
+    loading: isFetching,
     error,
     loadMore,
     hasMore,
   } = useRecentUsers(RECENT_USERS_COUNT, max);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Ref stores the latest loadMore function to prevent stale closures in the scroll handler.
-  // handleScroll is recreated only when isLoading/hasMore change, but loadMoreRef.current
+  // handleScroll is recreated only when isFetching/hasMore change, but loadMoreRef.current
   // always points to the latest loadMore from the hook, so the async fetch never uses a stale ref.
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
@@ -49,31 +49,32 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
   /**
    * Triggers loading the next batch when the user scrolls near the bottom.
    * Uses a threshold of 4 rows from the end to start fetching early.
-   * Stops fetching when hasMore is false.
+   * Stops fetching when hasMore is false or when an error is present.
    * Uses a ref for loadMore so the scroll handler stays stable across renders.
    */
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
-    if (!el || isLoading || !hasMore) return;
+    // Skip if an error is present to avoid silent retry loops
+    if (!el || isFetching || !hasMore || error) return;
 
     const scrollBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (scrollBottom < ROW_HEIGHT * 4) {
       loadMoreRef.current();
     }
-  }, [isLoading, hasMore]);
+  }, [isFetching, hasMore, error]);
 
   // The virtualizer count is bumped by 1 when loading + hasMore are both true.
   // This extra slot renders a "Loading more..." row at the bottom.
   // The user lookup for that index returns undefined, which triggers isLoadingMore.
   const rowVirtualizer = useVirtualizer({
-    count: recentUsers.length + (isLoading && hasMore ? 1 : 0),
+    count: recentUsers.length + (isFetching && hasMore ? 1 : 0),
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 4,
   });
 
   // ------ Loading state (initial load only) ------
-  if (isLoading && recentUsers.length === 0) {
+  if (isFetching && recentUsers.length === 0) {
     return (
       <div className="space-y-8">
         {Array.from({ length: RECENT_USERS_COUNT }).map((_, index) => (
@@ -99,7 +100,7 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
   }
 
   // ------ Empty state ------
-  if (!isLoading && recentUsers.length === 0) {
+  if (!isFetching && recentUsers.length === 0) {
     return (
       <div className="space-y-8 text-center text-muted-foreground py-8">
         No recent users available

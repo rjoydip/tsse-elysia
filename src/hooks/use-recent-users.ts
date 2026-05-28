@@ -74,6 +74,19 @@ export function processPage(
 }
 
 /**
+ * Creates a new AbortController, cancelling any previous in-flight request.
+ * Returns the new controller for use with the next fetch.
+ */
+function createAbortController(aborterRef: { current: AbortController | null }): AbortController {
+  if (aborterRef.current) {
+    aborterRef.current.abort();
+  }
+  const controller = new AbortController();
+  aborterRef.current = controller;
+  return controller;
+}
+
+/**
  * Handles errors from a fetchUserPage call.
  * Updates error state and resets loading flags.
  */
@@ -111,13 +124,7 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
       return;
     }
     loadingRef.current = true;
-
-    // Cancel any previous in-flight request
-    if (aborterRef.current) {
-      aborterRef.current.abort();
-    }
-    const controller = new AbortController();
-    aborterRef.current = controller;
+    const controller = createAbortController(aborterRef);
 
     setLoading(true);
     setError(null);
@@ -141,8 +148,7 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
 
   // Load the first batch on mount
   useEffect(() => {
-    const controller = new AbortController();
-    aborterRef.current = controller;
+    const controller = createAbortController(aborterRef);
 
     const fetchInitial = async () => {
       // Early exit if max is 0 or less — nothing to load
