@@ -18,24 +18,6 @@ interface MonthlyRow {
 }
 
 /**
- * Builds a monthly registration array from raw DB rows.
- * Fills gaps with zero and slices to monthCap.
- */
-function buildMonthlyData(
-  rows: MonthlyRow[],
-  monthCap: number,
-): Array<{ name: string; total: number }> {
-  const monthMap = new Map<number, number>();
-  for (const row of rows) {
-    monthMap.set(row.month, row.count);
-  }
-  return MONTH_NAMES.slice(0, monthCap).map((name, index) => ({
-    name,
-    total: monthMap.get(index + 1) ?? 0,
-  }));
-}
-
-/**
  * Filters for querying users.
  */
 export interface UserFilters {
@@ -68,6 +50,24 @@ export class UserRepository {
   constructor(db?: DbType) {
     // Capture db at construction time for DI/testing, but fall back to live binding
     this.db = db;
+  }
+
+  /**
+   * Builds a monthly registration array from raw DB rows.
+   * Fills gaps with zero and slices to monthCap.
+   */
+  private static buildMonthlyData(
+    rows: MonthlyRow[],
+    monthCap: number,
+  ): Array<{ name: string; total: number }> {
+    const monthMap = new Map<number, number>();
+    for (const row of rows) {
+      monthMap.set(row.month, row.count);
+    }
+    return MONTH_NAMES.slice(0, monthCap).map((name, index) => ({
+      name,
+      total: monthMap.get(index + 1) ?? 0,
+    }));
   }
 
   /**
@@ -242,11 +242,8 @@ export class UserRepository {
       query = query.where(and(...conditions));
     }
 
-    query = query.orderBy(desc(users.createdAt)).limit(limit);
-
-    if (typeof offset === "number" && offset > 0) {
-      query = query.offset(offset);
-    }
+    const safeOffset = typeof offset === "number" && offset > 0 ? offset : 0;
+    query = query.orderBy(desc(users.createdAt)).limit(limit).offset(safeOffset);
 
     return query;
   }
@@ -316,7 +313,7 @@ export class UserRepository {
     const yearEnd = Math.floor(Date.UTC(year, monthCap, 1) / 1000);
 
     const rows = await this.getMonthlyRows(yearStart, yearEnd);
-    return buildMonthlyData(rows, monthCap);
+    return UserRepository.buildMonthlyData(rows, monthCap);
   }
 
   /**
@@ -334,7 +331,7 @@ export class UserRepository {
     const nextMonthStart = Math.floor(Date.UTC(currentYear, monthCap, 1) / 1000);
 
     const rows = await this.getMonthlyRows(yearStart, nextMonthStart);
-    return buildMonthlyData(rows, monthCap);
+    return UserRepository.buildMonthlyData(rows, monthCap);
   }
 
   /**

@@ -61,6 +61,7 @@ export function processPage(
 ): void {
   if (signal.aborted) {
     loadingRef.current = false;
+    setLoading(false);
     return;
   }
 
@@ -99,6 +100,7 @@ export function handleFetchError(
 ): void {
   if (signal.aborted) {
     loadingRef.current = false;
+    setLoading(false);
     return;
   }
   setError(err instanceof Error ? err.message : "Failed to fetch recent users");
@@ -106,9 +108,34 @@ export function handleFetchError(
   loadingRef.current = false;
 }
 
+/**
+ * Orchestrates a paginated fetch: creates an abort controller, fetches a page,
+ * then delegates to a result processor. Shared by both initial load and loadMore.
+ */
+async function fetchWithAbort(
+  limit: number,
+  offset: number,
+  aborterRef: { current: AbortController | null },
+  loadingRef: { current: boolean },
+  processResult: (users: RecentUserItem[], signal: AbortSignal) => void,
+  setLoading: (v: boolean) => void,
+  setError: (msg: string | null) => void,
+): Promise<void> {
+  const controller = createAbortController(aborterRef);
+  setLoading(true);
+  setError(null);
+
+  try {
+    const newUsers = await fetchUserPage(limit, offset, controller.signal);
+    processResult(newUsers, controller.signal);
+  } catch (err) {
+    handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
+  }
+}
+
 export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number) {
   const [recentUsers, setRecentUsers] = useState<RecentUserItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const aborterRef = useRef<AbortController | null>(null);
@@ -124,74 +151,68 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
       return;
     }
     loadingRef.current = true;
-    const controller = createAbortController(aborterRef);
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const newUsers = await fetchUserPage(limit, offsetRef.current, controller.signal);
-      processPage(
-        newUsers,
-        limit,
-        controller.signal,
-        loadingRef,
-        offsetRef,
-        setRecentUsers,
-        setHasMore,
-        setLoading,
-      );
-    } catch (err) {
-      handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
-    }
+    await fetchWithAbort(
+      limit,
+      offsetRef.current,
+      aborterRef,
+      loadingRef,
+      (users, signal) =>
+        processPage(
+          users,
+          limit,
+          signal,
+          loadingRef,
+          offsetRef,
+          setRecentUsers,
+          setHasMore,
+          setIsFetching,
+        ),
+      setIsFetching,
+      setError,
+    );
   }, [hasMore, limit, max]);
 
   // Load the first batch on mount
   useEffect(() => {
-    const controller = createAbortController(aborterRef);
-
     const fetchInitial = async () => {
       // Early exit if max is 0 or less — nothing to load
       if (max !== undefined && max <= 0) {
         setHasMore(false);
-        setLoading(false);
+        setIsFetching(false);
         return;
       }
 
-      setLoading(true);
-      setError(null);
-      try {
-        const initialUsers = await fetchUserPage(limit, 0, controller.signal);
-        /* The initial fetch replaces rather than appends, so pass the result
-           through processPage with a no-op setRecentUsers to get the offset/hasMore
-           side-effects, then do the replacement separately. */
-        processPage(
-          initialUsers,
-          limit,
-          controller.signal,
-          loadingRef,
-          offsetRef,
-          () => {},
-          setHasMore,
-          setLoading,
-        );
-        if (!controller.signal.aborted) {
-          setRecentUsers(initialUsers);
-        }
-      } catch (err) {
-        handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
-      }
+      loadingRef.current = true;
+      await fetchWithAbort(
+        limit,
+        0,
+        aborterRef,
+        loadingRef,
+        (users, signal) => {
+          // Initial fetch replaces (does not append)
+          if (signal.aborted) return;
+          setRecentUsers(users);
+          offsetRef.current = users.length;
+          if (users.length < limit) {
+            setHasMore(false);
+          }
+          setIsFetching(false);
+          loadingRef.current = false;
+        },
+        setIsFetching,
+        setError,
+      );
     };
 
     fetchInitial();
 
     return () => {
-      controller.abort();
-      if (aborterRef.current === controller) {
+      if (aborterRef.current) {
+        aborterRef.current.abort();
         aborterRef.current = null;
       }
     };
   }, [limit, max]);
 
-  return { recentUsers, loading, error, loadMore, hasMore };
+  return { recentUsers, isFetching, error, loadMore, hasMore };
 }

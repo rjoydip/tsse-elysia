@@ -27,13 +27,10 @@ export interface RecentUsersProps {
 }
 
 export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
-  const {
-    recentUsers,
-    loading: isFetching,
-    error,
-    loadMore,
-    hasMore,
-  } = useRecentUsers(RECENT_USERS_COUNT, max);
+  const { recentUsers, isFetching, error, loadMore, hasMore } = useRecentUsers(
+    RECENT_USERS_COUNT,
+    max,
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   // Ref stores the latest loadMore function to prevent stale closures in the scroll handler.
   // handleScroll is recreated only when isFetching/hasMore change, but loadMoreRef.current

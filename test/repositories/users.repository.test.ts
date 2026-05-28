@@ -191,7 +191,9 @@ describe("User Repository", () => {
           orderBy: (dir: any) => {
             orderDirection = dir;
             return {
-              limit: () => Promise.resolve(mockUsers),
+              limit: () => ({
+                offset: () => Promise.resolve(mockUsers),
+              }),
             };
           },
         }),
@@ -210,10 +212,12 @@ describe("User Repository", () => {
       mockDb.select = () => ({
         from: () => ({
           orderBy: () => ({
-            limit: (n: number) => {
-              capturedLimit = n;
-              return Promise.resolve([]);
-            },
+            limit: (n: number) => ({
+              offset: () => {
+                capturedLimit = n;
+                return Promise.resolve([]);
+              },
+            }),
           }),
         }),
       });
@@ -231,7 +235,9 @@ describe("User Repository", () => {
             capturedRole = condition;
             return {
               orderBy: () => ({
-                limit: () => Promise.resolve([]),
+                limit: () => ({
+                  offset: () => Promise.resolve([]),
+                }),
               }),
             };
           },
@@ -264,11 +270,13 @@ describe("User Repository", () => {
       expect(capturedOffset).toBe(10);
     });
 
-    test("should not apply offset when offset is 0", async () => {
+    test("should apply offset 0 when offset is 0", async () => {
       mockDb.select = () => ({
         from: () => ({
           orderBy: () => ({
-            limit: () => Promise.resolve([]),
+            limit: () => ({
+              offset: () => Promise.resolve([]),
+            }),
           }),
         }),
       });

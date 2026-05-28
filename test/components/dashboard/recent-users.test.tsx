@@ -16,7 +16,7 @@ let mockError: string | null = null;
 vi.mock("../../../src/hooks/use-recent-users", () => ({
   useRecentUsers: () => ({
     recentUsers: mockRecentUsers,
-    loading: mockLoading,
+    isFetching: mockLoading,
     error: mockError,
     hasMore: true,
     loadMore: vi.fn(),

@@ -4,12 +4,34 @@
  */
 
 import { afterEach, describe, expect, it, vi } from "bun:test";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import {
   shouldLoadMore,
   fetchUserPage,
   processPage,
   handleFetchError,
+  useRecentUsers,
 } from "~/hooks/use-recent-users";
+
+/**
+ * Captures the value of a hook outside a React component by rendering a thin wrapper.
+ * Works without a DOM environment via react-dom/server.
+ * @returns an object with a `current` getter that reflects the latest hook value.
+ */
+function renderHookServer<T>(useHook: () => T): { readonly current: T } {
+  let current!: T;
+  function TestComponent() {
+    current = useHook();
+    return createElement("div");
+  }
+  renderToString(createElement(TestComponent));
+  return {
+    get current() {
+      return current;
+    },
+  };
+}
 
 describe("shouldLoadMore", () => {
   it("should return true when all conditions are met", () => {
@@ -269,5 +291,27 @@ describe("handleFetchError", () => {
 
     expect(setError).not.toHaveBeenCalled();
     expect(loadingRef.current).toBe(false);
+  });
+});
+
+describe("useRecentUsers (integration)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should start with loading state, no data, and hasMore true", () => {
+    const state = renderHookServer(() => useRecentUsers(5));
+
+    expect(state.current.recentUsers).toEqual([]);
+    expect(state.current.isFetching).toBe(true);
+    expect(state.current.error).toBeNull();
+    expect(state.current.hasMore).toBe(true);
+    expect(typeof state.current.loadMore).toBe("function");
+  });
+
+  it("should set fetch function as loadMore", () => {
+    const state = renderHookServer(() => useRecentUsers(5));
+
+    expect(typeof state.current.loadMore).toBe("function");
   });
 });
