@@ -4,7 +4,12 @@
  */
 
 import { afterEach, describe, expect, it, vi } from "bun:test";
-import { shouldLoadMore, fetchUserPage } from "~/hooks/use-recent-users";
+import {
+  shouldLoadMore,
+  fetchUserPage,
+  processPage,
+  handleFetchError,
+} from "~/hooks/use-recent-users";
 
 describe("shouldLoadMore", () => {
   it("should return true when all conditions are met", () => {
@@ -141,5 +146,128 @@ describe("fetchUserPage", () => {
 
     await expect(fetchPromise).rejects.toThrow("operation was aborted");
     expect(fetchCalled).toBe(true);
+  });
+});
+
+describe("processPage", () => {
+  it("should append new users and update offset", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    processPage(
+      [
+        {
+          id: "1",
+          avatarSrc: "",
+          fallback: "U1",
+          name: "A",
+          email: "a@t.com",
+          role: "user",
+          timestamp: 1,
+        },
+      ],
+      10,
+      signal,
+      loadingRef,
+      offsetRef,
+      setRecentUsers,
+      setHasMore,
+      setLoading,
+    );
+
+    expect(setRecentUsers).toHaveBeenCalledTimes(1);
+    expect(offsetRef.current).toBe(1);
+    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(loadingRef.current).toBe(false);
+  });
+
+  it("should set hasMore false when fewer users than limit returned", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    processPage([], 10, signal, loadingRef, offsetRef, setRecentUsers, setHasMore, setLoading);
+
+    expect(setHasMore).toHaveBeenCalledWith(false);
+  });
+
+  it("should bail out when signal is aborted", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+
+    processPage(
+      [
+        {
+          id: "1",
+          avatarSrc: "",
+          fallback: "U1",
+          name: "A",
+          email: "a@t.com",
+          role: "user",
+          timestamp: 1,
+        },
+      ],
+      10,
+      controller.signal,
+      loadingRef,
+      offsetRef,
+      setRecentUsers,
+      setHasMore,
+      setLoading,
+    );
+
+    expect(setRecentUsers).not.toHaveBeenCalled();
+    expect(loadingRef.current).toBe(false);
+  });
+});
+
+describe("handleFetchError", () => {
+  it("should set error message from Error instance", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    handleFetchError(new Error("network failure"), signal, loadingRef, setError, setLoading);
+
+    expect(setError).toHaveBeenCalledWith("network failure");
+    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(loadingRef.current).toBe(false);
+  });
+
+  it("should use default message when error is not an Error instance", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    handleFetchError("string error", signal, loadingRef, setError, setLoading);
+
+    expect(setError).toHaveBeenCalledWith("Failed to fetch recent users");
+  });
+
+  it("should bail out on aborted signal", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+
+    handleFetchError(new Error("fail"), controller.signal, loadingRef, setError, setLoading);
+
+    expect(setError).not.toHaveBeenCalled();
+    expect(loadingRef.current).toBe(false);
   });
 });

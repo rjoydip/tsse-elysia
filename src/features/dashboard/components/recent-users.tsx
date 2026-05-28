@@ -27,11 +27,17 @@ export interface RecentUsersProps {
 }
 
 export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
-  const { recentUsers, loading, error, loadMore, hasMore } = useRecentUsers(
-    RECENT_USERS_COUNT,
-    max,
-  );
+  const {
+    recentUsers,
+    loading: isLoading,
+    error,
+    loadMore,
+    hasMore,
+  } = useRecentUsers(RECENT_USERS_COUNT, max);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Ref stores the latest loadMore function to prevent stale closures in the scroll handler.
+  // handleScroll is recreated only when isLoading/hasMore change, but loadMoreRef.current
+  // always points to the latest loadMore from the hook, so the async fetch never uses a stale ref.
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
 
@@ -48,23 +54,26 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
    */
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
-    if (!el || loading || !hasMore) return;
+    if (!el || isLoading || !hasMore) return;
 
     const scrollBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (scrollBottom < ROW_HEIGHT * 4) {
       loadMoreRef.current();
     }
-  }, [loading, hasMore]);
+  }, [isLoading, hasMore]);
 
+  // The virtualizer count is bumped by 1 when loading + hasMore are both true.
+  // This extra slot renders a "Loading more..." row at the bottom.
+  // The user lookup for that index returns undefined, which triggers isLoadingMore.
   const rowVirtualizer = useVirtualizer({
-    count: recentUsers.length + (loading && hasMore ? 1 : 0),
+    count: recentUsers.length + (isLoading && hasMore ? 1 : 0),
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 4,
   });
 
   // ------ Loading state (initial load only) ------
-  if (loading && recentUsers.length === 0) {
+  if (isLoading && recentUsers.length === 0) {
     return (
       <div className="space-y-8">
         {Array.from({ length: RECENT_USERS_COUNT }).map((_, index) => (
@@ -90,7 +99,7 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
   }
 
   // ------ Empty state ------
-  if (!loading && recentUsers.length === 0) {
+  if (!isLoading && recentUsers.length === 0) {
     return (
       <div className="space-y-8 text-center text-muted-foreground py-8">
         No recent users available

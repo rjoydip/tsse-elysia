@@ -278,6 +278,22 @@ export class UserRepository {
   }
 
   /**
+   * Shared monthly registration query for a date range.
+   * Extracts month number and count from users created within the given range.
+   */
+  async #queryMonthlyRows(yearStart: number, yearEnd: number): Promise<MonthlyRow[]> {
+    return this.getDb()
+      .select({
+        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
+        count: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} < ${yearEnd}`))
+      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
+  }
+
+  /**
    * Gets monthly user registrations for a specific year.
    * Used for yearly comparison chart data.
    */
@@ -291,16 +307,7 @@ export class UserRepository {
     const monthCap = year === currentYear ? now.getMonth() + 1 : 12;
     const yearEnd = Math.floor(Date.UTC(year, monthCap, 1) / 1000);
 
-    const rows: MonthlyRow[] = await this.getDb()
-      .select({
-        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
-        count: sql`COUNT(*)`.as<number>(),
-      })
-      .from(users)
-      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} < ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
-
+    const rows = await this.#queryMonthlyRows(yearStart, yearEnd);
     return buildMonthlyData(rows, monthCap);
   }
 
@@ -318,18 +325,7 @@ export class UserRepository {
     // Cap to start of next month so future months are not included
     const nextMonthStart = Math.floor(Date.UTC(currentYear, monthCap, 1) / 1000);
 
-    const rows: MonthlyRow[] = await this.getDb()
-      .select({
-        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
-        count: sql`COUNT(*)`.as<number>(),
-      })
-      .from(users)
-      .where(
-        and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} < ${nextMonthStart}`),
-      )
-      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
-
+    const rows = await this.#queryMonthlyRows(yearStart, nextMonthStart);
     return buildMonthlyData(rows, monthCap);
   }
 

@@ -45,6 +45,54 @@ export async function fetchUserPage(
   return data.recentUsers ?? [];
 }
 
+/**
+ * Processes the result of a fetchUserPage call.
+ * Updates state, offset, and hasMore based on the fetched users.
+ */
+export function processPage(
+  newUsers: RecentUserItem[],
+  limit: number,
+  signal: AbortSignal,
+  loadingRef: { current: boolean },
+  offsetRef: { current: number },
+  setRecentUsers: (fn: (prev: RecentUserItem[]) => RecentUserItem[]) => void,
+  setHasMore: (fn: boolean | ((prev: boolean) => boolean)) => void,
+  setLoading: (v: boolean) => void,
+): void {
+  if (signal.aborted) {
+    loadingRef.current = false;
+    return;
+  }
+
+  setRecentUsers((prev) => [...prev, ...newUsers]);
+  offsetRef.current += newUsers.length;
+  if (newUsers.length < limit) {
+    setHasMore(false);
+  }
+  setLoading(false);
+  loadingRef.current = false;
+}
+
+/**
+ * Handles errors from a fetchUserPage call.
+ * Updates error state and resets loading flags.
+ */
+export function handleFetchError(
+  err: unknown,
+  signal: AbortSignal,
+  loadingRef: { current: boolean },
+  setError: (msg: string | null) => void,
+  setLoading: (v: boolean) => void,
+): void {
+  if (signal.aborted) {
+    loadingRef.current = false;
+    return;
+  }
+  setError(err instanceof Error ? err.message : "Failed to fetch recent users");
+  setLoading(false);
+  loadingRef.current = false;
+}
+
 export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number) {
   const [recentUsers, setRecentUsers] = useState<RecentUserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,26 +124,18 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
 
     try {
       const newUsers = await fetchUserPage(limit, offsetRef.current, controller.signal);
-      if (controller.signal.aborted) {
-        loadingRef.current = false;
-        return;
-      }
-
-      setRecentUsers((prev) => [...prev, ...newUsers]);
-      offsetRef.current += newUsers.length;
-      if (newUsers.length < limit) {
-        setHasMore(false);
-      }
-      setLoading(false);
-      loadingRef.current = false;
+      processPage(
+        newUsers,
+        limit,
+        controller.signal,
+        loadingRef,
+        offsetRef,
+        setRecentUsers,
+        setHasMore,
+        setLoading,
+      );
     } catch (err) {
-      if (controller.signal.aborted) {
-        loadingRef.current = false;
-        return;
-      }
-      setError(err instanceof Error ? err.message : "Failed to fetch recent users");
-      setLoading(false);
-      loadingRef.current = false;
+      handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
     }
   }, [hasMore, limit, max]);
 

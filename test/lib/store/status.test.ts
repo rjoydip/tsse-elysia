@@ -49,7 +49,6 @@ function resetStatusStore(): void {
 describe("status store", () => {
   beforeEach(() => {
     resetStatusStore();
-    (globalThis.fetch as any).preconnect = true;
   });
 
   afterEach(() => {

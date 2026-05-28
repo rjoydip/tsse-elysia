@@ -49,7 +49,13 @@ const ScrambledText = memo(function ScrambledText({
     trigger: "hover",
   });
 
-  return <span ref={ref} onClick={replay} className="text-primary" />;
+  return (
+    <span
+      ref={ref}
+      onClick={replay}
+      className="text-primary font-medium cursor-pointer inline-block"
+    />
+  );
 });
 
 export interface BrandingProps {
@@ -98,7 +104,7 @@ export function BrandTitle({ size = "4xl", children }: BrandTitleProps) {
       {children || (
         <>
           Build faster with{" "}
-          <span className="text-primary align-middle">
+          <span className="text-primary">
             <ScrambledText text={APP_NAME} speed={0.2} />
           </span>{" "}
           template
@@ -170,7 +176,7 @@ export function Branding({
     if (hidden.mobile) {
       return "hidden lg:flex";
     }
-    return "hidden lg:flex";
+    return "";
   };
 
   const getJustifyClass = (): string => {
