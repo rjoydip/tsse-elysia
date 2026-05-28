@@ -94,3 +94,38 @@ test.describe("Dashboard Overview Chart API", () => {
     expect(body.error).toBeDefined();
   });
 });
+
+test.describe("Dashboard Recent Activity API", () => {
+  test.beforeEach(async ({ page }) => {
+    await signUpViaUI(page);
+  });
+
+  test("should return recent users with default pagination", async ({ page }) => {
+    const response = await page.request.get(`${E2E_BASE_URL}/api/dashboard/recent-activity/users`);
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.recentUsers).toBeDefined();
+    expect(Array.isArray(body.recentUsers)).toBe(true);
+    expect(body.timestamp).toBeDefined();
+  });
+
+  test("should return recent users with offset pagination", async ({ page }) => {
+    const response = await page.request.get(
+      `${E2E_BASE_URL}/api/dashboard/recent-activity/users?limit=5&offset=5`,
+    );
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.recentUsers).toBeDefined();
+    expect(Array.isArray(body.recentUsers)).toBe(true);
+  });
+
+  test("should return 401 when not authenticated for recent activity", async ({ request }) => {
+    const response = await request.get(`${E2E_BASE_URL}/api/dashboard/recent-activity/users`);
+    expect(response.status()).toBe(401);
+
+    const body = await response.json();
+    expect(body.error).toBeDefined();
+  });
+});

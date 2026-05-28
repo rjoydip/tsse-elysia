@@ -12,6 +12,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RecentUserItem } from "~/repositories/dashboard";
 import { RECENT_USERS_COUNT } from "~/config";
 
+/**
+ * Checks whether another fetch batch should be allowed.
+ */
+export function shouldLoadMore(
+  hasMore: boolean,
+  loading: boolean,
+  max: number | undefined,
+  offset: number,
+): boolean {
+  if (!hasMore || loading) return false;
+  if (max !== undefined && offset >= max) return false;
+  return true;
+}
+
+/**
+ * Fetches a page of recent users from the API.
+ */
+export async function fetchUserPage(
+  limit: number,
+  offset: number,
+  signal: AbortSignal,
+): Promise<RecentUserItem[]> {
+  const response = await fetch(
+    `/api/dashboard/recent-activity/users?limit=${limit}&offset=${offset}`,
+    { signal },
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch recent users: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.recentUsers ?? [];
+}
+
 export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number) {
   const [recentUsers, setRecentUsers] = useState<RecentUserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,13 +55,13 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
   const offsetRef = useRef(0);
 
   const loadMore = useCallback(async () => {
-    // Hard cap: stop if we've reached the known total
-    if (max && offsetRef.current >= max) {
-      setHasMore(false);
+    // Pure-predicate guard against cap hit, concurrent calls, or no-more-data
+    if (!shouldLoadMore(hasMore, loadingRef.current, max, offsetRef.current)) {
+      if (max !== undefined && offsetRef.current >= max) {
+        setHasMore(false);
+      }
       return;
     }
-    // Synchronous guard: prevents concurrent fetches even from stale closures
-    if (!hasMore || loadingRef.current) return;
     loadingRef.current = true;
 
     // Cancel any previous in-flight request
@@ -42,21 +75,12 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
     setError(null);
 
     try {
-      // Use ref for offset — always current, never stale
-      const response = await fetch(
-        `/api/dashboard/recent-activity/users?limit=${limit}&offset=${offsetRef.current}`,
-        { signal: controller.signal },
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch recent users: ${response.statusText}`);
-      }
-      const data = await response.json();
+      const newUsers = await fetchUserPage(limit, offsetRef.current, controller.signal);
       if (controller.signal.aborted) {
         loadingRef.current = false;
         return;
       }
 
-      const newUsers = data.recentUsers ?? [];
       setRecentUsers((prev) => [...prev, ...newUsers]);
       offsetRef.current += newUsers.length;
       if (newUsers.length < limit) {
@@ -81,19 +105,18 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
     aborterRef.current = controller;
 
     const fetchInitial = async () => {
+      // Early exit if max is 0 or less — nothing to load
+      if (max !== undefined && max <= 0) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `/api/dashboard/recent-activity/users?limit=${limit}&offset=0`,
-          {
-            signal: controller.signal,
-          },
-        );
-        if (!response.ok) throw new Error(`Failed to fetch recent users: ${response.statusText}`);
-        const data = await response.json();
+        const initialUsers = await fetchUserPage(limit, 0, controller.signal);
         if (controller.signal.aborted) return;
-        const initialUsers = data.recentUsers ?? [];
         setRecentUsers(initialUsers);
         offsetRef.current = initialUsers.length;
         if (initialUsers.length < limit) {
@@ -115,7 +138,7 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
         aborterRef.current = null;
       }
     };
-  }, [limit]);
+  }, [limit, max]);
 
   return { recentUsers, loading, error, loadMore, hasMore };
 }

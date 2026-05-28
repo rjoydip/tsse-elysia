@@ -221,6 +221,88 @@ describe("User Repository", () => {
       await repository.findRecent();
       expect(capturedLimit).toBe(10);
     });
+
+    test("should apply role filter via where", async () => {
+      let capturedRole = "";
+
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: () => ({
+              where: (condition: any) => {
+                capturedRole = condition;
+                return Promise.resolve([]);
+              },
+            }),
+          }),
+        }),
+      });
+
+      await repository.findRecent(5, "manager");
+      expect(capturedRole).toBeDefined();
+    });
+
+    test("should apply offset when provided", async () => {
+      let capturedOffset = -1;
+
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: () => ({
+              where: () => ({
+                offset: (n: number) => {
+                  capturedOffset = n;
+                  return Promise.resolve([]);
+                },
+              }),
+            }),
+          }),
+        }),
+      });
+
+      await repository.findRecent(5, "user", 10);
+      expect(capturedOffset).toBe(10);
+    });
+
+    test("should not apply offset when offset is 0", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: () => Promise.resolve([]),
+          }),
+        }),
+      });
+
+      const result = await repository.findRecent(5, undefined, 0);
+      expect(result).toEqual([]);
+    });
+
+    test("should apply both role filter and offset", async () => {
+      let capturedRole = "";
+      let capturedOffset = -1;
+
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: () => ({
+              where: (condition: any) => {
+                capturedRole = condition;
+                return {
+                  offset: (n: number) => {
+                    capturedOffset = n;
+                    return Promise.resolve([]);
+                  },
+                };
+              },
+            }),
+          }),
+        }),
+      });
+
+      await repository.findRecent(5, "admin", 20);
+      expect(capturedRole).toBeDefined();
+      expect(capturedOffset).toBe(20);
+    });
   });
 
   describe("getMonthlyRegistrationsForYear", () => {

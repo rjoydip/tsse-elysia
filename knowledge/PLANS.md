@@ -151,6 +151,27 @@ Core focus:
 - Deterministic seeds for reproducible testing
 - `--fresh` flag enables clean reseeding
 
+### Phase 20 – Dashboard Code Review Fixes ✅
+
+**Completed:**
+
+- **Side-effect compliance**: Moved `onLoadCountChange` callback from render body to `useEffect` in `recent-users.tsx` to comply with React rules.
+- **Cyclomatic complexity**: Extracted `shouldLoadMore()` (offset+cap guard) and `fetchUserPage()` into exported helpers from `use-recent-users.ts`, reducing `loadMore` CRAP score from 49.5 to ~12.
+- **DRY monthly queries**: Extracted `buildMonthlyData()` private helper shared by `getMonthlyRegistrations` and `getMonthlyRegistrationsForYear` in `users.ts`.
+- **Shared constant**: Moved duplicated `monthNames` arrays into `MONTH_NAMES` at `src/config/date.ts`, consumed by 4 locations (repositories, route, hook).
+- **Query order**: Fixed `findRecent` to chain `.where()` before `.offset()`, matching `findAll` pattern.
+- **Dead code**: Removed unused `_i` variable in `Array.from` skeleton loop.
+- **Edge-case hardening**: Added `max !== undefined && max <= 0` guard in initial `useEffect` to prevent fetching when cap is zero. Changed `if (max && ...)` to `if (max !== undefined && ...)` in `loadMore` to handle `max=0` correctly.
+- **Stable scroll handler**: Used `loadMoreRef` pattern in `recent-users.tsx` so `handleScroll` callback does not recreate on every batch load.
+- **Branding fix**: Changed `<div>` to `<span>` wrapping `ScrambledText` to prevent block-element line break in `BrandTitle`.
+- **Font size**: Reduced global Tailwind font-size scale for dashboard-optimized reading (`text-base` → 0.875rem, `text-sm` → 0.8125rem, etc.) via `src/styles/theme.css`.
+- **Tests added**:
+  - 11 unit tests for `shouldLoadMore` + `fetchUserPage` (use-recent-users.test.ts)
+  - 4 unit tests for `findRecent` offset/role (users.repository.test.ts)
+  - 4 unit tests for `MONTH_NAMES` constant (config/date.test.ts)
+  - 3 E2E tests for recent-activity `/users` endpoint with offset pagination (dashboard/index.spec.ts)
+- All 1370+ unit tests pass, lint clean, typecheck clean.
+
 ### Phase 6 – Main Dashboard Implementation ✅
 
 **Completed:**

@@ -6,7 +6,34 @@
 import { eq, ne, like, and, or, desc, sql, count, inArray } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
+import { MONTH_NAMES } from "~/config/date";
 import type { DbType } from "~/config/db";
+
+/**
+ * Type for monthly registration data.
+ */
+interface MonthlyRow {
+  month: number;
+  count: number;
+}
+
+/**
+ * Builds a monthly registration array from raw DB rows.
+ * Fills gaps with zero and slices to monthCap.
+ */
+function buildMonthlyData(
+  rows: MonthlyRow[],
+  monthCap: number,
+): Array<{ name: string; total: number }> {
+  const monthMap = new Map<number, number>();
+  for (const row of rows) {
+    monthMap.set(row.month, row.count);
+  }
+  return MONTH_NAMES.slice(0, monthCap).map((name, index) => ({
+    name,
+    total: monthMap.get(index + 1) ?? 0,
+  }));
+}
 
 /**
  * Filters for querying users.
@@ -205,12 +232,12 @@ export class UserRepository {
   ): Promise<(typeof users.$inferSelect)[]> {
     let query = this.getDb().select().from(users).orderBy(desc(users.createdAt)).limit(limit);
 
-    if (typeof offset === "number" && offset > 0) {
-      query = query.offset(offset);
-    }
-
     if (role) {
       query = query.where(eq(users.role, role));
+    }
+
+    if (typeof offset === "number" && offset > 0) {
+      query = query.offset(offset);
     }
 
     return query;
@@ -257,21 +284,6 @@ export class UserRepository {
   async getMonthlyRegistrationsForYear(
     year: number,
   ): Promise<Array<{ name: string; total: number }>> {
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
     const now = new Date();
     const currentYear = now.getFullYear();
     const yearStart = Math.floor(Date.UTC(year, 0, 1) / 1000);
@@ -279,7 +291,7 @@ export class UserRepository {
     const monthCap = year === currentYear ? now.getMonth() + 1 : 12;
     const yearEnd = Math.floor(Date.UTC(year, monthCap, 1) / 1000);
 
-    const rows = await this.getDb()
+    const rows: MonthlyRow[] = await this.getDb()
       .select({
         month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
         count: sql`COUNT(*)`.as<number>(),
@@ -289,15 +301,7 @@ export class UserRepository {
       .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
       .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
 
-    const monthMap = new Map<number, number>();
-    for (const row of rows) {
-      monthMap.set(row.month, row.count);
-    }
-
-    return monthNames.slice(0, monthCap).map((name, index) => ({
-      name,
-      total: monthMap.get(index + 1) ?? 0,
-    }));
+    return buildMonthlyData(rows, monthCap);
   }
 
   /**
@@ -307,28 +311,14 @@ export class UserRepository {
    * @returns Array of monthly registration counts for the current year
    */
   async getMonthlyRegistrations(): Promise<Array<{ name: string; total: number }>> {
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
     const now = new Date();
     const currentYear = now.getFullYear();
+    const monthCap = now.getMonth() + 1;
     const yearStart = Math.floor(Date.UTC(currentYear, 0, 1) / 1000);
     // Cap to start of next month so future months are not included
-    const nextMonthStart = Math.floor(Date.UTC(currentYear, now.getMonth() + 1, 1) / 1000);
+    const nextMonthStart = Math.floor(Date.UTC(currentYear, monthCap, 1) / 1000);
 
-    const rows = await this.getDb()
+    const rows: MonthlyRow[] = await this.getDb()
       .select({
         month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
         count: sql`COUNT(*)`.as<number>(),
@@ -340,16 +330,7 @@ export class UserRepository {
       .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
       .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
 
-    const monthMap = new Map<number, number>();
-    for (const row of rows) {
-      monthMap.set(row.month, row.count);
-    }
-
-    const monthCount = now.getMonth() + 1;
-    return monthNames.slice(0, monthCount).map((name, index) => ({
-      name,
-      total: monthMap.get(index + 1) ?? 0,
-    }));
+    return buildMonthlyData(rows, monthCap);
   }
 
   /**

@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import type { MonthlyRegistrationsItem, YearlyComparisonItem } from "~/repositories/dashboard";
+import { MONTH_NAMES } from "~/config/date";
 
 /**
  * Filters data to only include months up to the current month.
@@ -15,22 +16,8 @@ import type { MonthlyRegistrationsItem, YearlyComparisonItem } from "~/repositor
  */
 export function capToCurrentMonth<T extends { name: string }>(data: T[]): T[] {
   const currentMonth = new Date().getMonth();
-  const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
   return data.filter((item) => {
-    const monthIndex = monthNames.indexOf(item.name);
+    const monthIndex = (MONTH_NAMES as readonly string[]).indexOf(item.name);
     return monthIndex >= 0 && monthIndex <= currentMonth;
   });
 }

@@ -98,9 +98,9 @@ export function BrandTitle({ size = "4xl", children }: BrandTitleProps) {
       {children || (
         <>
           Build faster with{" "}
-          <div className="text-primary align-middle">
+          <span className="text-primary align-middle">
             <ScrambledText text={APP_NAME} speed={0.2} />
-          </div>{" "}
+          </span>{" "}
           template
         </>
       )}

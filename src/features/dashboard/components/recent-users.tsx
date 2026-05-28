@@ -5,7 +5,7 @@
  * Each scroll near the bottom triggers a batch load of more users.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRecentUsers } from "~/hooks/use-recent-users";
 import { RECENT_USERS_COUNT } from "~/config";
@@ -32,18 +32,19 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
     max,
   );
   const scrollRef = useRef<HTMLDivElement>(null);
-  const prevCount = useRef(recentUsers.length);
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
 
-  // Fire the callback whenever the count changes
-  if (recentUsers.length !== prevCount.current) {
-    prevCount.current = recentUsers.length;
+  // Fire onLoadCountChange in a useEffect to comply with React rules
+  useEffect(() => {
     onLoadCountChange?.(recentUsers.length);
-  }
+  }, [recentUsers.length, onLoadCountChange]);
 
   /**
    * Triggers loading the next batch when the user scrolls near the bottom.
    * Uses a threshold of 4 rows from the end to start fetching early.
    * Stops fetching when hasMore is false.
+   * Uses a ref for loadMore so the scroll handler stays stable across renders.
    */
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -51,9 +52,9 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
 
     const scrollBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (scrollBottom < ROW_HEIGHT * 4) {
-      loadMore();
+      loadMoreRef.current();
     }
-  }, [loading, loadMore, hasMore]);
+  }, [loading, hasMore]);
 
   const rowVirtualizer = useVirtualizer({
     count: recentUsers.length + (loading && hasMore ? 1 : 0),
@@ -66,7 +67,7 @@ export function RecentUsers({ onLoadCountChange, max }: RecentUsersProps) {
   if (loading && recentUsers.length === 0) {
     return (
       <div className="space-y-8">
-        {Array.from({ length: RECENT_USERS_COUNT }, (_, _i) => _i + 1).map((_, index) => (
+        {Array.from({ length: RECENT_USERS_COUNT }).map((_, index) => (
           <UserRow
             key={index}
             avatarSrc="/avatars/01.png"
