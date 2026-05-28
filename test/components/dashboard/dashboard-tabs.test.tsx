@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi, beforeEach } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { DashboardTabs } from "../../../src/features/dashboard/components/dashboard-tabs";
+import { DashboardTabs } from "~/features/dashboard/components/dashboard-tabs";
 
 describe("DashboardTabs", () => {
   const mockOnValueChange = vi.fn();

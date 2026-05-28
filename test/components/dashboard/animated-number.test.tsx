@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach, beforeAll } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { AnimatedNumber } from "../../../src/features/dashboard/components/shared/animated-number";
+import { AnimatedNumber } from "~/features/dashboard/components/shared/animated-number";
 
 // Mock RAF/CAF globally — these are used by the component's useEffect but never during SSR
 beforeAll(() => {

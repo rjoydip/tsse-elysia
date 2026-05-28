@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Sheet, SheetTrigger } from "../../../src/components/ui/sheet";
+import { Sheet, SheetTrigger } from "~/components/ui/sheet";
 
 describe("Sheet", () => {
   it("should render Sheet with trigger", () => {

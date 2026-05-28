@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { DropdownMenu, DropdownMenuTrigger } from "../../../src/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
 
 describe("DropdownMenu", () => {
   it("should render DropdownMenu with trigger", () => {

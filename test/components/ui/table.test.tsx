@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Table } from "../../../src/components/ui/table";
+import { Table } from "~/components/ui/table";
 
 describe("Table", () => {
   it("should render Table with proper wrapper", () => {

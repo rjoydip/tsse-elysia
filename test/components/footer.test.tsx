@@ -5,12 +5,12 @@
 
 import { describe, expect, it, mock } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Footer } from "../../src/components/layout/landing/footer";
+import { Footer } from "~/components/layout/landing/footer";
 
 // Mock auth client
 let mockSession: any = null;
 let mockIsPending = false;
-mock.module("../../src/lib/auth/client", () => ({
+mock.module("~/lib/auth/client", () => ({
   useSession: () => ({ data: mockSession, isPending: mockIsPending }),
 }));
 

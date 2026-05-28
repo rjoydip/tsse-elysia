@@ -225,7 +225,7 @@ Core focus:
 - Created Docker parsing utilities:
   - `src/lib/docker/types.ts` - Type definitions
   - `src/lib/docker/index.ts` - Parser utilities
-- Unit tests: `test/lib/docker/index.test.ts`
+- Unit tests: `test/unit/lib/docker/index.test.ts`
 
 ### Phase 9 – User Management Dashboard ✅
 

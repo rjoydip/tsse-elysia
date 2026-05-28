@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import type { UserRole, Permission } from "../../../src/lib/auth/permissions";
-import { hasPermission, meetsRoleRequirement } from "../../../src/lib/auth/permissions";
+import type { UserRole, Permission } from "~/lib/auth/permissions";
+import { hasPermission, meetsRoleRequirement } from "~/lib/auth/permissions";
 
 /**
  * Simulates the checkAuthorization function from ProtectedRoute

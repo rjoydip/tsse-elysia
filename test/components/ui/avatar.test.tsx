@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Avatar } from "../../../src/components/ui/avatar";
+import { Avatar } from "~/components/ui/avatar";
 
 describe("Avatar", () => {
   it("should render Avatar component", () => {

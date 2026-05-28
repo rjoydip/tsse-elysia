@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Collapsible, CollapsibleTrigger } from "../../../src/components/ui/collapsible";
+import { Collapsible, CollapsibleTrigger } from "~/components/ui/collapsible";
 
 describe("Collapsible", () => {
   it("should render Collapsible with trigger", () => {

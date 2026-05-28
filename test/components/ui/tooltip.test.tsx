@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Tooltip, TooltipTrigger, TooltipProvider } from "../../../src/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipProvider } from "~/components/ui/tooltip";
 
 describe("Tooltip", () => {
   it("should render TooltipProvider", () => {

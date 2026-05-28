@@ -12,7 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
-} from "../../../src/components/ui/breadcrumb";
+} from "~/components/ui/breadcrumb";
 
 describe("Breadcrumb", () => {
   it("should render Breadcrumb as nav with aria-label", () => {

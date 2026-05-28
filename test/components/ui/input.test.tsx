@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Input } from "../../../src/components/ui/input";
+import { Input } from "~/components/ui/input";
 
 describe("Input", () => {
   it("should render input with default classes", () => {

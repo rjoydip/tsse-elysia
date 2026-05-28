@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi, beforeEach } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { RecentUsers } from "../../../src/features/dashboard/components/recent-users";
+import { RecentUsers } from "~/features/dashboard/components/recent-users";
 import { RECENT_USERS_COUNT } from "~/config";
 
 // Track mock state so we can test each scenario
@@ -13,7 +13,7 @@ let mockRecentUsers: any[] = [];
 let mockLoading = true;
 let mockError: string | null = null;
 
-vi.mock("../../../src/hooks/use-recent-users", () => ({
+vi.mock("~/hooks/use-recent-users", () => ({
   useRecentUsers: () => ({
     recentUsers: mockRecentUsers,
     isFetching: mockLoading,

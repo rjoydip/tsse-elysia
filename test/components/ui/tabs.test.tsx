@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../src/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
 describe("Tabs", () => {
   it("should render Tabs root component with children", () => {

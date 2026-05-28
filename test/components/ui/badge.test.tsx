@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Badge, badgeVariants } from "../../../src/components/ui/badge";
+import { Badge, badgeVariants } from "~/components/ui/badge";
 
 describe("Badge", () => {
   it("should render with default variant", () => {

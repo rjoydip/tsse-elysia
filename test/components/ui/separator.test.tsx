@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Separator } from "../../../src/components/ui/separator";
+import { Separator } from "~/components/ui/separator";
 
 describe("Separator", () => {
   it("should render horizontal separator by default", () => {

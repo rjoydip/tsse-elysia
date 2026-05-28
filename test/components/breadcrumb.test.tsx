@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { BreadcrumbNav } from "../../src/components/docs/breadcrumb";
+import { BreadcrumbNav } from "~/components/docs/breadcrumb";
 
 describe("Breadcrumb", () => {
   it("should return null for empty items array", () => {
