@@ -8,6 +8,7 @@ import { Elysia } from "elysia";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
 import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
+import { MONTH_NAMES } from "~/config/date";
 
 const monthlyRegistrationsExample = [
   { name: "Jan", total: 32 },
@@ -73,24 +74,12 @@ export const overviewChartRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
-        const monthNames = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
+        const now = new Date();
+        const slicedNames = MONTH_NAMES.slice(0, now.getMonth() + 1);
 
         const currentYearData = await userRepository.getMonthlyRegistrations();
 
-        const yearlyData = monthNames.map((name, index) => ({
+        const yearlyData = slicedNames.map((name, index) => ({
           name,
           currentYear: currentYearData[index]?.total ?? 0,
           previousYear: 0,

@@ -1,113 +1,317 @@
 /**
  * Unit tests for src/hooks/use-recent-users.ts
- * Tests: loading → success → error state transitions, data mapping, limit parameter, and cleanup (isMounted flag)
+ * Tests: shouldLoadMore guard, fetchUserPage integration with mocked fetch.
  */
 
-import { describe, it, expect, vi, beforeEach } from "bun:test";
+import { afterEach, describe, expect, it, vi } from "bun:test";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import {
+  shouldLoadMore,
+  fetchUserPage,
+  processPage,
+  handleFetchError,
+  useRecentUsers,
+} from "~/hooks/use-recent-users";
 
-// Mock the dashboard service
-const mockDashboardService = {
-  getRecentUsers: vi.fn(),
-};
+/**
+ * Captures the value of a hook outside a React component by rendering a thin wrapper.
+ * Works without a DOM environment via react-dom/server.
+ * @returns an object with a `current` getter that reflects the latest hook value.
+ */
+function renderHookServer<T>(useHook: () => T): { readonly current: T } {
+  let current!: T;
+  function TestComponent() {
+    current = useHook();
+    return createElement("div");
+  }
+  renderToString(createElement(TestComponent));
+  return {
+    get current() {
+      return current;
+    },
+  };
+}
 
-vi.mock("~/services/dashboard", () => ({
-  dashboardService: mockDashboardService,
-}));
-
-// Mock the logger
-vi.mock("~/lib/logger", () => ({
-  logger: {
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
-}));
-
-describe("useRecentUsers Hook Logic", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe("shouldLoadMore", () => {
+  it("should return true when all conditions are met", () => {
+    expect(shouldLoadMore(true, false, undefined, 0)).toBe(true);
   });
 
-  describe("Service Integration", () => {
-    it("should fetch recent users with default limit of 5", async () => {
-      const mockUsers = [
+  it("should return false when hasMore is false", () => {
+    expect(shouldLoadMore(false, false, undefined, 0)).toBe(false);
+  });
+
+  it("should return false when currently loading", () => {
+    expect(shouldLoadMore(true, true, undefined, 0)).toBe(false);
+  });
+
+  it("should return false when offset reaches max cap", () => {
+    expect(shouldLoadMore(true, false, 10, 10)).toBe(false);
+    expect(shouldLoadMore(true, false, 10, 15)).toBe(false);
+  });
+
+  it("should return true when offset is below max cap", () => {
+    expect(shouldLoadMore(true, false, 10, 5)).toBe(true);
+  });
+
+  it("should handle max=0 correctly (not falsy)", () => {
+    expect(shouldLoadMore(true, false, 0, 0)).toBe(false);
+    expect(shouldLoadMore(true, false, 0, -1)).toBe(true);
+  });
+});
+
+describe("fetchUserPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should fetch users with correct query params", async () => {
+    const mockResponse = {
+      recentUsers: [
         {
-          avatarSrc: "/avatars/01.png",
-          fallback: "JD",
-          name: "John Doe",
-          email: "john@example.com",
+          id: "1",
+          avatarSrc: "",
+          fallback: "U1",
+          name: "User 1",
+          email: "user1@test.com",
           role: "user",
+          timestamp: Date.now(),
         },
-      ];
+      ],
+    };
+    let capturedUrl = "";
 
-      mockDashboardService.getRecentUsers.mockResolvedValue(mockUsers);
-
-      // Simulate what the hook does on mount with default limit (5)
-      const data = await mockDashboardService.getRecentUsers(5);
-
-      expect(mockDashboardService.getRecentUsers).toHaveBeenCalledWith(5);
-      expect(data).toEqual(mockUsers);
+    vi.spyOn(globalThis as any, "fetch").mockImplementation((input: unknown) => {
+      capturedUrl = typeof input === "string" ? input : (input as Request).url;
+      return Promise.resolve(new Response(JSON.stringify(mockResponse), { status: 200 }));
     });
 
-    it("should fetch recent users with custom limit", async () => {
-      const mockUsers = Array.from({ length: 10 }, (_, i) => ({
-        name: `User ${i + 1}`,
-      }));
+    const result = await fetchUserPage(5, 10, new AbortController().signal);
 
-      mockDashboardService.getRecentUsers.mockResolvedValue(mockUsers);
-
-      // Simulate what the hook does with limit=10
-      const data = await mockDashboardService.getRecentUsers(10);
-
-      expect(mockDashboardService.getRecentUsers).toHaveBeenCalledWith(10);
-      expect(data).toHaveLength(10);
-    });
-
-    it("should handle fetch errors", async () => {
-      const errorMessage = "Failed to fetch recent users";
-      mockDashboardService.getRecentUsers.mockRejectedValue(new Error(errorMessage));
-
-      await expect(mockDashboardService.getRecentUsers()).rejects.toThrow(errorMessage);
-    });
-
-    it("should handle null/undefined response by defaulting to empty array", async () => {
-      mockDashboardService.getRecentUsers.mockResolvedValue(null);
-
-      // Simulate the hook's null-coalescing logic
-      const data = (await mockDashboardService.getRecentUsers()) ?? [];
-      expect(data).toEqual([]);
-    });
+    expect(capturedUrl).toContain("/api/dashboard/recent-activity/users");
+    expect(capturedUrl).toContain("limit=5");
+    expect(capturedUrl).toContain("offset=10");
+    expect(result).toEqual([
+      {
+        id: "1",
+        avatarSrc: "",
+        fallback: "U1",
+        name: "User 1",
+        email: "user1@test.com",
+        role: "user",
+        timestamp: expect.any(Number),
+      },
+    ]);
   });
 
-  describe("Limit Parameter", () => {
-    it("should call getRecentUsers with different limits", async () => {
-      mockDashboardService.getRecentUsers.mockResolvedValue([]);
+  it("should default to empty array when response has no recentUsers", async () => {
+    vi.spyOn(globalThis as any, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({}), { status: 200 })),
+    );
 
-      await mockDashboardService.getRecentUsers(3);
-      expect(mockDashboardService.getRecentUsers).toHaveBeenCalledWith(3);
-
-      await mockDashboardService.getRecentUsers(20);
-      expect(mockDashboardService.getRecentUsers).toHaveBeenCalledWith(20);
-    });
+    const result = await fetchUserPage(5, 0, new AbortController().signal);
+    expect(result).toEqual([]);
   });
 
-  describe("Cleanup (isMounted flag)", () => {
-    it("should resolve fetch after unmount without error", async () => {
-      let resolvePromise!: (data: any) => void;
-      const promise = new Promise((resolve) => {
-        resolvePromise = resolve;
-      });
+  it("should throw on non-ok response", async () => {
+    vi.spyOn(globalThis as any, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(null, { status: 500, statusText: "Server Error" })),
+    );
 
-      mockDashboardService.getRecentUsers.mockReturnValue(promise);
+    await expect(fetchUserPage(5, 0, new AbortController().signal)).rejects.toThrow(
+      "Failed to fetch recent users: Server Error",
+    );
+  });
 
-      // Start the fetch (simulating mount)
-      const fetchPromise = mockDashboardService.getRecentUsers();
+  it("should abort when signal is aborted before fetch", async () => {
+    const controller = new AbortController();
+    controller.abort();
 
-      // Simulate unmount before resolution
-      resolvePromise([{ name: "Late Arrival" }]);
-      const result = await fetchPromise;
-      expect(result).toEqual([{ name: "Late Arrival" }]);
-    });
+    vi.spyOn(globalThis as any, "fetch").mockImplementation(
+      (_: unknown, init: RequestInit | undefined) => {
+        // Simulate real fetch behavior: already-aborted signal rejects immediately
+        if (init?.signal?.aborted) {
+          return Promise.reject(new DOMException("The operation was aborted", "AbortError"));
+        }
+        return Promise.resolve(new Response(JSON.stringify({ recentUsers: [] }), { status: 200 }));
+      },
+    );
+
+    await expect(fetchUserPage(5, 0, controller.signal)).rejects.toThrow("operation was aborted");
+  });
+
+  it("should abort when signal is aborted mid-request", async () => {
+    const controller = new AbortController();
+    let fetchCalled = false;
+
+    vi.spyOn(globalThis as any, "fetch").mockImplementation(
+      (_: unknown, init: RequestInit | undefined) => {
+        fetchCalled = true;
+        // Return a pending promise; abort event will reject it
+        return new Promise((_resolve, reject) => {
+          const onAbort = () => {
+            reject(new DOMException("The operation was aborted", "AbortError"));
+          };
+          if (init?.signal?.aborted) {
+            onAbort();
+            return;
+          }
+          init?.signal?.addEventListener("abort", onAbort);
+        });
+      },
+    );
+
+    // Start fetch first, then abort mid-flight
+    const fetchPromise = fetchUserPage(5, 0, controller.signal);
+    controller.abort();
+
+    await expect(fetchPromise).rejects.toThrow("operation was aborted");
+    expect(fetchCalled).toBe(true);
+  });
+});
+
+describe("processPage", () => {
+  it("should append new users and update offset", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    processPage(
+      [
+        {
+          id: "1",
+          avatarSrc: "",
+          fallback: "U1",
+          name: "A",
+          email: "a@t.com",
+          role: "user",
+          timestamp: 1,
+        },
+      ],
+      10,
+      signal,
+      loadingRef,
+      offsetRef,
+      setRecentUsers,
+      setHasMore,
+      setLoading,
+    );
+
+    expect(setRecentUsers).toHaveBeenCalledTimes(1);
+    expect(offsetRef.current).toBe(1);
+    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(loadingRef.current).toBe(false);
+  });
+
+  it("should set hasMore false when fewer users than limit returned", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    processPage([], 10, signal, loadingRef, offsetRef, setRecentUsers, setHasMore, setLoading);
+
+    expect(setHasMore).toHaveBeenCalledWith(false);
+  });
+
+  it("should bail out when signal is aborted", () => {
+    const loadingRef = { current: true };
+    const offsetRef = { current: 0 };
+    const setRecentUsers = vi.fn();
+    const setHasMore = vi.fn();
+    const setLoading = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+
+    processPage(
+      [
+        {
+          id: "1",
+          avatarSrc: "",
+          fallback: "U1",
+          name: "A",
+          email: "a@t.com",
+          role: "user",
+          timestamp: 1,
+        },
+      ],
+      10,
+      controller.signal,
+      loadingRef,
+      offsetRef,
+      setRecentUsers,
+      setHasMore,
+      setLoading,
+    );
+
+    expect(setRecentUsers).not.toHaveBeenCalled();
+    expect(loadingRef.current).toBe(false);
+  });
+});
+
+describe("handleFetchError", () => {
+  it("should set error message from Error instance", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    handleFetchError(new Error("network failure"), signal, loadingRef, setError, setLoading);
+
+    expect(setError).toHaveBeenCalledWith("network failure");
+    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(loadingRef.current).toBe(false);
+  });
+
+  it("should use default message when error is not an Error instance", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const signal = new AbortController().signal;
+
+    handleFetchError("string error", signal, loadingRef, setError, setLoading);
+
+    expect(setError).toHaveBeenCalledWith("Failed to fetch recent users");
+  });
+
+  it("should bail out on aborted signal", () => {
+    const loadingRef = { current: true };
+    const setError = vi.fn();
+    const setLoading = vi.fn();
+    const controller = new AbortController();
+    controller.abort();
+
+    handleFetchError(new Error("fail"), controller.signal, loadingRef, setError, setLoading);
+
+    expect(setError).not.toHaveBeenCalled();
+    expect(loadingRef.current).toBe(false);
+  });
+});
+
+describe("useRecentUsers (integration)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should start with loading state, no data, and hasMore true", () => {
+    const state = renderHookServer(() => useRecentUsers(5));
+
+    expect(state.current.recentUsers).toEqual([]);
+    expect(state.current.isFetching).toBe(true);
+    expect(state.current.error).toBeNull();
+    expect(state.current.hasMore).toBe(true);
+    expect(typeof state.current.loadMore).toBe("function");
+  });
+
+  it("should set fetch function as loadMore", () => {
+    const state = renderHookServer(() => useRecentUsers(5));
+
+    expect(typeof state.current.loadMore).toBe("function");
   });
 });

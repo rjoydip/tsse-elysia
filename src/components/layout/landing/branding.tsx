@@ -176,7 +176,7 @@ export function Branding({
     if (hidden.mobile) {
       return "hidden lg:flex";
     }
-    return "hidden lg:flex";
+    return "";
   };
 
   const getJustifyClass = (): string => {

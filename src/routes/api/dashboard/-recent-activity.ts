@@ -52,10 +52,8 @@ export const recentActivityRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
-        const limit = Math.min(
-          50,
-          Math.max(1, Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10")),
-        );
+        const rawLimit = Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10");
+        const limit = Math.min(50, Math.max(1, Number.isNaN(rawLimit) ? 10 : rawLimit));
         // Only show users with the "user" role (exclude admins, managers, etc.)
         const dbUsers = await userRepository.findRecent(limit, "user");
 
@@ -104,12 +102,13 @@ export const recentActivityRoutes = new Elysia({
       if (authResult.error) return { error: authResult.error.message };
 
       try {
-        const limit = Math.min(
-          50,
-          Math.max(1, Number.parseInt(new URL(request.url).searchParams.get("limit") ?? "10")),
-        );
+        const url = new URL(request.url);
+        const rawLimit = Number.parseInt(url.searchParams.get("limit") ?? "10");
+        const limit = Math.min(50, Math.max(1, Number.isNaN(rawLimit) ? 10 : rawLimit));
+        const rawOffset = Number.parseInt(url.searchParams.get("offset") ?? "0");
+        const offset = Math.max(0, Number.isNaN(rawOffset) ? 0 : rawOffset);
         // Only show users with the "user" role (exclude admins, managers, etc.)
-        const recentUsers = await userRepository.findRecent(limit, "user");
+        const recentUsers = await userRepository.findRecent(limit, "user", offset);
 
         return {
           recentUsers: recentUsers.map(formatUserForDisplay),
@@ -127,7 +126,8 @@ export const recentActivityRoutes = new Elysia({
     {
       detail: {
         summary: "Get recent users",
-        description: "Returns a feed of recently registered users with role info.",
+        description:
+          "Returns a feed of recently registered users with role info. Supports pagination via limit and offset.",
         tags: ["dashboard", "activity"],
         responses: {
           200: {

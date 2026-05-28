@@ -191,7 +191,9 @@ describe("User Repository", () => {
           orderBy: (dir: any) => {
             orderDirection = dir;
             return {
-              limit: () => Promise.resolve(mockUsers),
+              limit: () => ({
+                offset: () => Promise.resolve(mockUsers),
+              }),
             };
           },
         }),
@@ -210,10 +212,12 @@ describe("User Repository", () => {
       mockDb.select = () => ({
         from: () => ({
           orderBy: () => ({
-            limit: (n: number) => {
-              capturedLimit = n;
-              return Promise.resolve([]);
-            },
+            limit: (n: number) => ({
+              offset: () => {
+                capturedLimit = n;
+                return Promise.resolve([]);
+              },
+            }),
           }),
         }),
       });
@@ -221,10 +225,167 @@ describe("User Repository", () => {
       await repository.findRecent();
       expect(capturedLimit).toBe(10);
     });
+
+    test("should apply role filter via where", async () => {
+      let capturedRole = "";
+
+      mockDb.select = () => ({
+        from: () => ({
+          where: (condition: any) => {
+            capturedRole = condition;
+            return {
+              orderBy: () => ({
+                limit: () => ({
+                  offset: () => Promise.resolve([]),
+                }),
+              }),
+            };
+          },
+        }),
+      });
+
+      await repository.findRecent(5, "manager");
+      expect(capturedRole).toBeDefined();
+    });
+
+    test("should apply offset when provided", async () => {
+      let capturedOffset = -1;
+
+      mockDb.select = () => ({
+        from: () => ({
+          where: (_condition: any) => ({
+            orderBy: () => ({
+              limit: () => ({
+                offset: (n: number) => {
+                  capturedOffset = n;
+                  return Promise.resolve([]);
+                },
+              }),
+            }),
+          }),
+        }),
+      });
+
+      await repository.findRecent(5, "user", 10);
+      expect(capturedOffset).toBe(10);
+    });
+
+    test("should apply offset 0 when offset is 0", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          orderBy: () => ({
+            limit: () => ({
+              offset: () => Promise.resolve([]),
+            }),
+          }),
+        }),
+      });
+
+      const result = await repository.findRecent(5, undefined, 0);
+      expect(result).toEqual([]);
+    });
+
+    test("should apply both role filter and offset", async () => {
+      let capturedRole = "";
+      let capturedOffset = -1;
+
+      mockDb.select = () => ({
+        from: () => ({
+          where: (condition: any) => {
+            capturedRole = condition;
+            return {
+              orderBy: () => ({
+                limit: () => ({
+                  offset: (n: number) => {
+                    capturedOffset = n;
+                    return Promise.resolve([]);
+                  },
+                }),
+              }),
+            };
+          },
+        }),
+      });
+
+      await repository.findRecent(5, "admin", 3);
+      expect(capturedRole).toBeDefined();
+      expect(capturedOffset).toBe(3);
+    });
+  });
+
+  describe("getMonthlyRegistrationsForYear", () => {
+    test("should return months up to current month for current year", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => ({
+            groupBy: () => ({
+              orderBy: () =>
+                Promise.resolve([
+                  { month: 1, count: 5 },
+                  { month: 3, count: 7 },
+                ]),
+            }),
+          }),
+        }),
+      });
+
+      const currentYear = new Date().getFullYear();
+      const result = await repository.getMonthlyRegistrationsForYear(currentYear);
+      const expectedMonthCount = new Date().getMonth() + 1;
+
+      expect(result).toHaveLength(expectedMonthCount);
+      expect(result[0]).toEqual({ name: "Jan", total: 5 });
+      expect(result[1]).toEqual({ name: "Feb", total: 0 });
+      expect(result[2]).toEqual({ name: "Mar", total: 7 });
+    });
+
+    test("should return full 12 months for previous year", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => ({
+            groupBy: () => ({
+              orderBy: () =>
+                Promise.resolve([
+                  { month: 6, count: 10 },
+                  { month: 12, count: 5 },
+                ]),
+            }),
+          }),
+        }),
+      });
+
+      const result = await repository.getMonthlyRegistrationsForYear(2025);
+
+      expect(result).toHaveLength(12);
+      expect(result[0]).toEqual({ name: "Jan", total: 0 });
+      expect(result[5]).toEqual({ name: "Jun", total: 10 });
+      expect(result[11]).toEqual({ name: "Dec", total: 5 });
+    });
+
+    test("should return zeros when no registrations exist for the year", async () => {
+      mockDb.select = () => ({
+        from: () => ({
+          where: () => ({
+            groupBy: () => ({
+              orderBy: () => Promise.resolve([]),
+            }),
+          }),
+        }),
+      });
+
+      const currentYear = new Date().getFullYear();
+      const result = await repository.getMonthlyRegistrationsForYear(currentYear);
+      const expectedMonthCount = new Date().getMonth() + 1;
+
+      expect(result).toHaveLength(expectedMonthCount);
+      for (const month of result) {
+        expect(month.total).toBe(0);
+      }
+    });
   });
 
   describe("getMonthlyRegistrations", () => {
-    test("should return 12 months with counts", async () => {
+    test("should return months up to current month with counts", async () => {
       mockDb.select = () => ({
         from: () => ({
           where: () => ({
@@ -240,16 +401,15 @@ describe("User Repository", () => {
       });
 
       const result = await repository.getMonthlyRegistrations();
+      const expectedMonthCount = new Date().getMonth() + 1;
 
-      expect(result).toHaveLength(12);
+      expect(result).toHaveLength(expectedMonthCount);
       expect(result[0]).toEqual({ name: "Jan", total: 5 });
-      expect(result[5]).toEqual({ name: "Jun", total: 3 });
       // Months without data should be 0
       expect(result[1]).toEqual({ name: "Feb", total: 0 });
-      expect(result[11]).toEqual({ name: "Dec", total: 0 });
     });
 
-    test("should return all zeros when no registrations exist", async () => {
+    test("should return zeros when no registrations exist", async () => {
       mockDb.select = () => ({
         from: () => ({
           where: () => ({
@@ -261,8 +421,9 @@ describe("User Repository", () => {
       });
 
       const result = await repository.getMonthlyRegistrations();
+      const expectedMonthCount = new Date().getMonth() + 1;
 
-      expect(result).toHaveLength(12);
+      expect(result).toHaveLength(expectedMonthCount);
       for (const month of result) {
         expect(month.total).toBe(0);
       }

@@ -6,7 +6,16 @@
 import { eq, ne, like, and, or, desc, sql, count, inArray } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
+import { MONTH_NAMES } from "~/config/date";
 import type { DbType } from "~/config/db";
+
+/**
+ * Type for monthly registration data.
+ */
+interface MonthlyRow {
+  month: number;
+  count: number;
+}
 
 /**
  * Filters for querying users.
@@ -41,6 +50,24 @@ export class UserRepository {
   constructor(db?: DbType) {
     // Capture db at construction time for DI/testing, but fall back to live binding
     this.db = db;
+  }
+
+  /**
+   * Builds a monthly registration array from raw DB rows.
+   * Fills gaps with zero and slices to monthCap.
+   */
+  private static buildMonthlyData(
+    rows: MonthlyRow[],
+    monthCap: number,
+  ): Array<{ name: string; total: number }> {
+    const monthMap = new Map<number, number>();
+    for (const row of rows) {
+      monthMap.set(row.month, row.count);
+    }
+    return MONTH_NAMES.slice(0, monthCap).map((name, index) => ({
+      name,
+      total: monthMap.get(index + 1) ?? 0,
+    }));
   }
 
   /**
@@ -180,10 +207,10 @@ export class UserRepository {
   async countUsersThisMonth(): Promise<number> {
     const now = new Date();
     // Use UTC to avoid timezone issues
-    // Timestamps are stored as milliseconds, so no conversion needed
-    const monthStart = Date.UTC(now.getFullYear(), now.getMonth(), 1);
+    // Timestamps are stored as Unix seconds (Drizzle mode: "timestamp")
+    const monthStart = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), 1) / 1000);
     // Calculate start of next month for upper bound
-    const nextMonthStart = Date.UTC(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonthStart = Math.floor(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1) / 1000);
     const [result] = await this.getDb()
       .select({ count: count() })
       .from(users)
@@ -192,35 +219,52 @@ export class UserRepository {
   }
 
   /**
-   * Retrieves the most recently created users.
+   * Retrieves the most recently created users with optional pagination.
    * @param limit - Maximum number of users to return (default: 10)
    * @param role - Optional role filter (e.g., "user" to show only regular users)
+   * @param offset - Optional number of records to skip (for pagination)
    * @returns Array of recent user records
    */
-  async findRecent(limit: number = 10, role?: string): Promise<(typeof users.$inferSelect)[]> {
-    let query = this.getDb().select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+  async findRecent(
+    limit: number = 10,
+    role?: string,
+    offset?: number,
+  ): Promise<(typeof users.$inferSelect)[]> {
+    const conditions: ReturnType<typeof eq>[] = [];
 
     if (role) {
-      query = query.where(eq(users.role, role));
+      conditions.push(eq(users.role, role));
     }
+
+    let query = this.getDb().select().from(users);
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const safeOffset = typeof offset === "number" && offset > 0 ? offset : 0;
+    query = query.orderBy(desc(users.createdAt)).limit(limit).offset(safeOffset);
 
     return query;
   }
 
   /**
-   * Finds users created since a given timestamp.
+   * Finds users created since a given timestamp (in milliseconds).
    * Uses DB-level filtering instead of fetching all and filtering in-memory.
-   * Timestamps are stored as milliseconds since epoch.
+   * The 'since' parameter is expected in milliseconds (e.g. Date.now() - offset),
+   * and is converted to Unix seconds for the database query since timestamps
+   * are stored as Unix seconds (Drizzle mode: "timestamp").
    */
   async findRecentSince(
     since: number,
     limit: number = 100,
   ): Promise<(typeof users.$inferSelect)[]> {
-    // Both the stored timestamps and the 'since' parameter are in milliseconds
+    // Convert from milliseconds to Unix seconds for DB comparison
+    const sinceInSeconds = Math.floor(since / 1000);
     return this.getDb()
       .select()
       .from(users)
-      .where(sql`${users.createdAt} >= ${since}`)
+      .where(sql`${users.createdAt} >= ${sinceInSeconds}`)
       .orderBy(desc(users.createdAt))
       .limit(limit);
   }
@@ -230,12 +274,28 @@ export class UserRepository {
    * @returns Count of users updated in the last hour
    */
   async countUsersUpdatedLastHour(): Promise<number> {
-    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const oneHourAgo = Math.floor((Date.now() - 60 * 60 * 1000) / 1000);
     const [result] = await this.getDb()
       .select({ count: count() })
       .from(users)
       .where(sql`${users.updatedAt} >= ${oneHourAgo}`);
     return result?.count ?? 0;
+  }
+
+  /**
+   * Shared monthly registration query for a date range.
+   * Extracts month number and count from users created within the given range.
+   */
+  async getMonthlyRows(yearStart: number, yearEnd: number): Promise<MonthlyRow[]> {
+    return this.getDb()
+      .select({
+        month: sql`CAST(strftime('%m', ${users.createdAt}, 'unixepoch') AS INTEGER)`.as<number>(),
+        count: sql`COUNT(*)`.as<number>(),
+      })
+      .from(users)
+      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} < ${yearEnd}`))
+      .groupBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`)
+      .orderBy(sql`strftime('%m', ${users.createdAt}, 'unixepoch')`);
   }
 
   /**
@@ -245,44 +305,15 @@ export class UserRepository {
   async getMonthlyRegistrationsForYear(
     year: number,
   ): Promise<Array<{ name: string; total: number }>> {
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const yearStart = Math.floor(Date.UTC(year, 0, 1) / 1000);
+    // Cap current year to the current month; previous years show full year
+    const monthCap = year === currentYear ? now.getMonth() + 1 : 12;
+    const yearEnd = Math.floor(Date.UTC(year, monthCap, 1) / 1000);
 
-    const yearStart = Date.UTC(year, 0, 1);
-    const yearEnd = Date.UTC(year, 11, 31, 23, 59, 59);
-
-    const rows = await this.getDb()
-      .select({
-        month:
-          sql`CAST(strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch') AS INTEGER)`.as<number>(),
-        count: sql`COUNT(*)`.as<number>(),
-      })
-      .from(users)
-      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`);
-
-    const monthMap = new Map<number, number>();
-    for (const row of rows) {
-      monthMap.set(row.month, row.count);
-    }
-
-    return monthNames.map((name, index) => ({
-      name,
-      total: monthMap.get(index + 1) ?? 0,
-    }));
+    const rows = await this.getMonthlyRows(yearStart, yearEnd);
+    return UserRepository.buildMonthlyData(rows, monthCap);
   }
 
   /**
@@ -292,45 +323,15 @@ export class UserRepository {
    * @returns Array of monthly registration counts for the current year
    */
   async getMonthlyRegistrations(): Promise<Array<{ name: string; total: number }>> {
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const monthCap = now.getMonth() + 1;
+    const yearStart = Math.floor(Date.UTC(currentYear, 0, 1) / 1000);
+    // Cap to start of next month so future months are not included
+    const nextMonthStart = Math.floor(Date.UTC(currentYear, monthCap, 1) / 1000);
 
-    const currentYear = new Date().getFullYear();
-    const yearStart = Date.UTC(currentYear, 0, 1);
-    const yearEnd = Date.UTC(currentYear, 11, 31, 23, 59, 59);
-
-    const rows = await this.getDb()
-      .select({
-        month:
-          sql`CAST(strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch') AS INTEGER)`.as<number>(),
-        count: sql`COUNT(*)`.as<number>(),
-      })
-      .from(users)
-      .where(and(sql`${users.createdAt} >= ${yearStart}`, sql`${users.createdAt} <= ${yearEnd}`))
-      .groupBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`)
-      .orderBy(sql`strftime('%m', ${users.createdAt} / 1000.0, 'unixepoch')`);
-
-    const monthMap = new Map<number, number>();
-    for (const row of rows) {
-      monthMap.set(row.month, row.count);
-    }
-
-    return monthNames.map((name, index) => ({
-      name,
-      total: monthMap.get(index + 1) ?? 0,
-    }));
+    const rows = await this.getMonthlyRows(yearStart, nextMonthStart);
+    return UserRepository.buildMonthlyData(rows, monthCap);
   }
 
   /**

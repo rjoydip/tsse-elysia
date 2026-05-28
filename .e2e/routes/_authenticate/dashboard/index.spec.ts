@@ -19,3 +19,113 @@ test.describe("Dashboard Index", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 });
+
+test.describe("Dashboard Overview Chart API", () => {
+  test.beforeEach(async ({ page }) => {
+    await signUpViaUI(page);
+  });
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  test("should return monthly registrations capped to current month", async ({ page }) => {
+    const response = await page.request.get(
+      `${E2E_BASE_URL}/api/dashboard/overview-chart/monthly-sales`,
+    );
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.monthlyData).toBeDefined();
+    expect(body.timestamp).toBeDefined();
+
+    const currentMonth = new Date().getMonth();
+    expect(body.monthlyData).toHaveLength(currentMonth + 1);
+
+    // Verify no months beyond the current month
+    for (const item of body.monthlyData) {
+      const monthIndex = monthNames.indexOf(item.name);
+      expect(monthIndex).toBeGreaterThanOrEqual(0);
+      expect(monthIndex).toBeLessThanOrEqual(currentMonth);
+    }
+  });
+
+  test("should return yearly comparison capped to current month", async ({ page }) => {
+    const response = await page.request.get(
+      `${E2E_BASE_URL}/api/dashboard/overview-chart/yearly-comparison`,
+    );
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.yearlyData).toBeDefined();
+    expect(body.timestamp).toBeDefined();
+
+    const currentMonth = new Date().getMonth();
+    expect(body.yearlyData).toHaveLength(currentMonth + 1);
+
+    // Verify each item has the expected structure
+    for (const item of body.yearlyData) {
+      const monthIndex = monthNames.indexOf(item.name);
+      expect(monthIndex).toBeGreaterThanOrEqual(0);
+      expect(monthIndex).toBeLessThanOrEqual(currentMonth);
+      expect(typeof item.currentYear).toBe("number");
+      expect(typeof item.previousYear).toBe("number");
+    }
+  });
+
+  test("should return 401 when not authenticated", async ({ request }) => {
+    const response = await request.get(
+      `${E2E_BASE_URL}/api/dashboard/overview-chart/monthly-sales`,
+    );
+    expect(response.status()).toBe(401);
+
+    const body = await response.json();
+    expect(body.error).toBeDefined();
+  });
+});
+
+test.describe("Dashboard Recent Activity API", () => {
+  test.beforeEach(async ({ page }) => {
+    await signUpViaUI(page);
+  });
+
+  test("should return recent users with default pagination", async ({ page }) => {
+    const response = await page.request.get(`${E2E_BASE_URL}/api/dashboard/recent-activity/users`);
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.recentUsers).toBeDefined();
+    expect(Array.isArray(body.recentUsers)).toBe(true);
+    expect(body.timestamp).toBeDefined();
+  });
+
+  test("should return recent users with offset pagination", async ({ page }) => {
+    const response = await page.request.get(
+      `${E2E_BASE_URL}/api/dashboard/recent-activity/users?limit=5&offset=5`,
+    );
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+    expect(body.recentUsers).toBeDefined();
+    expect(Array.isArray(body.recentUsers)).toBe(true);
+  });
+
+  test("should return 401 when not authenticated for recent activity", async ({ request }) => {
+    const response = await request.get(`${E2E_BASE_URL}/api/dashboard/recent-activity/users`);
+    expect(response.status()).toBe(401);
+
+    const body = await response.json();
+    expect(body.error).toBeDefined();
+  });
+});

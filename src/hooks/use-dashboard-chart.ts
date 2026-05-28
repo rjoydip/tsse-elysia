@@ -8,6 +8,19 @@
 
 import { useEffect, useState } from "react";
 import type { MonthlyRegistrationsItem, YearlyComparisonItem } from "~/repositories/dashboard";
+import { MONTH_NAMES } from "~/config/date";
+
+/**
+ * Filters data to only include months up to the current month.
+ * Serves as a client-side safety net even if the backend returns future months.
+ */
+export function capToCurrentMonth<T extends { name: string }>(data: T[]): T[] {
+  const currentMonth = new Date().getMonth();
+  return data.filter((item) => {
+    const monthIndex = (MONTH_NAMES as readonly string[]).indexOf(item.name);
+    return monthIndex >= 0 && monthIndex <= currentMonth;
+  });
+}
 
 export function useDashboardChartData() {
   const [monthlyData, setMonthlyData] = useState<MonthlyRegistrationsItem[]>([]);
@@ -41,8 +54,9 @@ export function useDashboardChartData() {
         const [monthlyJson, yearlyJson] = await Promise.all([monthlyRes.json(), yearlyRes.json()]);
 
         if (!abortController.signal.aborted) {
-          setMonthlyData(monthlyJson.monthlyData ?? []);
-          setYearlyData(yearlyJson.yearlyData ?? []);
+          // Client-side safety net: cap to current month regardless of backend
+          setMonthlyData(capToCurrentMonth(monthlyJson.monthlyData ?? []));
+          setYearlyData(capToCurrentMonth(yearlyJson.yearlyData ?? []));
           setLoading(false);
         }
       } catch (err) {

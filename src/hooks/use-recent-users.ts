@@ -1,51 +1,218 @@
 /**
- * Hook for fetching recent users.
- * Provides loading states and error handling for recent user data.
- *
- * Uses AbortController to cancel in-flight requests on unmount,
- * preventing duplicate requests under React StrictMode.
+ * Hook for fetching recent users with pagination.
+ * Supports infinite scrolling via loadMore() which fetches the next batch.
+ * Uses a ref-based offset to prevent stale-closure races: even if a scroll
+ * event fires with an old loadMore reference, offsetRef.current is always
+ * up to date. loadingRef synchronously guards against concurrent fetches.
+ * Tracks hasMore to stop fetching when all users are loaded.
+ * Uses AbortController to cancel in-flight requests on unmount.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RecentUserItem } from "~/repositories/dashboard";
+import { RECENT_USERS_COUNT } from "~/config";
 
-export function useRecentUsers(limit: number = 5) {
+/**
+ * Checks whether another fetch batch should be allowed.
+ */
+export function shouldLoadMore(
+  hasMore: boolean,
+  loading: boolean,
+  max: number | undefined,
+  offset: number,
+): boolean {
+  if (!hasMore || loading) return false;
+  if (max !== undefined && offset >= max) return false;
+  return true;
+}
+
+/**
+ * Fetches a page of recent users from the API.
+ */
+export async function fetchUserPage(
+  limit: number,
+  offset: number,
+  signal: AbortSignal,
+): Promise<RecentUserItem[]> {
+  const response = await fetch(
+    `/api/dashboard/recent-activity/users?limit=${limit}&offset=${offset}`,
+    { signal },
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch recent users: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.recentUsers ?? [];
+}
+
+/**
+ * Processes the result of a fetchUserPage call.
+ * Updates state, offset, and hasMore based on the fetched users.
+ */
+export function processPage(
+  newUsers: RecentUserItem[],
+  limit: number,
+  signal: AbortSignal,
+  loadingRef: { current: boolean },
+  offsetRef: { current: number },
+  setRecentUsers: (fn: (prev: RecentUserItem[]) => RecentUserItem[]) => void,
+  setHasMore: (fn: boolean | ((prev: boolean) => boolean)) => void,
+  setLoading: (v: boolean) => void,
+): void {
+  if (signal.aborted) {
+    loadingRef.current = false;
+    setLoading(false);
+    return;
+  }
+
+  setRecentUsers((prev) => [...prev, ...newUsers]);
+  offsetRef.current += newUsers.length;
+  if (newUsers.length < limit) {
+    setHasMore(false);
+  }
+  setLoading(false);
+  loadingRef.current = false;
+}
+
+/**
+ * Creates a new AbortController, cancelling any previous in-flight request.
+ * Returns the new controller for use with the next fetch.
+ */
+function createAbortController(aborterRef: { current: AbortController | null }): AbortController {
+  if (aborterRef.current) {
+    aborterRef.current.abort();
+  }
+  const controller = new AbortController();
+  aborterRef.current = controller;
+  return controller;
+}
+
+/**
+ * Handles errors from a fetchUserPage call.
+ * Updates error state and resets loading flags.
+ */
+export function handleFetchError(
+  err: unknown,
+  signal: AbortSignal,
+  loadingRef: { current: boolean },
+  setError: (msg: string | null) => void,
+  setLoading: (v: boolean) => void,
+): void {
+  if (signal.aborted) {
+    loadingRef.current = false;
+    setLoading(false);
+    return;
+  }
+  setError(err instanceof Error ? err.message : "Failed to fetch recent users");
+  setLoading(false);
+  loadingRef.current = false;
+}
+
+/**
+ * Orchestrates a paginated fetch: creates an abort controller, fetches a page,
+ * then delegates to a result processor. Shared by both initial load and loadMore.
+ */
+async function fetchWithAbort(
+  limit: number,
+  offset: number,
+  aborterRef: { current: AbortController | null },
+  loadingRef: { current: boolean },
+  processResult: (users: RecentUserItem[], signal: AbortSignal) => void,
+  setLoading: (v: boolean) => void,
+  setError: (msg: string | null) => void,
+): Promise<void> {
+  const controller = createAbortController(aborterRef);
+  setLoading(true);
+  setError(null);
+
+  try {
+    const newUsers = await fetchUserPage(limit, offset, controller.signal);
+    processResult(newUsers, controller.signal);
+  } catch (err) {
+    handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
+  }
+}
+
+export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number) {
   const [recentUsers, setRecentUsers] = useState<RecentUserItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const aborterRef = useRef<AbortController | null>(null);
+  const loadingRef = useRef(false);
+  const offsetRef = useRef(0);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    const fetchRecentUsers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`/api/dashboard/recent-activity/users?limit=${limit}`, {
-          signal: abortController.signal,
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch recent users: ${response.statusText}`);
-        }
-        const data = await response.json();
-        if (!abortController.signal.aborted) {
-          setRecentUsers(data.recentUsers ?? []);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!abortController.signal.aborted) {
-          setError(err instanceof Error ? err.message : "Failed to fetch recent users");
-          setLoading(false);
-        }
+  const loadMore = useCallback(async () => {
+    // Pure-predicate guard against cap hit, concurrent calls, or no-more-data
+    if (!shouldLoadMore(hasMore, loadingRef.current, max, offsetRef.current)) {
+      if (max !== undefined && offsetRef.current >= max) {
+        setHasMore(false);
       }
+      return;
+    }
+    loadingRef.current = true;
+    await fetchWithAbort(
+      limit,
+      offsetRef.current,
+      aborterRef,
+      loadingRef,
+      (users, signal) =>
+        processPage(
+          users,
+          limit,
+          signal,
+          loadingRef,
+          offsetRef,
+          setRecentUsers,
+          setHasMore,
+          setIsFetching,
+        ),
+      setIsFetching,
+      setError,
+    );
+  }, [hasMore, limit, max]);
+
+  // Load the first batch on mount
+  useEffect(() => {
+    const fetchInitial = async () => {
+      // Early exit if max is 0 or less — nothing to load
+      if (max !== undefined && max <= 0) {
+        setHasMore(false);
+        setIsFetching(false);
+        return;
+      }
+
+      loadingRef.current = true;
+      await fetchWithAbort(
+        limit,
+        0,
+        aborterRef,
+        loadingRef,
+        (users, signal) => {
+          // Initial fetch replaces (does not append)
+          if (signal.aborted) return;
+          setRecentUsers(users);
+          offsetRef.current = users.length;
+          if (users.length < limit) {
+            setHasMore(false);
+          }
+          setIsFetching(false);
+          loadingRef.current = false;
+        },
+        setIsFetching,
+        setError,
+      );
     };
 
-    fetchRecentUsers();
+    fetchInitial();
 
     return () => {
-      abortController.abort();
+      if (aborterRef.current) {
+        aborterRef.current.abort();
+        aborterRef.current = null;
+      }
     };
-  }, [limit]);
+  }, [limit, max]);
 
-  return { recentUsers, loading, error };
+  return { recentUsers, isFetching, error, loadMore, hasMore };
 }
