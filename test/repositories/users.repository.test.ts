@@ -227,14 +227,14 @@ describe("User Repository", () => {
 
       mockDb.select = () => ({
         from: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              where: (condition: any) => {
-                capturedRole = condition;
-                return Promise.resolve([]);
-              },
-            }),
-          }),
+          where: (condition: any) => {
+            capturedRole = condition;
+            return {
+              orderBy: () => ({
+                limit: () => Promise.resolve([]),
+              }),
+            };
+          },
         }),
       });
 
@@ -247,9 +247,9 @@ describe("User Repository", () => {
 
       mockDb.select = () => ({
         from: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              where: () => ({
+          where: (_condition: any) => ({
+            orderBy: () => ({
+              limit: () => ({
                 offset: (n: number) => {
                   capturedOffset = n;
                   return Promise.resolve([]);
@@ -283,25 +283,25 @@ describe("User Repository", () => {
 
       mockDb.select = () => ({
         from: () => ({
-          orderBy: () => ({
-            limit: () => ({
-              where: (condition: any) => {
-                capturedRole = condition;
-                return {
+          where: (condition: any) => {
+            capturedRole = condition;
+            return {
+              orderBy: () => ({
+                limit: () => ({
                   offset: (n: number) => {
                     capturedOffset = n;
                     return Promise.resolve([]);
                   },
-                };
-              },
-            }),
-          }),
+                }),
+              }),
+            };
+          },
         }),
       });
 
-      await repository.findRecent(5, "admin", 20);
+      await repository.findRecent(5, "admin", 3);
       expect(capturedRole).toBeDefined();
-      expect(capturedOffset).toBe(20);
+      expect(capturedOffset).toBe(3);
     });
   });
 

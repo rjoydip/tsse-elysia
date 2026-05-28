@@ -162,17 +162,24 @@ export function useRecentUsers(limit: number = RECENT_USERS_COUNT, max?: number)
       setError(null);
       try {
         const initialUsers = await fetchUserPage(limit, 0, controller.signal);
-        if (controller.signal.aborted) return;
-        setRecentUsers(initialUsers);
-        offsetRef.current = initialUsers.length;
-        if (initialUsers.length < limit) {
-          setHasMore(false);
+        /* The initial fetch replaces rather than appends, so pass the result
+           through processPage with a no-op setRecentUsers to get the offset/hasMore
+           side-effects, then do the replacement separately. */
+        processPage(
+          initialUsers,
+          limit,
+          controller.signal,
+          loadingRef,
+          offsetRef,
+          () => {},
+          setHasMore,
+          setLoading,
+        );
+        if (!controller.signal.aborted) {
+          setRecentUsers(initialUsers);
         }
-        setLoading(false);
       } catch (err) {
-        if (controller.signal.aborted) return;
-        setError(err instanceof Error ? err.message : "Failed to fetch recent users");
-        setLoading(false);
+        handleFetchError(err, controller.signal, loadingRef, setError, setLoading);
       }
     };
 
