@@ -3,24 +3,26 @@
  * Verifies each Elysia route module exposes the expected endpoints and payloads
  * when mounted as an isolated plugin (bypassing the full app assembly in -app.ts).
  *
- * These complement health.test.ts: modules.test.ts validates individual plugins
- * work correctly in isolation, while health.test.ts validates the full assembled
- * app stack end-to-end. Keeping them separate catches regressions in both the
- * plugin wiring and the app assembly layer.
+ * These complement the contract tests in test/unit/contract/api/:
+ * - modules.test.ts validates individual plugins work correctly in isolation
+ * - Contract tests (health.test.ts, heartbeat.test.ts) validate the full assembled
+ *   app stack end-to-end
+ * Keeping them separate catches regressions in both the plugin wiring and the
+ * app assembly layer.
  */
-
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
 import { APP_NAME } from "~/config";
 import { coreRoutes } from "~/routes/api/root/-core";
 import { realtimeRoutes } from "~/routes/api/root/-realtime";
 import { databaseRoutes } from "~/routes/api/root/-database";
+import { BASE_URL } from "~/test/helpers/request";
 
 describe("Core API module", () => {
   const app = new Elysia({ prefix: "/api" }).use(coreRoutes);
 
   it("should return root welcome message", async () => {
-    const response = await app.handle(new Request("http://localhost/api"));
+    const response = await app.handle(new Request(`${BASE_URL}/api`));
 
     expect(response.status).toBe(200);
     const body = await response.text();
@@ -28,7 +30,7 @@ describe("Core API module", () => {
   });
 
   it("should return healthy status payload", async () => {
-    const response = await app.handle(new Request("http://localhost/api/health"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
 
     expect(response.status).toBe(200);
     const data = (await response.json()) as { status: string; name: string };
@@ -41,7 +43,7 @@ describe("Realtime API module", () => {
   const app = new Elysia({ prefix: "/api" }).use(realtimeRoutes);
 
   it("should return realtime discovery metadata", async () => {
-    const response = await app.handle(new Request("http://localhost/api/realtime"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/realtime`));
 
     expect(response.status).toBe(200);
     const data = (await response.json()) as {
@@ -53,7 +55,7 @@ describe("Realtime API module", () => {
   });
 
   it("should return realtime health payload", async () => {
-    const response = await app.handle(new Request("http://localhost/api/realtime/health"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/realtime/health`));
 
     expect(response.status).toBe(200);
     const data = (await response.json()) as {
@@ -69,7 +71,7 @@ describe("Database API module", () => {
   const app = new Elysia({ prefix: "/api" }).use(databaseRoutes);
 
   it("should return database heartbeat payload", async () => {
-    const response = await app.handle(new Request("http://localhost/api/database/heartbeat"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/database/heartbeat`));
 
     expect([200, 503]).toContain(response.status);
     const data = (await response.json()) as {

@@ -1,7 +1,9 @@
 /**
  * Contract tests for health-check API endpoints.
- * Covers: main API health, auth health, database heartbeat,
- * realtime health, and cache health.
+ * Covers: main API health, auth health, realtime health,
+ * and realtime discovery.
+ *
+ * Heartbeat endpoints (cache, database) are tested in heartbeat.test.ts.
  *
  * Uses app.handle() to simulate requests without a running server.
  */
@@ -58,24 +60,6 @@ describe("GET /api/auth/health", () => {
 
   it("should return JSON content type", async () => {
     const response = await app.handle(new Request(`${BASE_URL}/api/auth/health`));
-    expect(response.headers.get("content-type")).toContain("application/json");
-  });
-});
-
-describe("GET /api/database/heartbeat", () => {
-  it("should return database heartbeat payload", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/database/heartbeat`));
-
-    expect([200, 503]).toContain(response.status);
-
-    const body = await response.json();
-    expect(["healthy", "unhealthy"]).toContain(body.status);
-    expect(body.timestamp).toBeDefined();
-    expect(body.detail).toBeDefined();
-  });
-
-  it("should return JSON content type", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/database/heartbeat`));
     expect(response.headers.get("content-type")).toContain("application/json");
   });
 });

@@ -1,9 +1,11 @@
 /**
- * Contract tests for Cache heartbeat API endpoint.
- * Validates the cache liveness probe response structure
- * and content type regardless of connectivity state.
+ * Contract tests for heartbeat API endpoints.
+ * Validates liveness probe response structure and content type
+ * for both cache and database heartbeat endpoints.
+ *
+ * These test through the full app stack via app.handle().
+ * Isolated plugin-level heartbeat tests are in test/unit/routes/.
  */
-
 import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
@@ -67,6 +69,24 @@ describe("GET /api/cache/heartbeat", () => {
   it("should return JSON content type", async () => {
     const response = await app.handle(new Request(`${BASE_URL}/api/cache/heartbeat`));
 
+    expect(response.headers.get("content-type")).toContain("application/json");
+  });
+});
+
+describe("GET /api/database/heartbeat", () => {
+  it("should return database heartbeat payload", async () => {
+    const response = await app.handle(new Request(`${BASE_URL}/api/database/heartbeat`));
+
+    expect([200, 503]).toContain(response.status);
+
+    const body = await response.json();
+    expect(["healthy", "unhealthy"]).toContain(body.status);
+    expect(body.timestamp).toBeDefined();
+    expect(body.detail).toBeDefined();
+  });
+
+  it("should return JSON content type", async () => {
+    const response = await app.handle(new Request(`${BASE_URL}/api/database/heartbeat`));
     expect(response.headers.get("content-type")).toContain("application/json");
   });
 });

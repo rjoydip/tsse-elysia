@@ -1,78 +1,18 @@
+/**
+ * Contract tests for Eden Treaty type-safe client.
+ * Validates that Elysia's Eden Treaty client correctly infers
+ * types and returns expected responses from the API.
+ *
+ * These complement health.test.ts and endpoints.test.ts by testing
+ * the client-server type contract rather than raw HTTP behavior.
+ */
 import { describe, it, expect, afterAll } from "bun:test";
 import { treaty } from "@elysiajs/eden";
 import { apiRoutes } from "~/routes/api/-app";
-import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
-
-const app = apiRoutes;
 
 afterAll(() => {
   closeStorage();
-});
-
-const getHealthData = () => ({
-  name: "TSS ELYSIA",
-  status: "ok",
-});
-
-describe("API Flows", () => {
-  it("should return 404 for unknown routes", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/unknown-route`));
-
-    expect(response.status).toBe(404);
-  });
-
-  it("should include CORS headers", async () => {
-    const response = await app.handle(
-      new Request(`${BASE_URL}/api/health`, {
-        method: "OPTIONS",
-        headers: {
-          Origin: "http://localhost:3000",
-          "Access-Control-Request-Method": "GET",
-        },
-      }),
-    );
-
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:3000");
-  });
-
-  it("should handle error response format", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/nonexistent`));
-
-    expect(response.status).toBe(404);
-  });
-
-  it("should include trace headers in response", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
-
-    expect(response.headers.get("X-Elapsed")).toBeDefined();
-  });
-});
-
-describe("API Health", () => {
-  it("should return correct name", () => {
-    const data = getHealthData();
-    expect(data.name).toBe("TSS ELYSIA");
-  });
-
-  it("should return ok status", () => {
-    const data = getHealthData();
-    expect(data.status).toBe("ok");
-  });
-
-  it("should return correct response structure", () => {
-    const data = getHealthData();
-    expect(data).toHaveProperty("name");
-    expect(data).toHaveProperty("status");
-  });
-});
-
-describe("API Root", () => {
-  it("should return welcome message", () => {
-    const name = "TSS ELYSIA";
-    const message = `Welcome to ${name}`;
-    expect(message).toBe("Welcome to TSS ELYSIA");
-  });
 });
 
 const api = treaty(apiRoutes);
@@ -90,7 +30,7 @@ describe("Eden Treaty - API Endpoints", () => {
     it("should return text/plain content type", async () => {
       const { response } = await api.api.get();
 
-      expect(response.headers.get("content-type")).toContain("text/plain");
+      expect(response.headers.get("content-type")).toMatch(/text\/plain/);
     });
   });
 

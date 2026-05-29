@@ -72,3 +72,17 @@ describe("API Error Handling", () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe("API Method Handling", () => {
+  it("should reject POST to API root with 404", async () => {
+    const response = await app.handle(
+      new Request(`${BASE_URL}/api`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+  });
+});

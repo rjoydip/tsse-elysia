@@ -1,6 +1,12 @@
 /**
- * Integration tests for MCP HTTP routes.
+ * Contract tests for MCP Core HTTP routes.
  * Covers route availability, health checks, rate limiting behavior, and tool discovery.
+ *
+ * Uses `new Elysia().use(mcpCoreRoutes)` to test the MCP core module in isolation,
+ * bypassing the full app assembly. This allows mocking the rate limiter directly
+ * without affecting other tests.
+ *
+ * Full-stack MCP endpoint tests are in mcp/endpoints.test.ts (uses apiRoutes).
  */
 import { Elysia } from "elysia";
 import { describe, expect, it, vi } from "bun:test";
@@ -63,7 +69,7 @@ describe("MCP API Root", () => {
   it("should return text/plain content type", async () => {
     const response = await app.handle(new Request("http://localhost/api/mcp/"));
 
-    expect(response.headers.get("content-type")).toContain("text/plain");
+    expect(response.headers.get("content-type")).toMatch(/text\/plain/);
   });
 });
 
