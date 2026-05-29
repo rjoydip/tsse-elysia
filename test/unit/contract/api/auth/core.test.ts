@@ -19,12 +19,6 @@ afterAll(() => {
 });
 
 describe("Auth API Flows", () => {
-  it("should return 404 for unknown routes", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/unknown-route`));
-
-    expect(response.status).toBe(404);
-  });
-
   it("should include CORS headers", async () => {
     const response = await app.handle(
       new Request(`${BASE_URL}/api/auth`, {
@@ -39,7 +33,7 @@ describe("Auth API Flows", () => {
     expect(response.headers.get("Access-Control-Allow-Origin")).toBeDefined();
   });
 
-  it("should handle error response format", async () => {
+  it("should return 404 for unknown auth routes", async () => {
     const response = await app.handle(new Request(`${BASE_URL}/api/auth/nonexistent`));
 
     expect(response.status).toBe(404);
@@ -92,19 +86,12 @@ describe("Auth API - Method Handling", () => {
     expect(response.status).toBe(200);
   });
 
-  it("should handle POST requests", async () => {
+  it("should handle POST /api/auth/sign-in", async () => {
     const response = await app.handle(
       new Request(`${BASE_URL}/api/auth/sign-in`, { method: "POST" }),
     );
 
-    expect(response.status).toBeDefined();
-  });
-
-  it("should handle allowed methods for sign-in", async () => {
-    const response = await app.handle(
-      new Request(`${BASE_URL}/api/auth/sign-in`, { method: "POST" }),
-    );
-
-    expect(response.status).toBeDefined();
+    // Better Auth returns 404 when sign-in body is missing
+    expect(response.status).toBe(404);
   });
 });

@@ -52,7 +52,7 @@ describe("Authenticated (TEST_AUTH_BYPASS) - Dashboard API", () => {
     const response = await app.handle(
       new Request(`${BASE_URL}/api/dashboard/metrics`, { headers: authHeaders }),
     );
-    expect(response.status).not.toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("GET /api/dashboard/analytics/overview passes auth", async () => {
@@ -61,7 +61,7 @@ describe("Authenticated (TEST_AUTH_BYPASS) - Dashboard API", () => {
         headers: authHeaders,
       }),
     );
-    expect(response.status).not.toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("GET /api/dashboard/recent-activity/users passes auth", async () => {
@@ -70,7 +70,7 @@ describe("Authenticated (TEST_AUTH_BYPASS) - Dashboard API", () => {
         headers: authHeaders,
       }),
     );
-    expect(response.status).not.toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("GET /api/dashboard/overview-chart/monthly-sales passes auth", async () => {
@@ -79,6 +79,6 @@ describe("Authenticated (TEST_AUTH_BYPASS) - Dashboard API", () => {
         headers: authHeaders,
       }),
     );
-    expect(response.status).not.toBe(401);
+    expect(response.status).toBe(200);
   });
 });
