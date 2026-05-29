@@ -3,17 +3,13 @@
  * Tests CRUD operations for permissions and roles requiring admin access.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
 import { TEST_TOKENS } from "~/test/helpers/auth";
 
 const app = apiRoutes;
-
-beforeAll(async () => {
-  // No setup needed for roles tests as they validate admin access
-});
 
 afterAll(() => {
   closeStorage();

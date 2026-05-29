@@ -4,17 +4,13 @@
  * All endpoints require authentication; administrative endpoints require admin/superadmin role.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
 import { TEST_TOKENS } from "~/test/helpers/auth";
 
 const app = apiRoutes;
-
-beforeAll(async () => {
-  // No setup needed for basic auth validation tests
-});
 
 afterAll(() => {
   closeStorage();

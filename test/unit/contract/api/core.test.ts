@@ -1,7 +1,10 @@
 import { describe, it, expect, afterAll } from "bun:test";
 import { treaty } from "@elysiajs/eden";
 import { apiRoutes } from "~/routes/api/-app";
+import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
+
+const app = apiRoutes;
 
 afterAll(() => {
   closeStorage();
@@ -14,14 +17,14 @@ const getHealthData = () => ({
 
 describe("API Flows", () => {
   it("should return 404 for unknown routes", async () => {
-    const response = await apiRoutes.handle(new Request("http://localhost/unknown-route"));
+    const response = await app.handle(new Request(`${BASE_URL}/unknown-route`));
 
     expect(response.status).toBe(404);
   });
 
   it("should include CORS headers", async () => {
-    const response = await apiRoutes.handle(
-      new Request("http://localhost/api/health", {
+    const response = await app.handle(
+      new Request(`${BASE_URL}/api/health`, {
         method: "OPTIONS",
         headers: {
           Origin: "http://localhost:3000",
@@ -34,13 +37,13 @@ describe("API Flows", () => {
   });
 
   it("should handle error response format", async () => {
-    const response = await apiRoutes.handle(new Request("http://localhost/api/nonexistent"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/nonexistent`));
 
     expect(response.status).toBe(404);
   });
 
   it("should include trace headers in response", async () => {
-    const response = await apiRoutes.handle(new Request("http://localhost/api/health"));
+    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
 
     expect(response.headers.get("X-Elapsed")).toBeDefined();
   });

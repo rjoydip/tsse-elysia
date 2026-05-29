@@ -1,6 +1,12 @@
 /**
  * Unit tests for modular API route plugins.
- * Verifies each Elysia route module exposes the expected endpoints and payloads.
+ * Verifies each Elysia route module exposes the expected endpoints and payloads
+ * when mounted as an isolated plugin (bypassing the full app assembly in -app.ts).
+ *
+ * These complement health.test.ts: modules.test.ts validates individual plugins
+ * work correctly in isolation, while health.test.ts validates the full assembled
+ * app stack end-to-end. Keeping them separate catches regressions in both the
+ * plugin wiring and the app assembly layer.
  */
 
 import { describe, expect, it } from "bun:test";

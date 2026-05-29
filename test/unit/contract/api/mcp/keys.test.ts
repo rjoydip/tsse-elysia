@@ -3,12 +3,17 @@
  * Validates authentication enforcement for key management operations.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
 import { TEST_TOKENS, malformedAuthRequest } from "~/test/helpers/auth";
+import { closeStorage } from "~/lib/cache";
 
 const app = apiRoutes;
+
+afterAll(() => {
+  closeStorage();
+});
 
 describe("MCP API Keys - Unauthenticated", () => {
   it("should return 401 without auth header", async () => {
