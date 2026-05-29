@@ -6,11 +6,16 @@
  * Uses app.handle() to simulate requests without a running server.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
+import { closeStorage } from "~/lib/cache";
 
 const app = apiRoutes;
+
+afterAll(() => {
+  closeStorage();
+});
 
 describe("GET /api/health", () => {
   it("should return healthy status with metadata", async () => {
@@ -37,7 +42,7 @@ describe("GET /api/health", () => {
       }),
     );
 
-    expect([200, 404, 405]).toContain(response.status);
+    expect(response.status).toBe(404);
   });
 });
 

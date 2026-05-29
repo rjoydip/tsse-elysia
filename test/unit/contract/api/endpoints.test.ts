@@ -7,11 +7,16 @@
  * while still exercising the full request/response lifecycle.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL, optionsRequest } from "~/test/helpers/request";
+import { closeStorage } from "~/lib/cache";
 
 const app = apiRoutes;
+
+afterAll(() => {
+  closeStorage();
+});
 
 describe("API Root", () => {
   it("should return welcome message", async () => {
@@ -26,29 +31,6 @@ describe("API Root", () => {
     const response = await app.handle(new Request(`${BASE_URL}/api`));
 
     expect(response.headers.get("content-type")).toMatch(/text\/plain/);
-  });
-});
-
-describe("API Health", () => {
-  it("should return 200 with status healthy", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
-
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.status).toBe("healthy");
-    expect(body.name).toBeDefined();
-  });
-
-  it("should return JSON content type", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
-
-    expect(response.headers.get("content-type")).toContain("application/json");
-  });
-
-  it("should include trace header", async () => {
-    const response = await app.handle(new Request(`${BASE_URL}/api/health`));
-
-    expect(response.headers.get("X-Elapsed")).toBeDefined();
   });
 });
 

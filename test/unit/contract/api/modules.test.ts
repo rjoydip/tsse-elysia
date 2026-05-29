@@ -3,14 +3,12 @@
  * Verifies each Elysia route module exposes the expected endpoints and payloads.
  */
 
-import { describe, expect, it, afterEach } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
 import { APP_NAME } from "~/config";
 import { coreRoutes } from "~/routes/api/root/-core";
 import { realtimeRoutes } from "~/routes/api/root/-realtime";
 import { databaseRoutes } from "~/routes/api/root/-database";
-import { cacheRoutes } from "~/routes/api/root/-cache";
-import { closeStorage } from "~/lib/cache";
 
 describe("Core API module", () => {
   const app = new Elysia({ prefix: "/api" }).use(coreRoutes);
@@ -76,36 +74,5 @@ describe("Database API module", () => {
     expect(["healthy", "unhealthy"]).toContain(data.status);
     expect(typeof data.timestamp).toBe("string");
     expect(typeof data.detail).toBe("string");
-  });
-});
-
-describe("Cache API module", () => {
-  const app = new Elysia({ prefix: "/api" }).use(cacheRoutes);
-
-  afterEach(() => {
-    closeStorage();
-  });
-
-  it("should return cache heartbeat payload", async () => {
-    const response = await app.handle(new Request("http://localhost/api/cache/heartbeat"));
-
-    expect([200, 503]).toContain(response.status);
-    const data = (await response.json()) as {
-      status: string;
-      timestamp: string;
-      backend: string;
-      latencyMs: number;
-    };
-    expect(["healthy", "unhealthy"]).toContain(data.status);
-    expect(typeof data.timestamp).toBe("string");
-    expect(["redis", "lru", "postgres"]).toContain(data.backend);
-    expect(typeof data.latencyMs).toBe("number");
-  });
-
-  it("should return latency measurement", async () => {
-    const response = await app.handle(new Request("http://localhost/api/cache/heartbeat"));
-    const data = (await response.json()) as { latencyMs: number };
-
-    expect(data.latencyMs).toBeGreaterThanOrEqual(0);
   });
 });

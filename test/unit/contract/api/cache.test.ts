@@ -4,11 +4,16 @@
  * and content type regardless of connectivity state.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
+import { closeStorage } from "~/lib/cache";
 
 const app = apiRoutes;
+
+afterAll(() => {
+  closeStorage();
+});
 
 describe("GET /api/cache/heartbeat", () => {
   it("should return valid response (200 or 503)", async () => {

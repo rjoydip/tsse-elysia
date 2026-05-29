@@ -78,7 +78,8 @@ describe("MCP API Health", () => {
   it("should rate limit repeated health probes from the same requester", async () => {
     let limitedResponse: Response | null = null;
 
-    for (let i = 0; i < 80; i++) {
+    // Rate limit is 60 req/min per IP; send limit+1 to trigger 429
+    for (let i = 0; i < 61; i++) {
       const response = await app.handle(
         new Request("http://localhost/api/mcp/health", {
           headers: {
@@ -99,8 +100,8 @@ describe("MCP API Health", () => {
   });
 
   it("should isolate health rate limit buckets per requester", async () => {
-    // Exhaust one requester bucket first.
-    for (let i = 0; i < 70; i++) {
+    // Exhaust one requester bucket first (rate limit is 60 req/min).
+    for (let i = 0; i < 61; i++) {
       await app.handle(
         new Request("http://localhost/api/mcp/health", {
           headers: {

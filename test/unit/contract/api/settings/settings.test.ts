@@ -1,191 +1,192 @@
 /**
- * Unit tests for Settings API routes.
- * Tests profile, account, display, and notifications endpoints.
+ * Contract tests for Settings API routes.
+ * Tests auth enforcement on profile, account, display, and notifications endpoints.
+ * All settings endpoints require authentication.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
+import { BASE_URL } from "~/test/helpers/request";
+import { closeStorage } from "~/lib/cache";
 
-const baseUrl = "http://localhost";
+const app = apiRoutes;
+
+afterAll(() => {
+  closeStorage();
+});
 
 describe("Settings API", () => {
-  describe("Unauthenticated Access", () => {
-    describe("GET /api/settings/profile", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/profile`));
+  describe("Profile endpoints", () => {
+    it("GET /api/settings/profile should return 401 without auth", async () => {
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/profile`));
 
-        expect(response.status).toBe(401);
-      });
+      expect(response.status).toBe(401);
     });
 
-    describe("PUT /api/settings/profile", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(
-          new Request(`${baseUrl}/api/settings/profile`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: "testuser",
-              bio: "Test bio",
-              urls: [],
-            }),
+    it("PUT /api/settings/profile should return 401 without auth", async () => {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/profile`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "fake-user",
+            bio: "test",
+            urls: [],
           }),
-        );
+        }),
+      );
 
-        expect(response.status).toBe(401);
-      });
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("Account endpoints", () => {
+    it("GET /api/settings/account should return 401 without auth", async () => {
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/account`));
+
+      expect(response.status).toBe(401);
     });
 
-    describe("GET /api/settings/account", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/account`));
-
-        expect(response.status).toBe(401);
-      });
-    });
-
-    describe("PUT /api/settings/account", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(
-          new Request(`${baseUrl}/api/settings/account`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: "Test User",
-              language: "en",
-            }),
+    it("PUT /api/settings/account should return 401 without auth", async () => {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/account`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "fake-user",
+            language: "xx",
           }),
-        );
+        }),
+      );
 
-        expect(response.status).toBe(401);
-      });
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("Display endpoints", () => {
+    it("GET /api/settings/display should return 401 without auth", async () => {
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/display`));
+
+      expect(response.status).toBe(401);
     });
 
-    describe("GET /api/settings/display", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/display`));
-
-        expect(response.status).toBe(401);
-      });
-    });
-
-    describe("PUT /api/settings/display", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(
-          new Request(`${baseUrl}/api/settings/display`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              items: ["recents", "home"],
-            }),
+    it("PUT /api/settings/display should return 401 without auth", async () => {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/display`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: ["test"],
           }),
-        );
+        }),
+      );
 
-        expect(response.status).toBe(401);
-      });
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("Notification endpoints", () => {
+    it("GET /api/settings/notifications should return 401 without auth", async () => {
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/notifications`));
+
+      expect(response.status).toBe(401);
     });
 
-    describe("GET /api/settings/notifications", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(
-          new Request(`${baseUrl}/api/settings/notifications`),
-        );
-
-        expect(response.status).toBe(401);
-      });
-    });
-
-    describe("PUT /api/settings/notifications", () => {
-      it("should return 401 when not authenticated", async () => {
-        const response = await apiRoutes.handle(
-          new Request(`${baseUrl}/api/settings/notifications`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "all",
-              mobile: true,
-              communication_emails: true,
-              social_emails: true,
-              marketing_emails: false,
-              security_emails: true,
-            }),
+    it("PUT /api/settings/notifications should return 401 without auth", async () => {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/notifications`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "none",
+            mobile: false,
+            communication_emails: false,
+            social_emails: false,
+            marketing_emails: false,
+            security_emails: false,
           }),
-        );
+        }),
+      );
 
-        expect(response.status).toBe(401);
-      });
+      expect(response.status).toBe(401);
     });
   });
 
   describe("Request Validation", () => {
     it("should reject malformed profile data", async () => {
-      const response = await apiRoutes.handle(
-        new Request(`${baseUrl}/api/settings/profile`, {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/profile`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            bio: "Missing username",
+            bio: "test",
           }),
         }),
       );
 
+      // Returns 500 because the route lacks validation middleware
+      // that would normally reject malformed payloads with 400
       expect(response.status).toBe(500);
     });
 
     it("should reject missing notification type", async () => {
-      const response = await apiRoutes.handle(
-        new Request(`${baseUrl}/api/settings/notifications`, {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/notifications`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            mobile: true,
-            communication_emails: true,
-            social_emails: true,
+            mobile: false,
+            communication_emails: false,
+            social_emails: false,
             marketing_emails: false,
-            security_emails: true,
+            security_emails: false,
           }),
         }),
       );
 
+      // Returns 500 because the route lacks validation middleware
+      // that would normally reject malformed payloads with 400
       expect(response.status).toBe(500);
     });
 
     it("should reject display with non-array items", async () => {
-      const response = await apiRoutes.handle(
-        new Request(`${baseUrl}/api/settings/display`, {
+      const response = await app.handle(
+        new Request(`${BASE_URL}/api/settings/display`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: "not-an-array",
+            items: "test",
           }),
         }),
       );
 
+      // Returns 500 because the route lacks validation middleware
+      // that would normally reject malformed payloads with 400
       expect(response.status).toBe(500);
     });
   });
 
   describe("Response Format", () => {
     it("should return JSON content type for profile", async () => {
-      const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/profile`));
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/profile`));
 
       expect(response.headers.get("content-type")).toContain("application/json");
     });
 
     it("should return JSON content type for account", async () => {
-      const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/account`));
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/account`));
 
       expect(response.headers.get("content-type")).toContain("application/json");
     });
 
     it("should return JSON content type for display", async () => {
-      const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/display`));
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/display`));
 
       expect(response.headers.get("content-type")).toContain("application/json");
     });
 
     it("should return JSON content type for notifications", async () => {
-      const response = await apiRoutes.handle(new Request(`${baseUrl}/api/settings/notifications`));
+      const response = await app.handle(new Request(`${BASE_URL}/api/settings/notifications`));
 
       expect(response.headers.get("content-type")).toContain("application/json");
     });

@@ -1,25 +1,7 @@
 /**
  * Auth test helpers for API contract tests.
- * Provides utilities for creating authenticated requests
- * and testing auth-related scenarios.
+ * Provides utilities for testing auth-related scenarios.
  */
-
-/**
- * Creates a request with a mock Authorization header.
- * Useful for testing protected endpoints that validate bearer tokens.
- *
- * @param url - Full URL including protocol and host
- * @param token - Bearer token value
- * @param method - HTTP method (default: GET)
- * @returns A standard Request object with Authorization header
- */
-export const authenticatedRequest = (url: string, token: string, method: string = "GET"): Request =>
-  new Request(url, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
 
 /**
  * Creates a request with a malformed Authorization header.

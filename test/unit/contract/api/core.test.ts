@@ -1,6 +1,11 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterAll } from "bun:test";
 import { treaty } from "@elysiajs/eden";
 import { apiRoutes } from "~/routes/api/-app";
+import { closeStorage } from "~/lib/cache";
+
+afterAll(() => {
+  closeStorage();
+});
 
 const getHealthData = () => ({
   name: "TSS ELYSIA",
