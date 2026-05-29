@@ -9,7 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
-} from "../../../src/components/ui/accordion";
+} from "~/components/ui/accordion";
 
 describe("Accordion", () => {
   it("should render Accordion with all components", () => {

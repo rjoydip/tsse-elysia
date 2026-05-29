@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Skeleton } from "../../../src/components/ui/skeleton";
+import { Skeleton } from "~/components/ui/skeleton";
 
 describe("Skeleton", () => {
   it("should render skeleton with default classes", () => {

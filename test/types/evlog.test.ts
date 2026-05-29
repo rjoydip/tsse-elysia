@@ -4,12 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type {
-  EvlogUser,
-  EvlogSession,
-  EvlogAuthSession,
-  EvlogUserContext,
-} from "../../src/types/evlog";
+import type { EvlogUser, EvlogSession, EvlogAuthSession, EvlogUserContext } from "~/types/evlog";
 
 describe("EvlogUser type", () => {
   it("should have required id property", () => {

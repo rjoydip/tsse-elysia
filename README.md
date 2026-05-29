@@ -349,94 +349,92 @@ src/
 ## Test Structure
 
 ```sh
-test/                  # Unit tests (Bun)
-├── config/           # Configuration tests
-│   ├── db/           # Database config tests
-│   ├── docs.test.ts  # Docs config tests (globKeyToDocPath, getSplatPath, buildDocMap)
-│   └── index.test.ts # App config tests
-├── components/       # Component tests
-│   ├── ui/          # UI component tests
+test/                  # Unit & component tests (Bun)
+├── components/       # Component & hook tests
 │   ├── auth/        # Auth component tests
-│   ├── data-table/   # Data-table component tests
-│   ├── docs/        # Docs component tests
-│   ├── layout/      # Layout component tests
-│   ├── profile/     # Profile component tests
-│   └── settings/    # Settings component tests
-├── context/        # Context tests
-├── features/       # Feature tests
-│   ├── apps/       # Apps feature tests
-│   ├── auth/      # Auth feature tests
-│   │   ├── sign-in/
-│   │   ├── sign-up/
-│   │   ├── forgot-password/
-│   │   └── otp/
-│   ├── chats/      # Chats feature tests
-│   ├── dashboard/ # Dashboard feature tests
-│   ├── errors/    # Errors feature tests
-│   ├── landing/    # Landing feature tests
-│   ├── settings/  # Settings feature tests
-│   ├── tasks/     # Tasks feature tests
-│   └── users/     # Users feature tests
-├── fixtures/       # Test fixtures
-├── hooks/         # Hook tests
-├── lib/           # Library tests
-│   ├── auth/      # Auth library tests
-│   ├── cache/     # Cache library tests
-│   ├── dashboard/ # Dashboard library tests
-│   ├── db/        # Database tests
-│   ├── mcp/      # MCP library tests
-│   │   └── tools/ # MCP tools tests
-│   ├── rate-limit/ # Rate limit tests
-│   ├── realtime/  # Realtime tests
-│   └── store/     # Store tests
-├── middlewares/   # Middleware tests
-│   ├── cors.test.ts
-│   ├── helmet.test.ts
-│   ├── rate-limit.ts
-│   └── index.test.ts
-├── plugins/      # Plugin tests
-├── routes/      # Route tests
-│   ├── api/     # API route tests
-│   │   ├── auth/
-│   │   ├── mcp/
-│   │   └── settings/
-│   └── (auth)/  # Auth route tests
-├── services/    # Service layer tests
-│   ├── cache/   # Cache service tests
-│   ├── dashboard/ # Dashboard service tests
-│   ├── llmo/    # LLMO service tests
-│   ├── mcp/    # MCP service tests
-│   └── status/  # Status service tests
-└── scripts/    # Script tests/
+│   ├── context/     # React context tests
+│   ├── dashboard/   # Dashboard component tests
+│   ├── hooks/       # Custom hook tests
+│   └── ui/          # UI component tests
+├── fixtures/        # Test fixtures & factories
+│   ├── db.ts
+│   ├── tokens.ts
+│   └── users.ts
+├── helpers/         # Test helpers (app, auth, request)
+├── scripts/         # Script tests (CLI, decisions, tasks)
+├── setup.ts         # Test setup/global preload
+├── types/           # Type tests
+└── unit/            # Unit tests
+    ├── config/     # Configuration tests
+    ├── contract/   # Contract tests (Eden Treaty)
+    │   ├── api/    # API endpoint contract tests
+    │   │   ├── auth/
+    │   │   ├── dashboard/
+    │   │   ├── mcp/
+    │   │   ├── roles/
+    │   │   ├── settings/
+    │   │   └── users/
+    │   └── openapi/ # OpenAPI spec contract tests
+    ├── features/   # Feature tests
+    ├── lib/        # Library tests
+    │   ├── auth/
+    │   ├── cache/
+    │   ├── config/
+    │   ├── dashboard/
+    │   ├── db/
+    │   ├── docker/
+    │   ├── mcp/
+    │   │   └── tools/
+    │   ├── pagination/
+    │   ├── rate-limit/
+    │   ├── realtime/
+    │   └── store/
+    ├── middlewares/ # Middleware tests
+    ├── plugins/    # Plugin tests
+    ├── repositories/ # Repository tests
+    ├── routes/     # Route tests
+    ├── services/   # Service layer tests
+    │   └── dashboard/
+    ├── types/      # Type utility tests
+    ├── utils/      # Utility function tests
+    └── validators/ # Validator tests
 
 .e2e/                 # E2E tests (Playwright)
-├── ui/               # UI E2E tests (split by component)
-│   ├── button.spec.ts
-│   ├── input.spec.ts
-│   ├── sidebar.spec.ts
-│   └── ...
-├── api/              # API E2E tests
-│   ├── endpoints.spec.ts
-│   ├── middlewares.spec.ts
-│   └── redis-health.spec.ts  # Redis heartbeat E2E
-├── middlewares/      # Middleware-specific E2E tests
+├── components/      # Component E2E tests
+│   ├── branding.spec.ts
+│   └── dashboard.spec.ts
+├── lib/             # Library E2E tests
+│   └── auth.spec.ts
+├── middlewares/     # Middleware E2E tests
 │   ├── cors.spec.ts
-│   ├── helmet.spec.ts
-│   ├── trace.spec.ts
 │   ├── error-handling.spec.ts
-│   └── rate-limit.spec.ts
-├── routes/           # Route E2E tests
-│   ├── auth.spec.ts
+│   ├── helmet.spec.ts
+│   ├── rate-limit.spec.ts
+│   └── trace.spec.ts
+├── realtime/        # WebSocket E2E tests
+│   └── websocket.spec.ts
+├── routes/          # Route E2E tests
+│   ├── (auth)/     # Auth flow E2E tests
+│   ├── (errors)/   # Error page E2E tests
+│   ├── _authenticate/ # Protected route E2E tests
+│   │   └── dashboard/
 │   ├── blog.spec.ts
+│   ├── cache.spec.ts
 │   ├── changelog.spec.ts
 │   ├── docs.spec.ts
-│   ├── profile.spec.ts
-│   ├── settings.spec.ts
+│   ├── llmo.spec.ts
+│   ├── permissions.spec.ts
+│   ├── protected-route.spec.ts
 │   └── status.spec.ts
-├── auth.spec.ts       # Auth flow tests
-├── landing.spec.ts   # Landing page tests
+├── ui/              # UI component E2E tests
+├── auth.spec.ts     # Auth flow tests
+├── landing.spec.ts  # Landing page tests
+├── mobile.spec.ts   # Mobile responsiveness tests
 ├── navigation.spec.ts # Navigation tests
-└── config.ts         # E2E configuration
+├── _setup.ts        # Global setup
+├── _teardown.ts     # Global teardown
+├── config.ts        # E2E configuration
+└── utils.ts         # E2E utilities
 
 .k6/                  # Load tests (k6)
 ├── api-test.js

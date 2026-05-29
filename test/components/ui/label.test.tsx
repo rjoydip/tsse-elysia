@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Label } from "../../../src/components/ui/label";
+import { Label } from "~/components/ui/label";
 
 describe("Label", () => {
   it("should render label with correct classes", () => {

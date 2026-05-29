@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Button, buttonVariants } from "../../../src/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 
 describe("Button", () => {
   it("should render with default variant", () => {

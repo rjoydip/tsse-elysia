@@ -10,7 +10,7 @@ import {
   BrandTitle,
   BrandDescription,
   BrandLogo,
-} from "../../src/components/layout/landing/branding";
+} from "~/components/layout/landing/branding";
 
 describe("Branding", () => {
   it("should render without crashing", () => {

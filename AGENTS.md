@@ -120,7 +120,7 @@ When writing unit tests:
 - Create a mock `db` object with the methods you need (`select`, `insert`, `update`)
 - Pass the mock to the repository constructor: `new AccountRepository(mockDb)`
 - Override mock methods in `beforeEach` or individual tests to return test data
-- See `test/repositories/settings/*.test.ts` for examples
+- See `test/unit/repositories/settings/*.test.ts` for examples
 
 **Documentation:**
 
@@ -157,44 +157,51 @@ This project uses two testing frameworks:
 
 ```bash
 test/
-├── components/       # Component tests
-│   ├── ui/          # UI component tests
+├── components/       # Component & hook tests
 │   ├── auth/        # Auth component tests
-│   ├── data-table/  # Data-table tests
-│   ├── docs/        # Docs tests
-│   ├── layout/      # Layout tests
-│   ├── profile/     # Profile tests
-│   └── settings/    # Settings tests
-├── config/           # Configuration tests
-│   ├── db/          # Database config tests
-│   ├── docs.test.ts # Docs config tests
-│   └── index.test.ts
-├── context/         # Context tests
-├── features/        # Feature tests
-│   ├── apps/       # Apps feature tests
-│   ├── auth/       # Auth feature tests
-│   ├── chats/      # Chats feature tests
-│   ├── dashboard/ # Dashboard feature tests
-│   ├── errors/     # Errors feature tests
-│   ├── landing/   # Landing feature tests
-│   ├── settings/  # Settings feature tests
-│   ├── tasks/      # Tasks feature tests
-│   └── users/      # Users feature tests
-├── fixtures/       # Test fixtures
-├── hooks/          # Hook tests
-├── lib/            # Library tests
-│   ├── auth/       # Auth tests
-│   ├── cache/      # Cache tests
-│   ├── dashboard/ # Dashboard tests
-│   ├── mcp/       # MCP tests
-│   │   └── tools/ # MCP tools tests
-│   ├── rate-limit/ # Rate limit tests
-│   └── store/      # Store tests
-├── middlewares/    # Middleware tests
-├── plugins/       # Plugin tests
-├── routes/         # Route tests
-├── services/       # Service layer tests
-└── scripts/       # Script tests
+│   ├── context/     # React context tests
+│   ├── dashboard/   # Dashboard component tests
+│   ├── hooks/       # Custom hook tests
+│   └── ui/          # UI component tests
+├── fixtures/        # Test fixtures & factories
+├── helpers/         # Test helpers (app, auth, request)
+├── scripts/         # Script tests (CLI, decisions, tasks)
+├── types/           # Type tests
+└── unit/            # Unit tests
+    ├── config/     # Configuration tests
+    ├── contract/   # Contract tests (Eden Treaty)
+    │   ├── api/    # API endpoint contract tests
+    │   │   ├── auth/
+    │   │   ├── dashboard/
+    │   │   ├── mcp/
+    │   │   ├── roles/
+    │   │   ├── settings/
+    │   │   └── users/
+    │   └── openapi/ # OpenAPI spec contract tests
+    ├── features/   # Feature tests
+    ├── lib/        # Library tests
+    │   ├── auth/       # Auth tests
+    │   ├── cache/      # Cache tests
+    │   ├── config/     # Config tests
+    │   ├── dashboard/  # Dashboard tests
+    │   ├── db/         # Database tests
+    │   ├── docker/     # Docker tests
+    │   ├── mcp/        # MCP tests
+    │   │   └── tools/  # MCP tools tests
+    │   ├── pagination/ # Pagination tests
+    │   ├── rate-limit/ # Rate limit tests
+    │   ├── realtime/   # Realtime tests
+    │   └── store/      # Store tests
+    ├── middlewares/    # Middleware tests
+    ├── plugins/       # Plugin tests
+    ├── repositories/  # Repository tests
+    │   └── settings/  # Settings repository tests
+    ├── routes/        # Route tests
+    ├── services/      # Service layer tests
+    │   └── dashboard/ # Dashboard service tests
+    ├── types/         # Type utility tests
+    ├── utils/         # Utility function tests
+    └── validators/    # Validator tests
 ```
 
 #### E2E Tests Structure
@@ -228,7 +235,7 @@ bun test
 bun test:unit:preload
 
 # Run specific test file
-bun test test/config/docs.test.ts
+bun test test/unit/config/docs.test.ts
 
 # Run all E2E tests
 bun run test:e2e

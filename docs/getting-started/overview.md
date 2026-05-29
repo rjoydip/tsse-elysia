@@ -59,12 +59,12 @@ tsse-elysia/
 │   │   └── _authenticated/ # Protected routes
 │   ├── services/  # Service layer
 │   └── styles/    # CSS styles
-├── test/          # Unit tests (Bun)
+├── test/          # Unit & component tests (Bun)
 │   ├── components/ # Component tests
-│   ├── config/    # Configuration tests
-│   ├── features/  # Feature tests
-│   ├── lib/       # Library tests
-│   └── services/  # Service tests
+│   ├── fixtures/   # Test fixtures
+│   ├── helpers/    # Test helpers
+│   ├── scripts/    # Script tests
+│   └── unit/       # Unit tests (config, lib, middleware, routes, ...)
 ├── .e2e/          # Playwright E2E tests
 ├── server.ts      # TanStack Start server
 ├── vite.config.ts # Vite configuration

@@ -39,7 +39,7 @@ Or create a `.env` file (see [Environment Variables](/docs/guides/environment-va
 bun test              # Run all tests
 bun test --watch      # Watch mode
 bun test --coverage   # With coverage
-bun test test/config/docs.test.ts  # Run specific test file
+bun test test/unit/config/docs.test.ts  # Run specific test file
 ```
 
 Test files: `test/**/*.test.ts`
@@ -216,94 +216,72 @@ src/
 ## Test Structure
 
 ```bash
-test/                  # Unit tests (Bun)
-├── config/           # Configuration tests
-│   ├── db/           # Database config tests
-│   ├── docs.test.ts  # Docs config tests
-│   ├── env.test.ts  # Environment config tests
-│   └── index.test.ts # App config tests
-├── components/       # Component tests
-│   ├── ui/          # UI component tests
+test/                  # Unit & component tests (Bun)
+├── components/       # Component & hook tests
 │   ├── auth/        # Auth component tests
-│   ├── data-table/ # Data-table component tests
-│   ├── docs/       # Docs component tests
-│   ├── layout/     # Layout component tests
-│   ├── profile/    # Profile component tests
-│   └── settings/   # Settings component tests
-├── context/        # Context tests
-├── features/       # Feature tests
-│   ├── apps/       # Apps feature tests
-│   ├── auth/      # Auth feature tests
-│   ├── chats/    # Chats feature tests
-│   ├── dashboard/ # Dashboard feature tests
-│   ├── errors/    # Errors feature tests
-│   ├── landing/   # Landing feature tests
-│   ├── settings/ # Settings feature tests
-│   ├── tasks/     # Tasks feature tests
-│   └── users/     # Users feature tests
-├── fixtures/       # Test fixtures
-├── hooks/         # Hook tests
-├── lib/           # Library tests
-│   ├── auth/      # Auth library tests
-│   ├── cache/     # Cache library tests
-│   ├── dashboard/ # Dashboard library tests
-│   ├── db/        # Database tests
-│   ├── mcp/       # MCP library tests
-│   │   └── tools/ # MCP tools tests
-│   ├── rate-limit/ # Rate limit tests
-│   ├── realtime/  # Realtime tests
-│   └── store/     # Store tests
-├── middlewares/   # Middleware tests
-│   ├── cors.test.ts
-│   ├── helmet.test.ts
-│   ├── rate-limit.ts
-│   └── index.test.ts
-├── plugins/      # Plugin tests
-├── routes/      # Route tests
-│   ├── api/     # API route tests
-│   │   ├── auth/
-│   │   ├── mcp/
-│   │   └── settings/
-│   └── (auth)/  # Auth route tests
-├── services/    # Service layer tests
-│   ├── cache/   # Cache service tests
-│   ├── dashboard/ # Dashboard service tests
-│   ├── llmo/    # LLMO service tests
-│   ├── mcp/    # MCP service tests
-│   └── status/  # Status service tests
-└── scripts/    # Script tests
+│   ├── context/     # React context tests
+│   ├── dashboard/   # Dashboard component tests
+│   ├── hooks/       # Custom hook tests
+│   └── ui/          # UI component tests
+├── fixtures/        # Test fixtures & factories
+├── helpers/         # Test helpers (app, auth, request)
+├── scripts/         # Script tests (CLI, decisions, tasks)
+├── types/           # Type tests
+└── unit/            # Unit tests
+    ├── config/     # Configuration tests
+    ├── contract/   # Contract tests (Eden Treaty)
+    │   ├── api/    # API endpoint contract tests
+    │   │   ├── auth/
+    │   │   ├── dashboard/
+    │   │   ├── mcp/
+    │   │   ├── roles/
+    │   │   ├── settings/
+    │   │   └── users/
+    │   └── openapi/ # OpenAPI spec contract tests
+    ├── features/   # Feature tests
+    ├── lib/        # Library tests
+    │   ├── auth/       # Auth tests
+    │   ├── cache/      # Cache tests
+    │   ├── config/     # Config tests
+    │   ├── dashboard/  # Dashboard tests
+    │   ├── db/         # Database tests
+    │   ├── docker/     # Docker tests
+    │   ├── mcp/        # MCP tests
+    │   │   └── tools/  # MCP tools tests
+    │   ├── pagination/ # Pagination tests
+    │   ├── rate-limit/ # Rate limit tests
+    │   ├── realtime/   # Realtime tests
+    │   └── store/      # Store tests
+    ├── middlewares/    # Middleware tests
+    ├── plugins/       # Plugin tests
+    ├── repositories/  # Repository tests
+    │   └── settings/  # Settings repository tests
+    ├── routes/        # Route tests
+    ├── services/      # Service layer tests
+    │   └── dashboard/ # Dashboard service tests
+    ├── types/         # Type utility tests
+    ├── utils/         # Utility function tests
+    └── validators/    # Validator tests
 
 .e2e/                 # E2E tests (Playwright)
-├── ui/               # UI E2E tests (split by component)
-│   ├── button.spec.ts
-│   ├── input.spec.ts
-│   ├── auth.spec.ts
-│   ├── navigation.spec.ts
-│   ├── mobile.spec.ts
-│   └── ...
-├── api/              # API E2E tests
-│   ├── endpoints.spec.ts
-│   ├── redis-health.spec.ts
-│   └── openapi.spec.ts
-├── routes/           # Route E2E tests
-│   ├── auth.spec.ts
-│   ├── profile.spec.ts
-│   ├── settings.spec.ts
-│   ├── docs.spec.ts
-│   ├── blog.spec.ts
-│   ├── changelog.spec.ts
-│   └── status.spec.ts
-├── middlewares/      # Middleware tests
-│   ├── rate-limit.spec.ts
-│   ├── cors.spec.ts
-│   ├── helmet.spec.ts
-│   └── trace.spec.ts
-├── realtime/         # WebSocket tests
-│   └── websocket.spec.ts
-├── auth.spec.ts      # Auth flow tests
-├── _config.ts        # E2E configuration
-├── _setup.ts         # Global setup
-└── _teardown.ts      # Global teardown
+├── components/      # Component E2E tests
+├── lib/             # Library E2E tests
+├── middlewares/     # Middleware E2E tests
+├── realtime/        # WebSocket E2E tests
+├── routes/          # Route E2E tests
+│   ├── (auth)/     # Auth flow E2E tests
+│   ├── (errors)/   # Error page E2E tests
+│   └── _authenticate/ # Protected route E2E tests
+│       └── dashboard/
+├── ui/              # UI component E2E tests
+├── auth.spec.ts     # Auth flow tests
+├── landing.spec.ts  # Landing page tests
+├── mobile.spec.ts   # Mobile responsiveness tests
+├── navigation.spec.ts # Navigation tests
+├── _setup.ts        # Global setup
+├── _teardown.ts     # Global teardown
+├── config.ts        # E2E configuration
+└── utils.ts         # E2E utilities
 ```
 
 ## Code Generation

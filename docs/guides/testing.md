@@ -15,7 +15,7 @@ This project uses two testing approaches: unit tests with Bun and E2E tests with
 bun test              # Run all tests
 bun test --watch      # Watch mode
 bun test --coverage  # With coverage report
-bun test test/config/docs.test.ts  # Run specific test file
+bun test test/unit/config/docs.test.ts  # Run specific test file
 ```
 
 ### Test Structure
@@ -24,23 +24,26 @@ Tests are located in `test/`:
 
 ```bash
 test/
-├── config/           # Configuration tests
-│   ├── docs.test.ts  # Docs config tests (globKeyToDocPath, getSplatPath, buildDocMap, getDisplayName)
-│   └── index.test.ts # App config tests
-├── middlewares/      # Middleware tests
-│   ├── cors.test.ts  # CORS middleware tests
-│   ├── helmet.test.ts # Helmet security headers tests
-│   └── index.test.ts # Middleware index tests (traceFn, errorFn, composedMiddleware)
-├── hooks/            # Hook tests
-├── lib/              # Library tests (logger, blog, utils, changelog)
-├── routes/           # Route tests
-│   └── status.test.ts # Status page tests
-├── store/            # Store tests
-├── components/       # Component tests
-├── db.test.ts        # Database tests
-├── auth.test.ts      # Auth tests
-└── fixtures/         # Test fixtures
-    └── db.ts
+├── components/       # Component & hook tests
+│   ├── auth/        # Auth component tests
+│   ├── context/     # React context tests
+│   ├── dashboard/   # Dashboard component tests
+│   ├── hooks/       # Custom hook tests
+│   └── ui/          # UI component tests
+├── fixtures/        # Test fixtures & factories
+├── helpers/         # Test helpers (app, auth, request)
+├── scripts/         # Script tests
+├── types/           # Type tests
+└── unit/            # Unit tests
+    ├── config/     # Configuration tests
+    ├── contract/   # Contract tests (Eden Treaty)
+    ├── features/   # Feature tests
+    ├── lib/        # Library tests
+    ├── middlewares/ # Middleware tests
+    ├── plugins/    # Plugin tests
+    ├── repositories/ # Repository tests
+    ├── routes/     # Route tests
+    └── services/   # Service layer tests
 ```
 
 ### Writing Tests
@@ -112,44 +115,76 @@ E2E tests are in `.e2e/`:
 
 ```bash
 .e2e/
-├── ui/               # UI E2E tests (split by component)
-│   ├── auth.spec.ts      # Authentication tests
-│   ├── button.spec.ts   # Button component tests
-│   ├── input.spec.ts    # Input component tests
-│   ├── card.spec.ts     # Card component tests
-│   ├── badge.spec.ts    # Badge component tests
-│   ├── tabs.spec.ts     # Tabs component tests
-│   ├── form.spec.ts     # Form integration tests
-│   ├── sidebar.spec.ts  # Sidebar navigation tests
-│   ├── avatar.spec.ts   # Avatar component tests
-│   ├── tooltip.spec.ts  # Tooltip component tests
-│   ├── sheet.spec.ts    # Sheet/Drawer component tests
-│   ├── dropdown-menu.spec.ts # DropdownMenu tests
-│   ├── switch.spec.ts   # Switch component tests
-│   ├── select.spec.ts   # Select component tests
-│   ├── accordion.spec.ts # Accordion component tests
-│   ├── label.spec.ts    # Label component tests
-│   ├── table.spec.ts    # Table component tests
-│   ├── skeleton.spec.ts # Skeleton component tests
-│   ├── navigation.spec.ts # Navigation tests
-│   ├── docs.spec.ts      # Documentation page tests
-│   ├── root.spec.ts      # Landing page tests
-│   ├── profile.spec.ts   # Profile page tests
-│   ├── settings.spec.ts  # Settings page tests
-│   ├── status.spec.ts    # Status page tests
-│   ├── blog.spec.ts      # Blog page tests
-│   ├── changelog.spec.ts # Changelog page tests
-│   └── mobile.spec.ts    # Mobile responsiveness tests
-├── api/              # API E2E tests
-│   ├── endpoints.spec.ts # API endpoint tests
-│   └── middlewares.spec.ts # Middleware tests (CORS, Helmet, Trace, Rate Limit, Error)
-├── mcp/              # MCP E2E tests
-│   ├── mcp.spec.ts
-│   └── mcp-keys.spec.ts
-├── middlewares/       # Middleware-specific tests
-│   └── rate-limit.spec.ts # Rate limiting tests
+├── components/      # Component E2E tests
+│   ├── branding.spec.ts
+│   └── dashboard.spec.ts
+├── lib/             # Library E2E tests
+│   └── auth.spec.ts
+├── middlewares/     # Middleware E2E tests
+│   ├── cors.spec.ts
+│   ├── error-handling.spec.ts
+│   ├── helmet.spec.ts
+│   ├── rate-limit.spec.ts
+│   └── trace.spec.ts
+├── realtime/        # WebSocket tests
+│   └── websocket.spec.ts
+├── routes/          # Route E2E tests
+│   ├── (auth)/     # Auth flow tests
+│   │   ├── forgot-password.spec.ts
+│   │   ├── otp.spec.ts
+│   │   ├── sign-in.spec.ts
+│   │   ├── sign-up.spec.ts
+│   │   └── verify-email.spec.ts
+│   ├── (errors)/   # Error page tests
+│   │   ├── 401.spec.ts
+│   │   ├── 403.spec.ts
+│   │   ├── 404.spec.ts
+│   │   ├── 500.spec.ts
+│   │   └── 503.spec.ts
+│   ├── _authenticate/ # Protected route tests
+│   │   ├── dashboard/
+│   │   │   ├── apps.spec.ts
+│   │   │   ├── chats.spec.ts
+│   │   │   ├── index.spec.ts
+│   │   │   ├── settings.spec.ts
+│   │   │   ├── tabs.spec.ts
+│   │   │   ├── tasks.spec.ts
+│   │   │   └── users.spec.ts
+│   │   └── help-center.spec.ts
+│   ├── blog.spec.ts
+│   ├── cache.spec.ts
+│   ├── changelog.spec.ts
+│   ├── docs.spec.ts
+│   ├── llmo.spec.ts
+│   ├── permissions.spec.ts
+│   ├── protected-route.spec.ts
+│   └── status.spec.ts
+├── ui/              # UI component E2E tests
+│   ├── accordion.spec.ts
+│   ├── avatar.spec.ts
+│   ├── badge.spec.ts
+│   ├── button.spec.ts
+│   ├── card.spec.ts
+│   ├── dropdown-menu.spec.ts
+│   ├── form.spec.ts
+│   ├── input.spec.ts
+│   ├── label.spec.ts
+│   ├── select.spec.ts
+│   ├── sheet.spec.ts
+│   ├── sidebar.spec.ts
+│   ├── skeleton.spec.ts
+│   ├── switch.spec.ts
+│   ├── table.spec.ts
+│   ├── tabs.spec.ts
+│   └── tooltip.spec.ts
 ├── auth.spec.ts      # Auth E2E tests
-└── config.ts         # E2E configuration (host, port, base URL)
+├── landing.spec.ts   # Landing page tests
+├── mobile.spec.ts    # Mobile responsiveness tests
+├── navigation.spec.ts # Navigation tests
+├── _setup.ts         # Global setup
+├── _teardown.ts      # Global teardown
+├── config.ts         # E2E configuration (host, port, base URL)
+└── utils.ts          # E2E utilities
 ```
 
 E2E configuration is centralized in `.e2e/config.ts` and shared by both `playwright.config.ts` and test files:

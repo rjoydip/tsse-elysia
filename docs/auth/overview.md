@@ -169,7 +169,7 @@ await auth.api.signOut({
 ### Unit Tests
 
 ```bash
-bun test test/routes/api/auth/$.test.ts test/lib/store/auth.test.ts
+bun test test/unit/contract/api/auth/core.test.ts test/unit/lib/auth/index.test.ts
 ```
 
 Tests cover: sign-up/sign-in route behavior, duplicate email handling path, auth UI store state transitions, session management, sign-out, and handler integration.

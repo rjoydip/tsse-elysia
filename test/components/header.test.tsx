@@ -1,26 +1,26 @@
 import { describe, expect, it, mock } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Header } from "../../src/components/layout/landing/header";
+import { Header } from "~/components/layout/landing/header";
 
 // Mock auth client
 let mockSession: any = null;
 let mockIsPending = false;
-mock.module("../../src/lib/auth/client", () => ({
+mock.module("~/lib/auth/client", () => ({
   useSession: () => ({ data: mockSession, isPending: mockIsPending }),
 }));
 
 // Mock scroll direction hook
-mock.module("../../src/hooks/use-scroll-direction", () => ({
+mock.module("~/hooks/use-scroll-direction", () => ({
   useScrollDirection: () => true, // default to visible
 }));
 
 // Mock Search component
-mock.module("../../src/components/search", () => ({
+mock.module("~/components/search", () => ({
   Search: ({ className }: any) => <button className={className}>Search</button>,
 }));
 
 // Mock ThemeSwitch component
-mock.module("../../src/components/theme-switch", () => ({
+mock.module("~/components/theme-switch", () => ({
   ThemeSwitch: () => <button>Toggle theme</button>,
 }));
 

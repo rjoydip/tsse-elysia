@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Switch } from "../../../src/components/ui/switch";
+import { Switch } from "~/components/ui/switch";
 
 describe("Switch", () => {
   it("should render switch with default classes", () => {

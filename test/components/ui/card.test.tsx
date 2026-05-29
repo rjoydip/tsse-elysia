@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "../../../src/components/ui/card";
+} from "~/components/ui/card";
 
 describe("Card", () => {
   it("should render Card container", () => {

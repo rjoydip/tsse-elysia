@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { Select, SelectTrigger, SelectValue } from "../../../src/components/ui/select";
+import { Select, SelectTrigger, SelectValue } from "~/components/ui/select";
 
 describe("Select", () => {
   it("should render Select with trigger", () => {
