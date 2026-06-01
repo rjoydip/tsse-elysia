@@ -64,6 +64,7 @@ Core focus:
 | 17    | Dashboard UI Polish                 | ✅     |
 | 18    | Dashboard Stability & HMR Fixes     | ✅     |
 | 19    | Production Seed & Env-Aware Seeding | ✅     |
+| 20    | Dashboard Code Review Fixes         | ✅     |
 | 21    | Nightly Dev Build Workflow          | ✅     |
 
 ---

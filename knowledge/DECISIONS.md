@@ -1439,7 +1439,7 @@ Created multi-stage Dockerfile with 4 stages:
 **Tradeoffs:**
 
 - ⚠️ Nightly release tag is overwritten each day (single "nightly" tag, not versioned)
-- ⚠️ Requires `GH_TOKEN` with `contents: write` permission for release creation
+- ⚠️ Uses built-in `secrets.GITHUB_TOKEN` (aliased via `env: GH_TOKEN` for `gh` CLI) — no user-managed PAT needed, but requires `contents: write` permission on the token
 - ✅ Full CI pipeline runs daily, catching issues faster
 - ✅ Artifacts available for 30 days; no manual cleanup
 - ✅ No impact on PR CI or release workflow (separate concurrency group)

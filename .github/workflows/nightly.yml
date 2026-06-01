@@ -43,7 +43,7 @@ jobs:
         run: bun test:coverage --run
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@cddd853df119a48c5be31a973f8cd97e12e35e16 # v6.0.1
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
@@ -98,13 +98,10 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - id: version
-        uses: ./.github/actions/compute-nightly-version
-
       - name: Download build artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: tsse-elysia-nightly-${{ steps.version.outputs.version }}
+          name: tsse-elysia-nightly-${{ needs.build.outputs.version }}
           path: dist/
 
       - name: Resolve host IP
@@ -150,19 +147,16 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - id: version
-        uses: ./.github/actions/compute-nightly-version
-
       - name: Download build artifact
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: tsse-elysia-nightly-${{ steps.version.outputs.version }}
+          name: tsse-elysia-nightly-${{ needs.build.outputs.version }}
           path: dist/
 
       - name: Create nightly archive
         run: |
-          tar -czf tsse-elysia-nightly-${{ steps.version.outputs.version }}.tar.gz dist/
-          zip -r tsse-elysia-nightly-${{ steps.version.outputs.version }}.zip dist/
+          tar -czf tsse-elysia-nightly-${{ needs.build.outputs.version }}.tar.gz dist/
+          zip -r tsse-elysia-nightly-${{ needs.build.outputs.version }}.zip dist/
 
       - name: Delete existing nightly release (if any)
         env:
@@ -181,10 +175,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "nightly" \
-            --title "Nightly Dev Build — ${{ steps.version.outputs.date }}" \
+            --title "Nightly Dev Build — ${{ needs.build.outputs.date }}" \
             --notes "## Nightly Dev Build
 
-          **Version:** ${{ steps.version.outputs.version }}
+          **Version:** ${{ needs.build.outputs.version }}
           **Date:** $(date -u '+%Y-%m-%d %H:%M UTC')
           **Commit:** ${{ github.sha }}
 
@@ -203,10 +197,10 @@ jobs:
 
           ${{ github.event.head_commit.message || 'Latest commits from main branch.' }}" \
             --prerelease \
-            tsse-elysia-nightly-${{ steps.version.outputs.version }}.tar.gz \
-            tsse-elysia-nightly-${{ steps.version.outputs.version }}.zip
+            tsse-elysia-nightly-${{ needs.build.outputs.version }}.tar.gz \
+            tsse-elysia-nightly-${{ needs.build.outputs.version }}.zip
 
-      - name: Prune old nightly artifacts
+      - name: Prune old workflow runs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
