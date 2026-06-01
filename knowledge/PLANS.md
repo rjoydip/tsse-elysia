@@ -64,8 +64,30 @@ Core focus:
 | 17    | Dashboard UI Polish                 | ✅     |
 | 18    | Dashboard Stability & HMR Fixes     | ✅     |
 | 19    | Production Seed & Env-Aware Seeding | ✅     |
+| 20    | Nightly Dev Build Workflow          | ✅     |
 
 ---
+
+## Completed Phases
+
+### Phase 20 – Nightly Dev Build Workflow ✅
+
+**Completed:**
+
+- Created `.github/workflows/nightly.yml` with scheduled `cron: 0 0 * * *` + manual trigger
+- Runs quality checks, unit tests (coverage), E2E tests, and production build
+- Creates/updates a "Nightly" GitHub Release (prerelease) with build artifacts
+- Version scheme: `0.0.0-dev.YYYYMMDD.<short-sha>` (unique daily, no semver bump)
+- Automatically prunes old workflow runs (keeps last 30)
+- Decision doc: `DECISIONS.md:decision-040-nightly-dev-build-workflow`
+- CI/CD docs updated in `docs/infra/ci-cd.md` with full workflow details
+
+**Benefits:**
+
+- Daily regression detection via full test suite
+- Pre-built artifacts available without formal releases
+- Consistent cadence independent of PR merges
+- Manual trigger available for ad-hoc dev builds
 
 ## Active Focus
 
@@ -277,6 +299,7 @@ src/
 - [Phase 11: Database Refactoring](./plans/phase-11-db0-database-refactoring.md)
 - [Phase 13: Contract Testing](./plans/phase-13-contract-testing-implementation-plan.md)
 - [Phase 15: Replace Fake Dashboard Analytics with Real User Data](./plans/phase-15-dashboard-real-user-data.md)
+- [Phase 20: Nightly Dev Build Workflow](./.github/workflows/nightly.yml)
 
 ---
 

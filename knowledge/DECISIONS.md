@@ -1408,6 +1408,44 @@ Created multi-stage Dockerfile with 4 stages:
 
 ---
 
+### 040: Nightly Dev Build Workflow
+
+**Status:** Accepted
+
+**Date:** 2026-06-01
+
+**Why:**
+
+- Provide daily development builds for testing and validation
+- Catch regressions early with full test suite + E2E runs on a schedule
+- Make latest changes available as pre-built artifacts without requiring a formal release
+- Establish a consistent nightly cadence independent of PR merges
+
+**Approach:**
+
+- GitHub Actions scheduled workflow at midnight UTC (cron: `0 0 * * *`)
+- Runs full quality checks (lint, typecheck), unit tests with coverage, E2E tests, and production build
+- Creates a "Nightly" GitHub Release (prerelease) with build artifacts (tarball + zip)
+- Version scheme: `0.0.0-dev.<YYYYMMDD>.<short-sha>` — unique per day, no semver bumps
+- Retains last 30 run artifacts; older ones pruned automatically
+- Also triggerable manually via `workflow_dispatch`
+
+**Alternatives Considered:**
+
+- Separate cron job on a dedicated server — more maintenance overhead than GitHub-hosted runner
+- Docker-based nightly image push to registry — adds complexity; not needed until container registries are in use
+- Publish to npm as `dev` tag — overkill; app is not a library
+
+**Tradeoffs:**
+
+- ⚠️ Nightly release tag is overwritten each day (single "nightly" tag, not versioned)
+- ⚠️ Requires `GH_TOKEN` with `contents: write` permission for release creation
+- ✅ Full CI pipeline runs daily, catching issues faster
+- ✅ Artifacts available for 30 days; no manual cleanup
+- ✅ No impact on PR CI or release workflow (separate concurrency group)
+
+---
+
 ## Rules
 
 - Every major decision MUST be logged
