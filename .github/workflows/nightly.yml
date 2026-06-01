@@ -60,19 +60,17 @@ jobs:
     name: Build & Artifact
     needs: quality
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date: ${{ steps.version.outputs.date }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
 
-      - name: Compute nightly version
-        id: version
-        run: |
-          DATE=$(date +%Y%m%d)
-          SHA=$(git rev-parse --short HEAD)
-          echo "version=0.0.0-dev.${DATE}.${SHA}" >> $GITHUB_OUTPUT
-          echo "date=${DATE}" >> $GITHUB_OUTPUT
+      - id: version
+        uses: ./.github/actions/compute-nightly-version
 
       - name: Build application
         run: bun run build
@@ -86,7 +84,7 @@ jobs:
 
   e2e:
     name: E2E Tests
-    needs: quality
+    needs: [quality, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -100,12 +98,18 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Build
-        run: bun run build
+      - id: version
+        uses: ./.github/actions/compute-nightly-version
+
+      - name: Download build artifact
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: tsse-elysia-nightly-${{ steps.version.outputs.version }}
+          path: dist/
 
       - name: Resolve host IP
         run: |
-          HOST_IP=$(ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
+          HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}') || HOST_IP="127.0.0.1"
           echo "E2E_HOST=$HOST_IP" >> $GITHUB_ENV
           echo "E2E_BASE_URL=http://$HOST_IP:4173" >> $GITHUB_ENV
           echo "BETTER_AUTH_URL=http://$HOST_IP:4173/api/auth" >> $GITHUB_ENV
@@ -115,6 +119,8 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
           bun run preview --port 4173 --host $E2E_HOST &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           for i in $(seq 1 30); do
             if curl -sf http://$E2E_HOST:4173 > /dev/null 2>&1; then
               echo "Server ready"
@@ -128,7 +134,7 @@ jobs:
 
       - name: Stop preview server
         if: always()
-        run: pkill -f "bun run preview" || true
+        run: kill $SERVER_PID 2>/dev/null || true
 
       - uses: ./.github/actions/setup-database
         with:
@@ -144,13 +150,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Compute nightly version
-        id: version
-        run: |
-          DATE=$(date +%Y%m%d)
-          SHA=$(git rev-parse --short HEAD)
-          echo "version=0.0.0-dev.${DATE}.${SHA}" >> $GITHUB_OUTPUT
-          echo "date=${DATE}" >> $GITHUB_OUTPUT
+      - id: version
+        uses: ./.github/actions/compute-nightly-version
 
       - name: Download build artifact
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1

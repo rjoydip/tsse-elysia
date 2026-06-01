@@ -188,11 +188,14 @@ Dev builds are automatically created daily at midnight UTC via `.github/workflow
 
 **Required secrets:**
 
-| Secret               | Purpose                                   |
-| -------------------- | ----------------------------------------- |
-| `GH_TOKEN`           | Creating/updating nightly release         |
-| `BETTER_AUTH_SECRET` | Preview server for E2E tests              |
-| `CODECOV_TOKEN`      | Coverage upload (optional, non-blocking)  |
+| Secret               | Purpose                                            |
+| -------------------- | -------------------------------------------------- |
+| `GITHUB_TOKEN`       | Built-in token (auto-set, needs `contents: write`) |
+| `BETTER_AUTH_SECRET` | Preview server for E2E tests                       |
+| `CODECOV_TOKEN`      | Coverage upload (optional, non-blocking)           |
+
+> Nightly workflows use `secrets.GITHUB_TOKEN` (aliased via `env: GH_TOKEN` for `gh` CLI compatibility).
+> No separate user-managed `GH_TOKEN` secret is needed — the built-in token provides `contents: write`.
 
 ## Manual Release
 

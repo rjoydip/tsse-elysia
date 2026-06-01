@@ -64,13 +64,13 @@ Core focus:
 | 17    | Dashboard UI Polish                 | ✅     |
 | 18    | Dashboard Stability & HMR Fixes     | ✅     |
 | 19    | Production Seed & Env-Aware Seeding | ✅     |
-| 20    | Nightly Dev Build Workflow          | ✅     |
+| 21    | Nightly Dev Build Workflow          | ✅     |
 
 ---
 
 ## Completed Phases
 
-### Phase 20 – Nightly Dev Build Workflow ✅
+### Phase 21 – Nightly Dev Build Workflow ✅
 
 **Completed:**
 
@@ -299,7 +299,7 @@ src/
 - [Phase 11: Database Refactoring](./plans/phase-11-db0-database-refactoring.md)
 - [Phase 13: Contract Testing](./plans/phase-13-contract-testing-implementation-plan.md)
 - [Phase 15: Replace Fake Dashboard Analytics with Real User Data](./plans/phase-15-dashboard-real-user-data.md)
-- [Phase 20: Nightly Dev Build Workflow](./.github/workflows/nightly.yml)
+- [Phase 21: Nightly Dev Build Workflow](./.github/workflows/nightly.yml)
 
 ---
 
