@@ -8,7 +8,6 @@ export {
   handleCreatePermission,
   handleUpdatePermission,
   handleDeletePermission,
-  handleSeedPermissions,
   handleGetRoles,
   handleCreateRole,
   handleGetRole,

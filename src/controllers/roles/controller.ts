@@ -5,8 +5,7 @@
  */
 
 import { auth } from "~/lib/auth";
-import type { UserRole } from "~/lib/auth/permissions";
-import { userRepository } from "~/repositories/users";
+import { validateAdminAccess } from "~/middlewares/authorization";
 import { permissionResolver } from "~/services/roles/permission-resolver.service";
 import {
   rolesService,
@@ -14,50 +13,13 @@ import {
   type RoleResponse,
 } from "~/services/dashboard/roles";
 
-const ADMIN_ROLES = ["superadmin", "admin"] as const;
-
-/**
- * Unified auth validation result.
- */
-interface AuthResult {
-  error?: { status: number; message: string };
-  userId?: string;
-  userRole?: string;
-}
-
-/**
- * Validates that the request has an active admin session.
- * Used by all roles/permissions endpoints.
- */
-async function validateAdminAccess(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<AuthResult> {
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session?.user) {
-    set.status = 401;
-    return { error: { status: 401, message: "Unauthorized" } };
-  }
-
-  const currentUser = await userRepository.findById(session.user.id);
-  const userRole = currentUser?.role ?? "user";
-
-  if (!ADMIN_ROLES.includes(userRole as (typeof ADMIN_ROLES)[number])) {
-    set.status = 403;
-    return { error: { status: 403, message: "Forbidden - admin role required" } };
-  }
-
-  return { userId: session.user.id, userRole };
-}
-
 /**
  * Validates that the request has an active session (any authenticated user).
  */
 async function validateAuthenticated(
   request: Request,
   set: Record<string, unknown>,
-): Promise<AuthResult> {
+): Promise<{ error?: { status: number; message: string }; userId?: string }> {
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user) {
@@ -65,18 +27,37 @@ async function validateAuthenticated(
     return { error: { status: 401, message: "Unauthorized" } };
   }
 
-  return { userId: session.user.id, userRole: "authenticated" };
+  return { userId: session.user.id };
 }
 
 /**
  * Wraps service calls that may throw into consistent error responses.
  */
-function handleServiceError(err: unknown, set: Record<string, unknown>, defaultMsg: string) {
-  set.status = 400;
+function handleServiceError(
+  err: unknown,
+  set: Record<string, unknown>,
+  defaultMsg: string,
+  status: number = 400,
+) {
+  set.status = status;
   return { error: err instanceof Error ? err.message : defaultMsg };
 }
 
 // ---- Permission Handlers ----
+
+/**
+ * GET /api/roles/permissions/mine - Get current user's effective permissions.
+ */
+export async function handleGetMyPermissions(
+  request: Request,
+  set: Record<string, unknown>,
+): Promise<{ permissions: string[] } | { error: string }> {
+  const authResult = await validateAuthenticated(request, set);
+  if (authResult.error) return { error: authResult.error.message };
+
+  const permissions = await permissionResolver.getEffectivePermissions(authResult.userId!);
+  return { permissions };
+}
 
 /**
  * GET /api/roles/permissions - List all permissions.
@@ -150,38 +131,6 @@ export async function handleDeletePermission(
   }
 
   return { success: true };
-}
-
-/**
- * POST /api/roles/permissions/seed - Seed default system permissions.
- */
-export async function handleSeedPermissions(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<{ success: boolean; message: string } | { error: string }> {
-  const authResult = await validateAdminAccess(request, set);
-  if (authResult.error) return { error: authResult.error.message };
-
-  await rolesService.seedDefaultPermissions();
-  return { success: true, message: "Default permissions seeded successfully" };
-}
-
-/**
- * GET /api/roles/permissions/mine - Get current user's effective permissions.
- */
-export async function handleGetMyPermissions(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<{ permissions: string[] } | { error: string }> {
-  const authResult = await validateAuthenticated(request, set);
-  if (authResult.error) return { error: authResult.error.message };
-
-  const userId = authResult.userId!;
-  const currentUser = await userRepository.findById(userId);
-  const fallbackRole = (currentUser?.role ?? "user") as UserRole;
-
-  const permissions = await permissionResolver.getEffectivePermissions(userId, fallbackRole);
-  return { permissions };
 }
 
 // ---- Role Handlers ----

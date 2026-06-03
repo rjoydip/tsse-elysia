@@ -11,7 +11,6 @@ import {
   handleCreatePermission,
   handleUpdatePermission,
   handleDeletePermission,
-  handleSeedPermissions,
   handleGetRoles,
   handleCreateRole,
   handleGetRole,
@@ -162,22 +161,6 @@ export const rolesRoutes = new Elysia({
       },
     },
   )
-  /**
-   * POST /api/roles/permissions/seed - Seed default system permissions
-   */
-  .post("/permissions/seed", async ({ set, request }) => handleSeedPermissions(request, set), {
-    detail: {
-      summary: "Seed default permissions",
-      description:
-        "Creates system-defined permissions from the codebase. Requires admin or superadmin role.",
-      tags: ["roles"],
-      responses: {
-        200: { description: "Default permissions seeded" },
-        401: { description: "Unauthorized - no active session" },
-        403: { description: "Forbidden - admin role required" },
-      },
-    },
-  })
   /**
    * GET /api/roles - Get all roles
    */

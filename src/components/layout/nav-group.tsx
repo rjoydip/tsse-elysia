@@ -69,17 +69,19 @@ function filterItems(
   userRole: string,
   can: (perm: Permission) => boolean,
 ): NavItem[] {
-  return items.filter((item) => {
-    if (!isItemVisible(item, userRole, can)) return false;
+  return items.reduce<NavItem[]>((acc, item) => {
+    if (!isItemVisible(item, userRole, can)) return acc;
     if (item.items) {
       const filteredSubItems = item.items.filter((subItem) =>
         isItemVisible(subItem, userRole, can),
       );
-      if (filteredSubItems.length === 0) return false;
-      item.items = filteredSubItems;
+      if (filteredSubItems.length === 0) return acc;
+      acc.push({ ...item, items: filteredSubItems });
+    } else {
+      acc.push(item);
     }
-    return true;
-  });
+    return acc;
+  }, []);
 }
 
 export function NavGroup({ title, items, roles, permission }: NavGroupProps) {

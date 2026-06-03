@@ -4,15 +4,20 @@
  * Falls back to hardcoded role-based permissions when the API is unavailable.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Permission } from "~/lib/auth/permissions";
+import { useSession } from "~/lib/auth/client";
 import { usePermission } from "./use-permission";
 
 /** Cache duration in milliseconds (5 minutes). */
 const CACHE_TTL = 5 * 60 * 1000;
 
-/** Session storage key for caching permissions. */
-const STORAGE_KEY = "tsse-permissions";
+/**
+ * Returns the session storage key for a given user.
+ */
+function cacheKey(userId: string): string {
+  return `tsse-permissions-${userId}`;
+}
 
 /**
  * Return type for useMyPermissions hook.
@@ -33,9 +38,9 @@ export interface UseMyPermissionsReturn {
 /**
  * Reads cached permissions from session storage.
  */
-function readCache(): { permissions: string[]; timestamp: number } | null {
+function readCache(userId: string): { permissions: string[]; timestamp: number } | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(cacheKey(userId));
     if (!raw) return null;
     return JSON.parse(raw) as { permissions: string[]; timestamp: number };
   } catch {
@@ -46,9 +51,12 @@ function readCache(): { permissions: string[]; timestamp: number } | null {
 /**
  * Writes permissions to session storage cache.
  */
-function writeCache(permissions: string[]): void {
+function writeCache(userId: string, permissions: string[]): void {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ permissions, timestamp: Date.now() }));
+    sessionStorage.setItem(
+      cacheKey(userId),
+      JSON.stringify({ permissions, timestamp: Date.now() }),
+    );
   } catch {
     // Storage full or unavailable — silently skip caching
   }
@@ -79,9 +87,12 @@ function isCacheValid(cache: { permissions: string[]; timestamp: number }): bool
  */
 export function useMyPermissions(): UseMyPermissionsReturn {
   const { permissions: fallbackPermissions } = usePermission();
+  const { data: session } = useSession();
+  const userId = session?.user?.id ?? "anonymous";
+
   const [permissions, setPermissions] = useState<Permission[]>(() => {
     // Try cache on initial mount
-    const cached = readCache();
+    const cached = readCache(userId);
     if (cached && isCacheValid(cached)) {
       return cached.permissions as Permission[];
     }
@@ -89,7 +100,6 @@ export function useMyPermissions(): UseMyPermissionsReturn {
   });
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fetchedRef = useRef(false);
 
   const can = useCallback(
     (permission: Permission): boolean => permissions.includes(permission),
@@ -108,7 +118,7 @@ export function useMyPermissions(): UseMyPermissionsReturn {
       const data = (await response.json()) as { permissions: string[] };
       const perms = data.permissions as Permission[];
       setPermissions(perms);
-      writeCache(perms);
+      writeCache(userId, perms);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(msg);
@@ -117,12 +127,10 @@ export function useMyPermissions(): UseMyPermissionsReturn {
     } finally {
       setIsPending(false);
     }
-  }, [fallbackPermissions]);
+  }, [userId, fallbackPermissions]);
 
   // Fetch on mount once
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
     fetchPermissions();
   }, [fetchPermissions]);
 

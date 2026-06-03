@@ -63,13 +63,13 @@ describe("Roles API - Unauthenticated Permission Operations", () => {
     expect(response.status).toBe(401);
   });
 
-  it("should return 401 for POST /api/roles/permissions/seed", async () => {
+  it("should return 404 for removed POST /api/roles/permissions/seed", async () => {
     const response = await app.handle(
       new Request(`${BASE_URL}/api/roles/permissions/seed`, {
         method: "POST",
       }),
     );
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(404);
   });
 });
 

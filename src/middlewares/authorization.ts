@@ -11,12 +11,51 @@ import { roleHierarchy, ADMIN_ROLES, type UserRole } from "~/lib/auth/permission
 import { permissionResolver } from "~/services/roles/permission-resolver.service";
 
 /**
+ * Safely casts a role string to UserRole, falling back to "user" if invalid.
+ */
+function toUserRole(role: string | null | undefined): UserRole {
+  const validRoles = Object.keys(roleHierarchy);
+  if (role && validRoles.includes(role)) {
+    return role as UserRole;
+  }
+  return "user";
+}
+
+/**
  * Result of authentication validation.
  */
 export interface AuthValidationResult {
   error?: { status: number; message: string };
   userId?: string;
   userRole?: string;
+}
+
+/**
+ * Validates admin access (superadmin or admin role) for use in controllers.
+ * Standalone version that doesn't require Elysia context.
+ */
+export async function validateAdminAccess(
+  request: Request,
+  set: Record<string, unknown>,
+): Promise<AuthValidationResult> {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user) {
+    set.status = 401;
+    return { error: { status: 401, message: "Unauthorized" } };
+  }
+
+  const currentUser = await userRepository.findById(session.user.id);
+  const userRole = toUserRole(currentUser?.role);
+
+  if (!ADMIN_ROLES.includes(userRole)) {
+    set.status = 403;
+    return {
+      error: { status: 403, message: "Forbidden - admin role required" },
+    };
+  }
+
+  return { userId: session.user.id, userRole };
 }
 
 /**
@@ -91,7 +130,7 @@ export const authorizationMiddleware = new Elysia({ name: "middleware.authorizat
         }
 
         const currentUser = await userRepository.findById(session.user.id);
-        const userRole = (currentUser?.role ?? "user") as UserRole;
+        const userRole = toUserRole(currentUser?.role);
 
         const hasPerm = await permissionResolver.hasPermission(
           session.user.id,
@@ -123,7 +162,7 @@ export const authorizationMiddleware = new Elysia({ name: "middleware.authorizat
         }
 
         const currentUser = await userRepository.findById(session.user.id);
-        const userRole = (currentUser?.role ?? "user") as UserRole;
+        const userRole = toUserRole(currentUser?.role);
 
         if (roleHierarchy[userRole] < roleHierarchy[minRole]) {
           set.status = 403;
@@ -154,9 +193,9 @@ export const authorizationMiddleware = new Elysia({ name: "middleware.authorizat
         }
 
         const currentUser = await userRepository.findById(session.user.id);
-        const userRole = currentUser?.role ?? "user";
+        const userRole = toUserRole(currentUser?.role);
 
-        if (!ADMIN_ROLES.includes(userRole as UserRole)) {
+        if (!ADMIN_ROLES.includes(userRole)) {
           set.status = 403;
           return {
             error: { status: 403, message: "Forbidden - admin role required" },

@@ -4,6 +4,7 @@
  */
 
 import { rolesRepository, type IRolesRepository } from "~/repositories/roles.repository";
+import { permissionResolver } from "~/services/roles/permission-resolver.service";
 import { Result } from "~/lib/result";
 
 /**
@@ -182,6 +183,7 @@ export class RolesService implements IRolesService {
       throw new Error(result.error.message);
     }
 
+    permissionResolver.invalidateAll();
     return this.toPermissionResponse(result.value);
   }
 
@@ -198,6 +200,8 @@ export class RolesService implements IRolesService {
       throw new Error(result.error.message);
     }
 
+    permissionResolver.invalidateAll();
+
     const updated = await this.repository.findPermissionById(id);
     if (Result.isError(updated)) {
       throw new Error("Permission not found");
@@ -211,6 +215,9 @@ export class RolesService implements IRolesService {
    */
   async deletePermission(id: string): Promise<boolean> {
     const result = await this.repository.deletePermission(id);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateAll();
+    }
     return Result.isOk(result);
   }
 
@@ -265,6 +272,8 @@ export class RolesService implements IRolesService {
       await this.repository.setPermissionsForRole(role.id, permIds);
     }
 
+    permissionResolver.invalidateAll();
+
     const updatedRole = await this.repository.findRoleById(role.id);
     if (Result.isError(updatedRole)) {
       throw new Error("Role not found");
@@ -299,6 +308,8 @@ export class RolesService implements IRolesService {
       await this.repository.setPermissionsForRole(id, permIds);
     }
 
+    permissionResolver.invalidateAll();
+
     const updatedRole = await this.repository.findRoleById(id);
     if (Result.isError(updatedRole)) {
       throw new Error("Role not found");
@@ -317,6 +328,9 @@ export class RolesService implements IRolesService {
    */
   async deleteRole(id: string): Promise<boolean> {
     const result = await this.repository.deleteRole(id);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateAll();
+    }
     return Result.isOk(result);
   }
 
@@ -359,6 +373,8 @@ export class RolesService implements IRolesService {
         });
       }
     }
+
+    permissionResolver.invalidateAll();
   }
 
   /**
@@ -370,6 +386,7 @@ export class RolesService implements IRolesService {
     if (Result.isError(result)) {
       throw new Error(result.error.message);
     }
+    permissionResolver.invalidateUser(userId);
   }
 
   /**
@@ -377,6 +394,9 @@ export class RolesService implements IRolesService {
    */
   async removeRoleFromUser(userId: string, roleId: string): Promise<boolean> {
     const result = await this.repository.removeRoleFromUser(userId, roleId);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateUser(userId);
+    }
     return Result.isOk(result);
   }
 

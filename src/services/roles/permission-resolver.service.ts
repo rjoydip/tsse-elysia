@@ -57,7 +57,11 @@ export class PermissionResolver {
         return result;
       }
     } catch {
-      // Fall through to fallback
+      // DB error — fall through to fallback but do NOT cache the fallback
+      if (fallbackRole) {
+        return getPermissions(fallbackRole);
+      }
+      return [];
     }
 
     if (fallbackRole) {

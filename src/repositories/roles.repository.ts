@@ -5,7 +5,7 @@
  */
 
 import { eq, and } from "drizzle-orm";
-import { db } from "~/config/db";
+import { db, type DbType } from "~/config/db";
 import { nanoid } from "nanoid";
 import {
   permissions,
@@ -160,16 +160,17 @@ export class RolesRepository implements IRolesRepository {
     }
 
     const now = new Date();
+    const permId = nanoid();
     try {
       await db.insert(permissions).values({
-        id: nanoid(),
+        id: permId,
         name: normalizedName,
         description: data.description ?? null,
         createdAt: now,
         updatedAt: now,
       });
 
-      const created = await this.findPermissionById(nanoid());
+      const created = await this.findPermissionById(permId);
       if (Result.isError(created)) {
         const byName = await this.findPermissionByName(normalizedName);
         return byName as Result<Permission, DatabaseError | ValidationError>;
@@ -225,7 +226,7 @@ export class RolesRepository implements IRolesRepository {
   }
 
   /**
-   * Deletes a permission.
+   * Deletes a permission and cleans up junction table records.
    */
   async deletePermission(id: string): Promise<Result<void, DatabaseError | NotFoundError>> {
     const existing = await this.findPermissionById(id);
@@ -234,7 +235,10 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db.delete(permissions).where(eq(permissions.id, id));
+      await db.transaction(async (tx: DbType) => {
+        await tx.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+        await tx.delete(permissions).where(eq(permissions.id, id));
+      });
     });
   }
 
@@ -292,20 +296,21 @@ export class RolesRepository implements IRolesRepository {
       );
     }
 
-    if (data.isDefault) {
-      await db.update(roles).set({ isDefault: false });
-    }
-
     const now = new Date();
     const roleId = nanoid();
     try {
-      await db.insert(roles).values({
-        id: roleId,
-        name: normalizedName,
-        description: data.description ?? null,
-        isDefault: data.isDefault ?? false,
-        createdAt: now,
-        updatedAt: now,
+      await db.transaction(async (tx: DbType) => {
+        if (data.isDefault) {
+          await tx.update(roles).set({ isDefault: false }).where(eq(roles.isDefault, true));
+        }
+        await tx.insert(roles).values({
+          id: roleId,
+          name: normalizedName,
+          description: data.description ?? null,
+          isDefault: data.isDefault ?? false,
+          createdAt: now,
+          updatedAt: now,
+        });
       });
 
       const created = await this.findRoleById(roleId);
@@ -343,20 +348,22 @@ export class RolesRepository implements IRolesRepository {
       }
     }
 
-    if (data.isDefault && !existing.value.isDefault) {
-      await db.update(roles).set({ isDefault: false });
-    }
-
     try {
-      await db
-        .update(roles)
-        .set({
-          name: normalizedName,
-          description: data.description !== undefined ? data.description : null,
-          isDefault: data.isDefault,
-          updatedAt: new Date(),
-        })
-        .where(eq(roles.id, id));
+      await db.transaction(async (tx: DbType) => {
+        if (data.isDefault && !existing.value.isDefault) {
+          await tx.update(roles).set({ isDefault: false }).where(eq(roles.isDefault, true));
+        }
+
+        await tx
+          .update(roles)
+          .set({
+            name: normalizedName,
+            description: data.description !== undefined ? data.description : null,
+            isDefault: data.isDefault,
+            updatedAt: new Date(),
+          })
+          .where(eq(roles.id, id));
+      });
       return Result.ok();
     } catch (error) {
       return Result.err(
@@ -366,7 +373,7 @@ export class RolesRepository implements IRolesRepository {
   }
 
   /**
-   * Deletes a role.
+   * Deletes a role and cleans up junction table records.
    */
   async deleteRole(id: string): Promise<Result<void, DatabaseError | NotFoundError>> {
     const existing = await this.findRoleById(id);
@@ -375,7 +382,11 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db.delete(roles).where(eq(roles.id, id));
+      await db.transaction(async (tx: DbType) => {
+        await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+        await tx.delete(userRoles).where(eq(userRoles.roleId, id));
+        await tx.delete(roles).where(eq(roles.id, id));
+      });
     });
   }
 
