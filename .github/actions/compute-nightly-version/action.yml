@@ -1,0 +1,22 @@
+name: Compute Nightly Version
+description: Compute nightly version string (0.0.0-dev.YYYYMMDD.<sha>) and date
+
+outputs:
+  version:
+    description: Nightly version string
+    value: ${{ steps.compute.outputs.version }}
+  date:
+    description: Date in YYYYMMDD format
+    value: ${{ steps.compute.outputs.date }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute nightly version
+      id: compute
+      shell: bash
+      run: |
+        DATE=$(date +%Y%m%d)
+        SHA=$(git rev-parse --short HEAD)
+        echo "version=0.0.0-dev.${DATE}.${SHA}" >> "$GITHUB_OUTPUT"
+        echo "date=${DATE}" >> "$GITHUB_OUTPUT"
