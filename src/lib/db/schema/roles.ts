@@ -3,8 +3,9 @@
  * Provides database tables for managing custom roles and permissions.
  */
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, unique } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
+import { users } from "./auth";
 
 /**
  * Permission table - stores individual permissions.
@@ -45,6 +46,25 @@ export const rolePermissions = sqliteTable("role_permission", {
 });
 
 /**
+ * User-Role junction table - many-to-many relationship.
+ * Links users to their assigned roles from the RBAC roles table.
+ */
+export const userRoles = sqliteTable(
+  "user_role",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    roleId: text("roleId")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    userRoleUnique: unique().on(table.userId, table.roleId),
+  }),
+);
+
+/**
  * Relations - defines relationships between tables.
  */
 export const permissionsRelations = relations(permissions, ({ many }) => ({
@@ -53,6 +73,7 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 
 export const rolesRelations = relations(roles, ({ many }) => ({
   rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
 }));
 
 export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
@@ -66,12 +87,24 @@ export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => 
   }),
 }));
 
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}));
+
 /**
  * Type definitions for runtime use.
  */
 export type Permission = typeof permissions.$inferSelect;
 export type Role = typeof roles.$inferSelect;
 export type RolePermission = typeof rolePermissions.$inferSelect;
+export type UserRole = typeof userRoles.$inferSelect;
 
 /**
  * Type definitions for inserting new records.
@@ -79,3 +112,4 @@ export type RolePermission = typeof rolePermissions.$inferSelect;
 export type NewPermission = typeof permissions.$inferInsert;
 export type NewRole = typeof roles.$inferInsert;
 export type NewRolePermission = typeof rolePermissions.$inferInsert;
+export type NewUserRole = typeof userRoles.$inferInsert;

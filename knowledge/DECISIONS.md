@@ -1414,6 +1414,45 @@ Created multi-stage Dockerfile with 4 stages:
 - Do NOT log trivial choices
 - Keep entries short but meaningful
 
+### 40: Dynamic RBAC with DB-Driven Permissions
+
+**Status:** In Progress
+
+**Why:**
+
+- The existing RBAC tables (`role`, `permission`, `role_permission`) are disconnected from the user model – they store abstract definitions but no user is linked to them
+- Permissions are hardcoded in `src/lib/auth/permissions.ts` (`ROLE_PERMISSIONS` map), requiring code changes to add/modify permissions
+- Authorization checks are duplicated inline across route handlers (no centralized middleware)
+- No controller layer exists for roles, violating the layered architecture pattern
+- No UI for admin to manage roles/permissions dynamically
+
+**Approach:**
+
+1. **User-Role linkage**: Add `user_roles` junction table + `role_id` FK on `user`
+2. **Dynamic resolver**: Create `PermissionResolver` service that reads effective permissions from DB (role-based), with in-memory cache
+3. **Centralized middleware**: Elysia plugin providing `requireAuth()`, `requireRole()`, `requirePermission()`, `requireMinRole()`
+4. **Controller layer**: Extract session/request parsing into `RolesController`
+5. **Admin UI**: Roles management page at `/dashboard/roles` with CRUD dialogs
+6. **User creation integration**: Role assignment via RBAC on user create/edit
+
+**Alternatives Considered:**
+
+- Keep hardcoded permissions only – simpler but requires code deploys for permission changes
+- Use a policy engine (e.g., Casbin) – over-engineered for current scale
+- Keep inline auth validation – violates DRY and layered architecture
+
+**Tradeoffs:**
+
+- ⚠️ Added complexity of DB lookups for permission checks (mitigated by caching)
+- ⚠️ Migration required to link existing users to RBAC roles
+- ⚠️ Two permission sources during migration (hardcoded fallback + DB source of truth)
+- ✅ Permissions configurable without code changes
+- ✅ Follows existing layered architecture
+- ✅ Eliminates duplicate auth validation code
+- ✅ Admin self-service for role management
+
+---
+
 ## When to Add a Decision
 
 Add when:

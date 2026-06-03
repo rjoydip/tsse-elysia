@@ -11,8 +11,10 @@ import {
   permissions,
   roles,
   rolePermissions,
+  userRoles,
   type Permission,
   type Role,
+  type UserRole,
 } from "~/lib/db/schema/roles";
 import { Result, DatabaseError, NotFoundError, ValidationError } from "~/lib/result";
 
@@ -80,6 +82,19 @@ export interface IRolesRepository {
     roleId: string,
     permissionIds: string[],
   ): Promise<Result<void, DatabaseError | NotFoundError>>;
+
+  // User-Role association methods
+  assignRoleToUser(
+    userId: string,
+    roleId: string,
+  ): Promise<Result<void, DatabaseError | NotFoundError | ValidationError>>;
+  removeRoleFromUser(
+    userId: string,
+    roleId: string,
+  ): Promise<Result<void, DatabaseError | NotFoundError>>;
+  getUserRoles(userId: string): Promise<Result<UserRole[], DatabaseError>>;
+  getRoleIdsForUser(userId: string): Promise<Result<string[], DatabaseError>>;
+  findDefaultRole(): Promise<Result<Role, DatabaseError | NotFoundError>>;
 }
 
 /**
@@ -456,6 +471,84 @@ export class RolesRepository implements IRolesRepository {
         const values = permissionIds.map((permissionId) => ({ roleId, permissionId }));
         await db.insert(rolePermissions).values(values);
       }
+    });
+  }
+
+  // ---- User-Role association methods ----
+
+  /**
+   * Assigns a role to a user.
+   * Creates a record in the user_role junction table.
+   */
+  async assignRoleToUser(
+    userId: string,
+    roleId: string,
+  ): Promise<Result<void, DatabaseError | NotFoundError | ValidationError>> {
+    const roleExists = await this.findRoleById(roleId);
+    if (Result.isError(roleExists)) {
+      return Result.err(roleExists.error);
+    }
+
+    return withDatabaseError(async () => {
+      const existing = await db
+        .select()
+        .from(userRoles)
+        .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(userRoles).values({ userId, roleId });
+      }
+    });
+  }
+
+  /**
+   * Removes a role from a user.
+   */
+  async removeRoleFromUser(
+    userId: string,
+    roleId: string,
+  ): Promise<Result<void, DatabaseError | NotFoundError>> {
+    return withDatabaseError(async () => {
+      await db
+        .delete(userRoles)
+        .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+    });
+  }
+
+  /**
+   * Gets all user_role records for a user.
+   */
+  async getUserRoles(userId: string): Promise<Result<UserRole[], DatabaseError>> {
+    return withDatabaseError(async () => {
+      const records = await db.select().from(userRoles).where(eq(userRoles.userId, userId));
+      return records as UserRole[];
+    });
+  }
+
+  /**
+   * Gets all role IDs assigned to a user.
+   */
+  async getRoleIdsForUser(userId: string): Promise<Result<string[], DatabaseError>> {
+    return withDatabaseError(async () => {
+      const records = await db
+        .select({ roleId: userRoles.roleId })
+        .from(userRoles)
+        .where(eq(userRoles.userId, userId));
+      return records.map((r: { roleId: string }) => r.roleId);
+    });
+  }
+
+  /**
+   * Finds the default role (where isDefault is true).
+   */
+  async findDefaultRole(): Promise<Result<Role, DatabaseError | NotFoundError>> {
+    return withDatabaseError(async () => {
+      const records = await db.select().from(roles).where(eq(roles.isDefault, true)).limit(1);
+      if (records.length === 0) {
+        throw new NotFoundError({ resource: "Role", id: "default" });
+      }
+      return records[0] as Role;
     });
   }
 }

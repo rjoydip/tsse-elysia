@@ -84,6 +84,11 @@ export interface IRolesService {
   updateRole(id: string, input: UpdateRoleInput): Promise<RoleResponse>;
   deleteRole(id: string): Promise<boolean>;
 
+  // User-Role methods
+  assignRoleToUser(userId: string, roleId: string): Promise<void>;
+  removeRoleFromUser(userId: string, roleId: string): Promise<boolean>;
+  getUserRoleIds(userId: string): Promise<string[]>;
+
   // Seed default permissions
   seedDefaultPermissions(): Promise<void>;
 }
@@ -354,6 +359,36 @@ export class RolesService implements IRolesService {
         });
       }
     }
+  }
+
+  /**
+   * Assigns a role to a user.
+   * @throws Error if the role does not exist
+   */
+  async assignRoleToUser(userId: string, roleId: string): Promise<void> {
+    const result = await this.repository.assignRoleToUser(userId, roleId);
+    if (Result.isError(result)) {
+      throw new Error(result.error.message);
+    }
+  }
+
+  /**
+   * Removes a role from a user.
+   */
+  async removeRoleFromUser(userId: string, roleId: string): Promise<boolean> {
+    const result = await this.repository.removeRoleFromUser(userId, roleId);
+    return Result.isOk(result);
+  }
+
+  /**
+   * Gets all role IDs assigned to a user.
+   */
+  async getUserRoleIds(userId: string): Promise<string[]> {
+    const result = await this.repository.getRoleIdsForUser(userId);
+    if (Result.isError(result)) {
+      return [];
+    }
+    return result.value;
   }
 }
 

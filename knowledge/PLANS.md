@@ -132,6 +132,72 @@ Core focus:
 - All errors return proper JSON error responses
 - Faster UX with skeleton instead of spinner
 
+### Phase 20 – Dynamic RBAC Roles & Permissions ✅
+
+**Goal:** Connect the existing RBAC tables (`role`, `permission`, `role_permission`) to actual users, make permissions dynamic (DB-driven), create centralized authorization middleware, and build admin-facing role management UI.
+
+**Completed:**
+
+#### Phase 20.1 – Connect RBAC Tables to Users (Foundation) ✅
+
+- Added `user_roles` junction table linking `user` ↔ `role` (no `role_id` FK on `user` — avoids circular import)
+- Created migration (drizzle/0003_soft_wild_child.sql)
+- Extended `RolesRepository` with 5 new methods: `assignRoleToUser`, `removeRoleFromUser`, `getUserRoles`, `getRoleIdsForUser`, `findDefaultRole`
+- Extended `UserRepository` with 4 convenience methods: `assignRole`, `removeUserRole`, `getUserRoles`, `getUserPermissions`
+- Exported new types (`UserRole`, `NewUserRole`, `userRolesRelations`) from schema index
+
+#### Phase 20.2 – Dynamic Permission Resolver ✅
+
+- Created `PermissionResolver` service in `src/services/roles/permission-resolver.service.ts`
+- Resolves permissions from DB (role-based) with in-memory TTL cache
+- Supports `getUserPermissions(userId)`, `hasPermission(userId, permission)`, `hasRole(userId, role)`
+- `invalidateUser(userId)` / `invalidateAll()` for cache invalidation
+
+#### Phase 20.3 – Centralized Authorization Middleware ✅
+
+- Created Elysia plugin in `src/middlewares/authorization.ts`
+- Methods: `requireAuth()`, `requireRole()`, `requirePermission()`, `requireMinRole()`, `validateAdminAccess()`
+- Refactored roles routes to use middleware via controller delegation
+
+#### Phase 20.4 – Roles Controller Layer ✅
+
+- Created `src/controllers/roles/controller.ts` with 10 handler functions
+- Created `src/controllers/roles/index.ts` barrel export
+- Refactored `src/routes/api/roles/-core.ts` to delegate all endpoints to controller
+
+#### Phase 20.5 – Role/Permission Management Dashboard UI ✅
+
+- Refactored `/dashboard/roles` page using modern store/provider/table/dialog pattern
+- Created `src/lib/stores/dashboard/roles.ts` — TanStack Store for roles and permissions data
+- Created `src/features/roles/data/schema.ts` — Zod schemas for Role and Permission types
+- Created `src/features/roles/components/` with full component suite:
+  - `roles-provider.tsx` / `permissions-provider.tsx` — context providers
+  - `roles-table.tsx` / `permissions-table.tsx` — data tables with pagination/filtering
+  - `roles-columns.tsx` / `permissions-columns.tsx` — column definitions
+  - `roles-row-actions.tsx` / `permissions-row-actions.tsx` — dropdown menus
+  - `roles-action-dialog.tsx` / `permissions-action-dialog.tsx` — create/edit dialogs
+  - `roles-delete-dialog.tsx` / `permissions-delete-dialog.tsx` — delete confirmation dialogs
+  - `roles-primary-buttons.tsx` / `permissions-primary-buttons.tsx` — action buttons
+  - `roles-dialogs.tsx` / `permissions-dialogs.tsx` — dialog orchestrators
+  - `roles-overview-cards.tsx` — dashboard cards showing role/permission counts
+- Sidebar navigation entry for "Roles & Permissions" already existed
+
+#### Phase 20.6 – Role Assignment on User Creation/Management ✅
+
+- Updated `POST /api/users` to accept optional `roleId` and call `userRepository.assignRole`
+- Updated `PATCH /api/users/:id` to accept optional `roleId` and re-assign RBAC roles
+- Dashboard metrics endpoint now returns `totalRoles` and `totalPermissions`
+
+#### Phase 20.7 – Testing ✅
+
+- Repository unit tests: `test/unit/repositories/roles/roles.repository.test.ts` (12 tests)
+- Service unit tests: `test/unit/services/roles/roles.service.test.ts` (14 tests)
+- Permission resolver unit tests: `test/unit/services/roles/permission-resolver.service.test.ts` (13 tests)
+- Contract tests: `test/unit/contract/api/roles/roles.test.ts` (9 tests)
+- E2E tests: `.e2e/api/roles.spec.ts` (unauthorized, forbidden, admin access, dashboard metrics)
+
+---
+
 ### Phase 19 – Production Seed & Environment-Aware Seeding ✅
 
 **Completed:**

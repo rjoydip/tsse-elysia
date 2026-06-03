@@ -14,9 +14,11 @@
  */
 
 import { faker } from "@faker-js/faker";
+import { eq, and, sql } from "drizzle-orm";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { reset } from "drizzle-seed";
+import { nanoid } from "nanoid";
 import { scriptLogger as logger } from "~/lib/logger";
 import { subscriptionPlans } from "~/lib/db/schema/subscriptions";
 import { users } from "~/lib/db/schema/auth";
@@ -268,6 +270,200 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
 }
 
 /**
+ * Seeds default system permissions.
+ * Inserts standard CRUD permissions used across the application.
+ */
+async function seedPermissions(db: ReturnType<typeof drizzle>): Promise<void> {
+  const systemPermissions: string[] = [
+    "dashboard:read",
+    "dashboard:write",
+    "dashboard:analytics",
+    "users:read",
+    "users:write",
+    "users:delete",
+    "settings:read",
+    "settings:write",
+    "tasks:read",
+    "tasks:write",
+    "tasks:delete",
+    "apps:read",
+    "apps:write",
+    "chats:read",
+    "chats:write",
+    "reports:read",
+    "reports:write",
+  ];
+
+  const now = new Date();
+  let seeded = 0;
+
+  for (const name of systemPermissions) {
+    try {
+      await db
+        .insert(schema.permissions)
+        .values({
+          id: nanoid(),
+          name,
+          description: `System permission: ${name}`,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing({ target: schema.permissions.name });
+      seeded++;
+    } catch {
+      // Skip duplicates
+    }
+  }
+
+  logger.info(`Seeded ${seeded} system permissions`);
+}
+
+/**
+ * Default role-to-permission mappings matching src/lib/auth/permissions.ts.
+ */
+const ROLE_PERMISSION_MAP: Record<string, string[]> = {
+  superadmin: [
+    "dashboard:read",
+    "dashboard:write",
+    "dashboard:analytics",
+    "users:read",
+    "users:write",
+    "users:delete",
+    "settings:read",
+    "settings:write",
+    "tasks:read",
+    "tasks:write",
+    "tasks:delete",
+    "apps:read",
+    "apps:write",
+    "chats:read",
+    "chats:write",
+    "reports:read",
+    "reports:write",
+  ],
+  admin: [
+    "dashboard:read",
+    "dashboard:write",
+    "dashboard:analytics",
+    "users:read",
+    "users:write",
+    "settings:read",
+    "settings:write",
+    "tasks:read",
+    "tasks:write",
+    "apps:read",
+    "apps:write",
+    "chats:read",
+    "chats:write",
+    "reports:read",
+    "reports:write",
+  ],
+  manager: [
+    "dashboard:read",
+    "dashboard:analytics",
+    "users:read",
+    "settings:read",
+    "tasks:read",
+    "tasks:write",
+    "apps:read",
+    "chats:read",
+    "chats:write",
+    "reports:read",
+  ],
+  cashier: [
+    "dashboard:read",
+    "tasks:read",
+    "tasks:write",
+    "apps:read",
+    "chats:read",
+    "chats:write",
+  ],
+  user: ["dashboard:read", "tasks:read", "apps:read", "chats:read", "chats:write"],
+};
+
+/**
+ * Seeds default roles and their permission assignments.
+ * Creates the 5 standard roles (superadmin, admin, manager, cashier, user)
+ * and links each to its appropriate set of permissions.
+ * Runs in both fresh and production environments.
+ */
+async function seedRoles(db: ReturnType<typeof drizzle>): Promise<void> {
+  const now = new Date();
+
+  // Fetch all existing permissions into a name→id lookup
+  const permRows = await db
+    .select({ id: schema.permissions.id, name: schema.permissions.name })
+    .from(schema.permissions);
+  const permByName = new Map(permRows.map((r) => [r.name, r.id]));
+
+  let roleCount = 0;
+
+  for (const [roleName, permNames] of Object.entries(ROLE_PERMISSION_MAP)) {
+    try {
+      const roleId = nanoid();
+      await db
+        .insert(schema.roles)
+        .values({
+          id: roleId,
+          name: roleName,
+          description: `Default ${roleName} role`,
+          isDefault: roleName === "user",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing({ target: schema.roles.name });
+
+      // Look up the role's actual ID (whether just inserted or pre-existing)
+      const existingRole = await db
+        .select({ id: schema.roles.id })
+        .from(schema.roles)
+        .where(eq(schema.roles.name, roleName))
+        .limit(1);
+
+      if (existingRole.length === 0) continue;
+
+      const actualRoleId = existingRole[0].id;
+
+      // Assign permissions to the role
+      for (const permName of permNames) {
+        const permId = permByName.get(permName);
+        if (!permId) {
+          logger.warn(`Permission "${permName}" not found for role "${roleName}"`);
+          continue;
+        }
+
+        try {
+          // Check if association already exists
+          const existing = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(schema.rolePermissions)
+            .where(
+              and(
+                eq(schema.rolePermissions.roleId, actualRoleId),
+                eq(schema.rolePermissions.permissionId, permId),
+              ),
+            );
+
+          if (existing[0]?.count === 0) {
+            await db
+              .insert(schema.rolePermissions)
+              .values({ roleId: actualRoleId, permissionId: permId });
+          }
+        } catch (error) {
+          logger.warn(`Failed to assign permission "${permName}" to role "${roleName}": ${error}`);
+        }
+      }
+
+      roleCount++;
+    } catch (error) {
+      logger.warn(`Failed to seed role "${roleName}": ${error}`);
+    }
+  }
+
+  logger.info(`Seeded ${roleCount} default roles with permission assignments`);
+}
+
+/**
  * Seeds static users via HTTP API to the running server.
  * This ensures proper password hashing and account creation.
  */
@@ -501,14 +697,20 @@ async function main(): Promise<void> {
     logger.step(2, "Seeding subscription plans...");
     await seedPlans(db);
 
+    logger.step(3, "Seeding system permissions...");
+    await seedPermissions(db);
+
+    logger.step(4, "Seeding default roles...");
+    await seedRoles(db);
+
     // In production, only seed essential admin accounts
     const usersToSeed = isProd ? ESSENTIAL_USERS : [...ESSENTIAL_USERS, ...DEV_USERS];
-    logger.step(3, `Seeding ${usersToSeed.length} static user(s)...`);
+    logger.step(5, `Seeding ${usersToSeed.length} static user(s)...`);
     await seedUsers(usersToSeed);
 
     if (!isProd) {
       // Dev mode: seed fake users with graph-friendly timestamps
-      logger.step(4, "Seeding fake users for charts...");
+      logger.step(6, "Seeding fake users for charts...");
       const fakeUsers = generateFakeUsers(options.count, options.seed);
       logger.info(`Generated ${fakeUsers.length} fake users`);
 

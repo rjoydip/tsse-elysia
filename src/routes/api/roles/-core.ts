@@ -1,50 +1,27 @@
 /**
  * Roles and Permissions API endpoints.
  * Provides CRUD operations for roles and permissions.
+ * Delegates to controller layer for session validation and response formatting.
  */
 
 import { Elysia, t } from "elysia";
-import { auth } from "~/lib/auth";
 import {
-  rolesService,
-  type RoleResponse,
-  type PermissionResponse,
-} from "~/services/dashboard/roles";
-
-import { userRepository } from "~/repositories/users";
-
-const ADMIN_ROLES = ["superadmin", "admin"] as const;
-
-interface AuthValidationResult {
-  error?: { status: number; message: string };
-  userId?: string;
-  userRole?: string;
-}
-
-async function validateAdminAccess(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<AuthValidationResult> {
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session?.user) {
-    set.status = 401;
-    return { error: { status: 401, message: "Unauthorized" } };
-  }
-
-  const currentUser = await userRepository.findById(session.user.id);
-  const userRole = currentUser?.role ?? "user";
-
-  if (!ADMIN_ROLES.includes(userRole as (typeof ADMIN_ROLES)[number])) {
-    set.status = 403;
-    return { error: { status: 403, message: "Forbidden - admin role required" } };
-  }
-
-  return { userId: session.user.id, userRole };
-}
+  handleGetMyPermissions,
+  handleGetPermissions,
+  handleCreatePermission,
+  handleUpdatePermission,
+  handleDeletePermission,
+  handleSeedPermissions,
+  handleGetRoles,
+  handleCreateRole,
+  handleGetRole,
+  handleUpdateRole,
+  handleDeleteRole,
+} from "~/controllers/roles";
+import type { PermissionResponse, RoleResponse } from "~/services/dashboard/roles";
 
 /**
- * Permission response example.
+ * Permission response example for OpenAPI docs.
  */
 const permissionExample: PermissionResponse = {
   id: "perm_123",
@@ -55,7 +32,7 @@ const permissionExample: PermissionResponse = {
 };
 
 /**
- * Role response example.
+ * Role response example for OpenAPI docs.
  */
 const roleExample: RoleResponse = {
   id: "role_123",
@@ -77,51 +54,45 @@ export const rolesRoutes = new Elysia({
   /**
    * GET /api/roles/permissions - Get all permissions
    */
-  .get(
-    "/permissions",
-    async ({ set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
-      const permissions = await rolesService.getAllPermissions();
-      return { permissions };
-    },
-    {
-      detail: {
-        summary: "Get all permissions",
-        description:
-          "Returns a list of all permissions in the system. Requires admin or superadmin role.",
-        tags: ["roles"],
-        responses: {
-          200: {
-            description: "Permissions retrieved successfully",
-            content: { "application/json": { example: { permissions: [permissionExample] } } },
-          },
-          401: { description: "Unauthorized - no active session" },
-          403: { description: "Forbidden - admin role required" },
+  .get("/permissions", async ({ set, request }) => handleGetPermissions(request, set), {
+    detail: {
+      summary: "Get all permissions",
+      description:
+        "Returns a list of all permissions in the system. Requires admin or superadmin role.",
+      tags: ["roles"],
+      responses: {
+        200: {
+          description: "Permissions retrieved successfully",
+          content: { "application/json": { example: { permissions: [permissionExample] } } },
         },
+        401: { description: "Unauthorized - no active session" },
+        403: { description: "Forbidden - admin role required" },
       },
     },
-  )
+  })
+  /**
+   * GET /api/roles/permissions/mine - Get current user's effective permissions
+   */
+  .get("/permissions/mine", async ({ set, request }) => handleGetMyPermissions(request, set), {
+    detail: {
+      summary: "Get my permissions",
+      description:
+        "Returns all effective permissions for the current authenticated user, resolved from their DB-assigned roles. Falls back to hardcoded role-based permissions if no DB roles are found.",
+      tags: ["roles"],
+      responses: {
+        200: { description: "Permissions retrieved successfully" },
+        401: { description: "Unauthorized - no active session" },
+      },
+    },
+  })
   /**
    * POST /api/roles/permissions - Create a new permission
    */
   .post(
     "/permissions",
     async ({ body, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { name, description } = body as { name: string; description?: string };
-
-      try {
-        const permission = await rolesService.createPermission({ name, description });
-        set.status = 201;
-        return { permission };
-      } catch (err) {
-        set.status = 400;
-        return { error: err instanceof Error ? err.message : "Failed to create permission" };
-      }
+      return handleCreatePermission(request, set, { name, description });
     },
     {
       body: t.Object({
@@ -147,19 +118,9 @@ export const rolesRoutes = new Elysia({
   .put(
     "/permissions/:id",
     async ({ params, body, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { id } = params as { id: string };
       const { name, description } = body as { name?: string; description?: string };
-
-      try {
-        const permission = await rolesService.updatePermission(id, { name, description });
-        return { permission };
-      } catch (err) {
-        set.status = 400;
-        return { error: err instanceof Error ? err.message : "Failed to update permission" };
-      }
+      return handleUpdatePermission(request, set, id, { name, description });
     },
     {
       body: t.Object({
@@ -185,18 +146,8 @@ export const rolesRoutes = new Elysia({
   .delete(
     "/permissions/:id",
     async ({ params, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { id } = params as { id: string };
-
-      const deleted = await rolesService.deletePermission(id);
-      if (!deleted) {
-        set.status = 404;
-        return { error: "Permission not found" };
-      }
-
-      return { success: true };
+      return handleDeletePermission(request, set, id);
     },
     {
       detail: {
@@ -214,82 +165,51 @@ export const rolesRoutes = new Elysia({
   /**
    * POST /api/roles/permissions/seed - Seed default system permissions
    */
-  .post(
-    "/permissions/seed",
-    async ({ set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
-      await rolesService.seedDefaultPermissions();
-      return { success: true, message: "Default permissions seeded successfully" };
-    },
-    {
-      detail: {
-        summary: "Seed default permissions",
-        description:
-          "Creates system-defined permissions from the codebase. Requires admin or superadmin role.",
-        tags: ["roles"],
-        responses: {
-          200: { description: "Default permissions seeded" },
-          401: { description: "Unauthorized - no active session" },
-          403: { description: "Forbidden - admin role required" },
-        },
+  .post("/permissions/seed", async ({ set, request }) => handleSeedPermissions(request, set), {
+    detail: {
+      summary: "Seed default permissions",
+      description:
+        "Creates system-defined permissions from the codebase. Requires admin or superadmin role.",
+      tags: ["roles"],
+      responses: {
+        200: { description: "Default permissions seeded" },
+        401: { description: "Unauthorized - no active session" },
+        403: { description: "Forbidden - admin role required" },
       },
     },
-  )
+  })
   /**
    * GET /api/roles - Get all roles
    */
-  .get(
-    "/",
-    async ({ set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
-      const roles = await rolesService.getAllRoles();
-      return { roles };
-    },
-    {
-      detail: {
-        summary: "Get all roles",
-        description:
-          "Returns a list of all roles in the system with their permissions. Requires admin or superadmin role.",
-        tags: ["roles"],
-        responses: {
-          200: {
-            description: "Roles retrieved successfully",
-            content: { "application/json": { example: { roles: [roleExample] } } },
-          },
-          401: { description: "Unauthorized - no active session" },
-          403: { description: "Forbidden - admin role required" },
+  .get("/", async ({ set, request }) => handleGetRoles(request, set), {
+    detail: {
+      summary: "Get all roles",
+      description:
+        "Returns a list of all roles in the system with their permissions. Requires admin or superadmin role.",
+      tags: ["roles"],
+      responses: {
+        200: {
+          description: "Roles retrieved successfully",
+          content: { "application/json": { example: { roles: [roleExample] } } },
         },
+        401: { description: "Unauthorized - no active session" },
+        403: { description: "Forbidden - admin role required" },
       },
     },
-  )
+  })
   /**
    * POST /api/roles - Create a new role
    */
   .post(
     "/",
     async ({ body, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { name, description, isDefault, permissionIds } = body as {
         name: string;
         description?: string;
         isDefault?: boolean;
         permissionIds?: string;
       };
-
-      try {
-        const role = await rolesService.createRole({ name, description, isDefault, permissionIds });
-        set.status = 201;
-        return { role };
-      } catch (err) {
-        set.status = 400;
-        return { error: err instanceof Error ? err.message : "Failed to create role" };
-      }
+      return handleCreateRole(request, set, { name, description, isDefault, permissionIds });
     },
     {
       body: t.Object({
@@ -317,18 +237,8 @@ export const rolesRoutes = new Elysia({
   .get(
     "/:id",
     async ({ params, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { id } = params as { id: string };
-      const role = await rolesService.getRole(id);
-
-      if (!role) {
-        set.status = 404;
-        return { error: "Role not found" };
-      }
-
-      return { role };
+      return handleGetRole(request, set, id);
     },
     {
       detail: {
@@ -350,9 +260,6 @@ export const rolesRoutes = new Elysia({
   .put(
     "/:id",
     async ({ params, body, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { id } = params as { id: string };
       const { name, description, isDefault, permissionIds } = body as {
         name?: string;
@@ -360,19 +267,7 @@ export const rolesRoutes = new Elysia({
         isDefault?: boolean;
         permissionIds?: string;
       };
-
-      try {
-        const role = await rolesService.updateRole(id, {
-          name,
-          description,
-          isDefault,
-          permissionIds,
-        });
-        return { role };
-      } catch (err) {
-        set.status = 400;
-        return { error: err instanceof Error ? err.message : "Failed to update role" };
-      }
+      return handleUpdateRole(request, set, id, { name, description, isDefault, permissionIds });
     },
     {
       body: t.Object({
@@ -400,18 +295,8 @@ export const rolesRoutes = new Elysia({
   .delete(
     "/:id",
     async ({ params, set, request }) => {
-      const authResult = await validateAdminAccess(request, set);
-      if (authResult.error) return { error: authResult.error.message };
-
       const { id } = params as { id: string };
-
-      const deleted = await rolesService.deleteRole(id);
-      if (!deleted) {
-        set.status = 404;
-        return { error: "Role not found" };
-      }
-
-      return { success: true };
+      return handleDeleteRole(request, set, id);
     },
     {
       detail: {

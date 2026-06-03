@@ -33,7 +33,7 @@ jobs:
             return days >= 30;
           result-encoding: string
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         if: steps.check.outputs.result == 'true'
         with:
           submodules: false
@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Issue Triage
         if: steps.check.outputs.result == 'true'
-        uses: anomalyco/opencode/github@58a27b95c155d3f7d9b9f25b30eb1233bfb0eae5 # v1.15.12
+        uses: anomalyco/opencode/github@385cb694419f98103af0e8fc6187ddcbcbb6eecb # v1.15.13
         timeout-minutes: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

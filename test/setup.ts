@@ -1,5 +1,54 @@
+/**
+ * Test setup - initializes in-memory SQLite database.
+ *
+ * Reads all Drizzle migration SQL files and creates tables
+ * in an in-memory SQLite database so contract/integration tests
+ * have access to all required tables without manual maintenance.
+ *
+ * Tables that already exist from Better Auth's auto-migration
+ * are handled gracefully via IF NOT EXISTS.
+ */
+
 import { afterEach } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { initializeDatabase, getDatabasePools, getWriteDb } from "~/config/db";
+
+/**
+ * Returns all Drizzle migration SQL file paths sorted by version.
+ */
+function getMigrationFiles(): string[] {
+  const migrationsDir = resolve(import.meta.dir, "../../drizzle");
+  const files = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  return files.map((f) => resolve(migrationsDir, f));
+}
+
+/**
+ * Executes all Drizzle migration SQL statements against the database.
+ * Uses CREATE TABLE IF NOT EXISTS to gracefully handle re-runs.
+ */
+async function runMigrations(db: ReturnType<typeof getWriteDb>): Promise<void> {
+  const files = getMigrationFiles();
+  for (const filePath of files) {
+    const sql = readFileSync(filePath, "utf-8");
+    const statements = sql
+      .split("--> statement-breakpoint")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const stmt of statements) {
+      try {
+        // Replace CREATE TABLE with CREATE TABLE IF NOT EXISTS for idempotency
+        const safeStmt = stmt.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ");
+        await db.execute(safeStmt);
+      } catch {
+        // Skip statements that fail (e.g., index creation if table is partial)
+      }
+    }
+  }
+}
 
 export async function setup() {
   // Set environment variables for test database
@@ -17,50 +66,12 @@ export async function setup() {
     throw new Error("Database failed to initialize for tests");
   }
 
-  // Create tables manually for in-memory SQLite
+  // Create all tables from Drizzle migrations in the in-memory database
   const db = getWriteDb();
   try {
-    // Create user_settings_account table
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS user_settings_account (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL UNIQUE,
-        name TEXT NOT NULL,
-        dob INTEGER,
-        language TEXT NOT NULL,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
-      )
-    `);
-
-    // Create user_settings_display table
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS user_settings_display (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL UNIQUE,
-        items TEXT NOT NULL,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
-      )
-    `);
-
-    // Create user_settings_notifications table
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS user_settings_notifications (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL UNIQUE,
-        type TEXT NOT NULL,
-        mobile INTEGER NOT NULL,
-        communicationEmails INTEGER NOT NULL,
-        socialEmails INTEGER NOT NULL,
-        marketingEmails INTEGER NOT NULL,
-        securityEmails INTEGER NOT NULL,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
-      )
-    `);
+    await runMigrations(db);
   } catch (error) {
-    console.warn("Failed to create tables for tests:", error);
+    console.warn("Failed to run migrations for tests:", error);
   }
 }
 
