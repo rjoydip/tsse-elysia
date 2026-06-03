@@ -3,7 +3,7 @@
 # =============================================================================
 # Stage 1: DEPS (Alpine) - Production dependencies only
 # =============================================================================
-FROM oven/bun:alpine AS deps
+FROM oven/bun:canary AS deps
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN bun install --frozen-lockfile --omit=dev --ignore-scripts
 # =============================================================================
 # Stage 2: BUILDER (Alpine) - Build the application
 # =============================================================================
-FROM oven/bun:alpine AS builder
+FROM oven/bun:canary AS builder
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ RUN bun run build
 # =============================================================================
 # Stage 3: RUNTIME EXTRACTOR - Extract Bun binary and CA certs from Alpine
 # =============================================================================
-FROM oven/bun:alpine AS runtime-deps
+FROM oven/bun:canary AS runtime-deps
 
 WORKDIR /app
 
