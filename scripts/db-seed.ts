@@ -754,9 +754,7 @@ async function main(): Promise<void> {
       const exists = await db
         .select({ count: sql<number>`count(*)` })
         .from(schema.userRoles)
-        .where(
-          and(eq(schema.userRoles.userId, user.id), eq(schema.userRoles.roleId, roleId)),
-        );
+        .where(and(eq(schema.userRoles.userId, user.id), eq(schema.userRoles.roleId, roleId)));
       if ((exists[0]?.count ?? 0) === 0) {
         try {
           await db.insert(schema.userRoles).values({ userId: user.id, roleId });
