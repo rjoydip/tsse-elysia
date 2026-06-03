@@ -4,31 +4,13 @@
  * for role and permission API endpoints.
  */
 
-import { auth } from "~/lib/auth";
-import { validateAdminAccess } from "~/middlewares/authorization";
+import { validateAdminAccess, validateAuth } from "~/middlewares/authorization";
 import { permissionResolver } from "~/services/roles/permission-resolver.service";
 import {
   rolesService,
   type PermissionResponse,
   type RoleResponse,
 } from "~/services/dashboard/roles";
-
-/**
- * Validates that the request has an active session (any authenticated user).
- */
-async function validateAuthenticated(
-  request: Request,
-  set: Record<string, unknown>,
-): Promise<{ error?: { status: number; message: string }; userId?: string }> {
-  const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session?.user) {
-    set.status = 401;
-    return { error: { status: 401, message: "Unauthorized" } };
-  }
-
-  return { userId: session.user.id };
-}
 
 /**
  * Wraps service calls that may throw into consistent error responses.
@@ -52,7 +34,7 @@ export async function handleGetMyPermissions(
   request: Request,
   set: Record<string, unknown>,
 ): Promise<{ permissions: string[] } | { error: string }> {
-  const authResult = await validateAuthenticated(request, set);
+  const authResult = await validateAuth(request, set);
   if (authResult.error) return { error: authResult.error.message };
 
   const permissions = await permissionResolver.getEffectivePermissions(authResult.userId!);
@@ -69,8 +51,12 @@ export async function handleGetPermissions(
   const authResult = await validateAdminAccess(request, set);
   if (authResult.error) return { error: authResult.error.message };
 
-  const permissions = await rolesService.getAllPermissions();
-  return { permissions };
+  try {
+    const permissions = await rolesService.getAllPermissions();
+    return { permissions };
+  } catch (err) {
+    return handleServiceError(err, set, "Failed to fetch permissions", 500);
+  }
 }
 
 /**
@@ -145,8 +131,12 @@ export async function handleGetRoles(
   const authResult = await validateAdminAccess(request, set);
   if (authResult.error) return { error: authResult.error.message };
 
-  const roles = await rolesService.getAllRoles();
-  return { roles };
+  try {
+    const roles = await rolesService.getAllRoles();
+    return { roles };
+  } catch (err) {
+    return handleServiceError(err, set, "Failed to fetch roles", 500);
+  }
 }
 
 /**
@@ -155,7 +145,7 @@ export async function handleGetRoles(
 export async function handleCreateRole(
   request: Request,
   set: Record<string, unknown>,
-  body: { name: string; description?: string; isDefault?: boolean; permissionIds?: string },
+  body: { name: string; description?: string; isDefault?: boolean; permissionIds?: string[] },
 ): Promise<{ role: RoleResponse } | { error: string }> {
   const authResult = await validateAdminAccess(request, set);
   if (authResult.error) return { error: authResult.error.message };
@@ -196,7 +186,7 @@ export async function handleUpdateRole(
   request: Request,
   set: Record<string, unknown>,
   id: string,
-  body: { name?: string; description?: string; isDefault?: boolean; permissionIds?: string },
+  body: { name?: string; description?: string; isDefault?: boolean; permissionIds?: string[] },
 ): Promise<{ role: RoleResponse } | { error: string }> {
   const authResult = await validateAdminAccess(request, set);
   if (authResult.error) return { error: authResult.error.message };

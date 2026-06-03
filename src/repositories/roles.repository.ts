@@ -38,7 +38,7 @@ async function withDatabaseError<T>(
  */
 export interface IRolesRepository {
   // Permission methods
-  findAllPermissions(): Promise<Result<Permission[], DatabaseError>>;
+  findAllPermissions(limit?: number, offset?: number): Promise<Result<Permission[], DatabaseError>>;
   findPermissionById(id: string): Promise<Result<Permission, DatabaseError | NotFoundError>>;
   findPermissionByName(name: string): Promise<Result<Permission, DatabaseError | NotFoundError>>;
   createPermission(data: {
@@ -52,7 +52,7 @@ export interface IRolesRepository {
   deletePermission(id: string): Promise<Result<void, DatabaseError | NotFoundError>>;
 
   // Role methods
-  findAllRoles(): Promise<Result<Role[], DatabaseError>>;
+  findAllRoles(limit?: number, offset?: number): Promise<Result<Role[], DatabaseError>>;
   findRoleById(id: string): Promise<Result<Role, DatabaseError | NotFoundError>>;
   findRoleByName(name: string): Promise<Result<Role, DatabaseError | NotFoundError>>;
   createRole(data: {
@@ -104,9 +104,17 @@ export class RolesRepository implements IRolesRepository {
   /**
    * Finds all permissions in the system.
    */
-  async findAllPermissions(): Promise<Result<Permission[], DatabaseError>> {
+  async findAllPermissions(
+    limit: number = 100,
+    offset: number = 0,
+  ): Promise<Result<Permission[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(permissions).orderBy(permissions.name);
+      const records = await db
+        .select()
+        .from(permissions)
+        .orderBy(permissions.name)
+        .limit(limit)
+        .offset(offset);
       return records as Permission[];
     });
   }
@@ -171,10 +179,6 @@ export class RolesRepository implements IRolesRepository {
       });
 
       const created = await this.findPermissionById(permId);
-      if (Result.isError(created)) {
-        const byName = await this.findPermissionByName(normalizedName);
-        return byName as Result<Permission, DatabaseError | ValidationError>;
-      }
       return created as Result<Permission, DatabaseError | ValidationError>;
     } catch (error) {
       return Result.err(
@@ -213,7 +217,8 @@ export class RolesRepository implements IRolesRepository {
         .update(permissions)
         .set({
           name: normalizedName,
-          description: data.description !== undefined ? data.description : null,
+          description:
+            data.description !== undefined ? data.description : existing.value.description,
           updatedAt: new Date(),
         })
         .where(eq(permissions.id, id));
@@ -245,9 +250,12 @@ export class RolesRepository implements IRolesRepository {
   /**
    * Finds all roles in the system.
    */
-  async findAllRoles(): Promise<Result<Role[], DatabaseError>> {
+  async findAllRoles(
+    limit: number = 100,
+    offset: number = 0,
+  ): Promise<Result<Role[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(roles).orderBy(roles.name);
+      const records = await db.select().from(roles).orderBy(roles.name).limit(limit).offset(offset);
       return records as Role[];
     });
   }
@@ -358,7 +366,8 @@ export class RolesRepository implements IRolesRepository {
           .update(roles)
           .set({
             name: normalizedName,
-            description: data.description !== undefined ? data.description : null,
+            description:
+              data.description !== undefined ? data.description : existing.value.description,
             isDefault: data.isDefault,
             updatedAt: new Date(),
           })

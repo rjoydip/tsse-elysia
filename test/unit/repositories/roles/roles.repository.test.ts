@@ -34,7 +34,11 @@ describe("RolesRepository", () => {
     test("should return empty array when no permissions exist", async () => {
       mockDb.select.mockReturnValue({
         from: () => ({
-          orderBy: () => Promise.resolve([]),
+          orderBy: () => ({
+            limit: () => ({
+              offset: () => Promise.resolve([]),
+            }),
+          }),
         }),
       });
 
@@ -62,7 +66,11 @@ describe("RolesRepository", () => {
 
       mockDb.select.mockReturnValue({
         from: () => ({
-          orderBy: () => Promise.resolve(mockPermissions),
+          orderBy: () => ({
+            limit: () => ({
+              offset: () => Promise.resolve(mockPermissions),
+            }),
+          }),
         }),
       });
 
@@ -121,18 +129,18 @@ describe("RolesRepository", () => {
           where: () => ({
             limit: () => {
               callCount++;
-              if (callCount === 3) {
-                return Promise.resolve([
-                  {
-                    id: "created-id",
-                    name: "test:perm",
-                    description: "Test permission",
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                  },
-                ]);
+              if (callCount === 1) {
+                return Promise.resolve([]);
               }
-              return Promise.resolve([]);
+              return Promise.resolve([
+                {
+                  id: "created-id",
+                  name: "test:perm",
+                  description: "Test permission",
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              ]);
             },
           }),
         }),
@@ -183,7 +191,11 @@ describe("RolesRepository", () => {
 
       mockDb.select.mockReturnValue({
         from: () => ({
-          orderBy: () => Promise.resolve(mockRoles),
+          orderBy: () => ({
+            limit: () => ({
+              offset: () => Promise.resolve(mockRoles),
+            }),
+          }),
         }),
       });
 

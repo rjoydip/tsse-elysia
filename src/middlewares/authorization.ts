@@ -59,6 +59,24 @@ export async function validateAdminAccess(
 }
 
 /**
+ * Standalone authentication check (no role requirement).
+ * Returns userId if authenticated, or sets 401 error.
+ */
+export async function validateAuth(
+  request: Request,
+  set: Record<string, unknown>,
+): Promise<AuthValidationResult> {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user) {
+    set.status = 401;
+    return { error: { status: 401, message: "Unauthorized" } };
+  }
+
+  return { userId: session.user.id };
+}
+
+/**
  * Authorization middleware plugin for Elysia.
  * Registers guard methods that can be used by route handlers.
  */

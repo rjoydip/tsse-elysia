@@ -40,11 +40,10 @@ describe("RolesService", () => {
   });
 
   describe("getAllPermissions", () => {
-    it("should return empty array when repository returns error", async () => {
+    it("should throw when repository returns error", async () => {
       mockRepository.findAllPermissions.mockResolvedValue(Result.err(new Error("DB error")));
 
-      const result = await service.getAllPermissions();
-      expect(result).toEqual([]);
+      await expect(service.getAllPermissions()).rejects.toThrow("DB error");
     });
 
     it("should return permissions when repository succeeds", async () => {
@@ -129,11 +128,10 @@ describe("RolesService", () => {
   });
 
   describe("getAllRoles", () => {
-    it("should return empty array when repository returns error", async () => {
+    it("should throw when repository returns error", async () => {
       mockRepository.findAllRoles.mockResolvedValue(Result.err(new Error("DB error")));
 
-      const result = await service.getAllRoles();
-      expect(result).toEqual([]);
+      await expect(service.getAllRoles()).rejects.toThrow("DB error");
     });
 
     it("should return roles with permissions when repository succeeds", async () => {

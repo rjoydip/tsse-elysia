@@ -95,8 +95,8 @@ export const rolesRoutes = new Elysia({
     },
     {
       body: t.Object({
-        name: t.String({ minLength: 1 }),
-        description: t.Optional(t.String()),
+        name: t.String({ minLength: 1, maxLength: 64 }),
+        description: t.Optional(t.String({ maxLength: 255 })),
       }),
       detail: {
         summary: "Create a new permission",
@@ -116,15 +116,15 @@ export const rolesRoutes = new Elysia({
    */
   .put(
     "/permissions/:id",
-    async ({ params, body, set, request }) => {
-      const { id } = params as { id: string };
+    async ({ params: { id }, body, set, request }) => {
       const { name, description } = body as { name?: string; description?: string };
       return handleUpdatePermission(request, set, id, { name, description });
     },
     {
+      params: t.Object({ id: t.String() }),
       body: t.Object({
-        name: t.Optional(t.String({ minLength: 1 })),
-        description: t.Optional(t.String()),
+        name: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
+        description: t.Optional(t.String({ maxLength: 255 })),
       }),
       detail: {
         summary: "Update a permission",
@@ -144,11 +144,11 @@ export const rolesRoutes = new Elysia({
    */
   .delete(
     "/permissions/:id",
-    async ({ params, set, request }) => {
-      const { id } = params as { id: string };
+    async ({ params: { id }, set, request }) => {
       return handleDeletePermission(request, set, id);
     },
     {
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: "Delete a permission",
         description: "Deletes a permission from the system. Requires admin or superadmin role.",
@@ -190,16 +190,16 @@ export const rolesRoutes = new Elysia({
         name: string;
         description?: string;
         isDefault?: boolean;
-        permissionIds?: string;
+        permissionIds?: string[];
       };
       return handleCreateRole(request, set, { name, description, isDefault, permissionIds });
     },
     {
       body: t.Object({
-        name: t.String({ minLength: 1 }),
-        description: t.Optional(t.String()),
+        name: t.String({ minLength: 1, maxLength: 64 }),
+        description: t.Optional(t.String({ maxLength: 255 })),
         isDefault: t.Optional(t.Boolean()),
-        permissionIds: t.Optional(t.String()),
+        permissionIds: t.Optional(t.Array(t.String())),
       }),
       detail: {
         summary: "Create a new role",
@@ -219,11 +219,11 @@ export const rolesRoutes = new Elysia({
    */
   .get(
     "/:id",
-    async ({ params, set, request }) => {
-      const { id } = params as { id: string };
+    async ({ params: { id }, set, request }) => {
       return handleGetRole(request, set, id);
     },
     {
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: "Get a specific role",
         description: "Returns a single role by ID. Requires admin or superadmin role.",
@@ -242,22 +242,22 @@ export const rolesRoutes = new Elysia({
    */
   .put(
     "/:id",
-    async ({ params, body, set, request }) => {
-      const { id } = params as { id: string };
+    async ({ params: { id }, body, set, request }) => {
       const { name, description, isDefault, permissionIds } = body as {
         name?: string;
         description?: string;
         isDefault?: boolean;
-        permissionIds?: string;
+        permissionIds?: string[];
       };
       return handleUpdateRole(request, set, id, { name, description, isDefault, permissionIds });
     },
     {
+      params: t.Object({ id: t.String() }),
       body: t.Object({
-        name: t.Optional(t.String({ minLength: 1 })),
-        description: t.Optional(t.String()),
+        name: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
+        description: t.Optional(t.String({ maxLength: 255 })),
         isDefault: t.Optional(t.Boolean()),
-        permissionIds: t.Optional(t.String()),
+        permissionIds: t.Optional(t.Array(t.String())),
       }),
       detail: {
         summary: "Update a role",
@@ -277,11 +277,11 @@ export const rolesRoutes = new Elysia({
    */
   .delete(
     "/:id",
-    async ({ params, set, request }) => {
-      const { id } = params as { id: string };
+    async ({ params: { id }, set, request }) => {
       return handleDeleteRole(request, set, id);
     },
     {
+      params: t.Object({ id: t.String() }),
       detail: {
         summary: "Delete a role",
         description: "Deletes a role from the system. Requires admin or superadmin role.",
