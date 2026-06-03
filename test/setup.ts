@@ -18,7 +18,7 @@ import { initializeDatabase, getDatabasePools, getWriteDb } from "~/config/db";
  * Returns all Drizzle migration SQL file paths sorted by version.
  */
 function getMigrationFiles(): string[] {
-  const migrationsDir = resolve(import.meta.dir, "../../drizzle");
+  const migrationsDir = resolve(import.meta.dir, "../drizzle");
   const files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();

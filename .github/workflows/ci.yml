@@ -64,7 +64,7 @@ jobs:
           operation: setup
 
       - name: Run tests (${{ matrix.runtime }})
-        run: bun test:coverage --run
+        run: bun test --preload ./test/setup.ts --coverage --run
 
       - name: Build (${{ matrix.runtime }})
         run: bun run ${{ matrix.build_cmd }}
