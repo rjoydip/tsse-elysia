@@ -5,7 +5,7 @@
  */
 
 import { eq, and } from "drizzle-orm";
-import { db, type DbType } from "~/config/db";
+import { db as defaultDb, type DbType } from "~/config/db";
 import { nanoid } from "nanoid";
 import {
   permissions,
@@ -101,6 +101,24 @@ export interface IRolesRepository {
  * Roles repository implementation using Drizzle ORM.
  */
 export class RolesRepository implements IRolesRepository {
+  private db: DbType | undefined;
+
+  /**
+   * Creates a new RolesRepository instance.
+   * @param db - Optional database instance for dependency injection (testing).
+   */
+  constructor(db?: DbType) {
+    this.db = db;
+  }
+
+  /**
+   * Returns the database instance, preferring the constructor-injected instance
+   * over the module-level default.
+   */
+  private getDb(): DbType {
+    return this.db ?? defaultDb;
+  }
+
   /**
    * Finds all permissions in the system.
    */
@@ -109,7 +127,7 @@ export class RolesRepository implements IRolesRepository {
     offset: number = 0,
   ): Promise<Result<Permission[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db
+      const records = await this.getDb()
         .select()
         .from(permissions)
         .orderBy(permissions.name)
@@ -124,7 +142,7 @@ export class RolesRepository implements IRolesRepository {
    */
   async findPermissionById(id: string): Promise<Result<Permission, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(permissions).where(eq(permissions.id, id)).limit(1);
+      const records = await this.getDb().select().from(permissions).where(eq(permissions.id, id)).limit(1);
       if (records.length === 0) {
         throw new NotFoundError({ resource: "Permission", id });
       }
@@ -139,7 +157,7 @@ export class RolesRepository implements IRolesRepository {
     name: string,
   ): Promise<Result<Permission, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      const records = await db
+      const records = await this.getDb()
         .select()
         .from(permissions)
         .where(eq(permissions.name, name))
@@ -170,7 +188,7 @@ export class RolesRepository implements IRolesRepository {
     const now = new Date();
     const permId = nanoid();
     try {
-      await db.insert(permissions).values({
+      await this.getDb().insert(permissions).values({
         id: permId,
         name: normalizedName,
         description: data.description ?? null,
@@ -213,10 +231,10 @@ export class RolesRepository implements IRolesRepository {
     }
 
     try {
-      await db
+      await this.getDb()
         .update(permissions)
         .set({
-          name: normalizedName,
+          name: data.name !== undefined ? normalizedName : existing.value.name,
           description:
             data.description !== undefined ? data.description : existing.value.description,
           updatedAt: new Date(),
@@ -240,7 +258,7 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db.transaction(async (tx: DbType) => {
+      await this.getDb().transaction(async (tx: DbType) => {
         await tx.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
         await tx.delete(permissions).where(eq(permissions.id, id));
       });
@@ -255,7 +273,7 @@ export class RolesRepository implements IRolesRepository {
     offset: number = 0,
   ): Promise<Result<Role[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(roles).orderBy(roles.name).limit(limit).offset(offset);
+      const records = await this.getDb().select().from(roles).orderBy(roles.name).limit(limit).offset(offset);
       return records as Role[];
     });
   }
@@ -265,7 +283,7 @@ export class RolesRepository implements IRolesRepository {
    */
   async findRoleById(id: string): Promise<Result<Role, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(roles).where(eq(roles.id, id)).limit(1);
+      const records = await this.getDb().select().from(roles).where(eq(roles.id, id)).limit(1);
       if (records.length === 0) {
         throw new NotFoundError({ resource: "Role", id });
       }
@@ -279,7 +297,7 @@ export class RolesRepository implements IRolesRepository {
   async findRoleByName(name: string): Promise<Result<Role, DatabaseError | NotFoundError>> {
     const normalizedName = name.toLowerCase().trim();
     return withDatabaseError(async () => {
-      const records = await db.select().from(roles).where(eq(roles.name, normalizedName)).limit(1);
+      const records = await this.getDb().select().from(roles).where(eq(roles.name, normalizedName)).limit(1);
       if (records.length === 0) {
         throw new NotFoundError({ resource: "Role", id: normalizedName });
       }
@@ -307,7 +325,7 @@ export class RolesRepository implements IRolesRepository {
     const now = new Date();
     const roleId = nanoid();
     try {
-      await db.transaction(async (tx: DbType) => {
+      await this.getDb().transaction(async (tx: DbType) => {
         if (data.isDefault) {
           await tx.update(roles).set({ isDefault: false }).where(eq(roles.isDefault, true));
         }
@@ -357,18 +375,18 @@ export class RolesRepository implements IRolesRepository {
     }
 
     try {
-      await db.transaction(async (tx: DbType) => {
-        if (data.isDefault && !existing.value.isDefault) {
+      await this.getDb().transaction(async (tx: DbType) => {
+        if (data.isDefault) {
           await tx.update(roles).set({ isDefault: false }).where(eq(roles.isDefault, true));
         }
 
         await tx
           .update(roles)
           .set({
-            name: normalizedName,
+            name: data.name !== undefined ? normalizedName : existing.value.name,
             description:
               data.description !== undefined ? data.description : existing.value.description,
-            isDefault: data.isDefault,
+            isDefault: data.isDefault !== undefined ? data.isDefault : existing.value.isDefault,
             updatedAt: new Date(),
           })
           .where(eq(roles.id, id));
@@ -391,7 +409,7 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db.transaction(async (tx: DbType) => {
+      await this.getDb().transaction(async (tx: DbType) => {
         await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
         await tx.delete(userRoles).where(eq(userRoles.roleId, id));
         await tx.delete(roles).where(eq(roles.id, id));
@@ -411,7 +429,7 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      const records = await db
+      const records = await this.getDb()
         .select({ permission: permissions })
         .from(rolePermissions)
         .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
@@ -438,7 +456,7 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      const existing = await db
+      const existing = await this.getDb()
         .select()
         .from(rolePermissions)
         .where(
@@ -447,7 +465,7 @@ export class RolesRepository implements IRolesRepository {
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(rolePermissions).values({ roleId, permissionId });
+        await this.getDb().insert(rolePermissions).values({ roleId, permissionId });
       }
     });
   }
@@ -465,7 +483,7 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db
+      await this.getDb()
         .delete(rolePermissions)
         .where(
           and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)),
@@ -486,10 +504,10 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+      await this.getDb().delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
       if (permissionIds.length > 0) {
         const values = permissionIds.map((permissionId) => ({ roleId, permissionId }));
-        await db.insert(rolePermissions).values(values);
+        await this.getDb().insert(rolePermissions).values(values);
       }
     });
   }
@@ -510,14 +528,14 @@ export class RolesRepository implements IRolesRepository {
     }
 
     return withDatabaseError(async () => {
-      const existing = await db
+      const existing = await this.getDb()
         .select()
         .from(userRoles)
         .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(userRoles).values({ userId, roleId });
+        await this.getDb().insert(userRoles).values({ userId, roleId });
       }
     });
   }
@@ -530,7 +548,7 @@ export class RolesRepository implements IRolesRepository {
     roleId: string,
   ): Promise<Result<void, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      await db
+      await this.getDb()
         .delete(userRoles)
         .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
     });
@@ -541,7 +559,7 @@ export class RolesRepository implements IRolesRepository {
    */
   async getUserRoles(userId: string): Promise<Result<UserRole[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(userRoles).where(eq(userRoles.userId, userId));
+      const records = await this.getDb().select().from(userRoles).where(eq(userRoles.userId, userId));
       return records as UserRole[];
     });
   }
@@ -551,7 +569,7 @@ export class RolesRepository implements IRolesRepository {
    */
   async getRoleIdsForUser(userId: string): Promise<Result<string[], DatabaseError>> {
     return withDatabaseError(async () => {
-      const records = await db
+      const records = await this.getDb()
         .select({ roleId: userRoles.roleId })
         .from(userRoles)
         .where(eq(userRoles.userId, userId));
@@ -564,7 +582,7 @@ export class RolesRepository implements IRolesRepository {
    */
   async findDefaultRole(): Promise<Result<Role, DatabaseError | NotFoundError>> {
     return withDatabaseError(async () => {
-      const records = await db.select().from(roles).where(eq(roles.isDefault, true)).limit(1);
+      const records = await this.getDb().select().from(roles).where(eq(roles.isDefault, true)).limit(1);
       if (records.length === 0) {
         throw new NotFoundError({ resource: "Role", id: "default" });
       }

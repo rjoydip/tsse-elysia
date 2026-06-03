@@ -37,8 +37,15 @@ export async function handleGetMyPermissions(
   const authResult = await validateAuth(request, set);
   if (authResult.error) return { error: authResult.error.message };
 
-  const permissions = await permissionResolver.getEffectivePermissions(authResult.userId!);
-  return { permissions };
+  try {
+    const permissions = await permissionResolver.getEffectivePermissions(
+      authResult.userId!,
+      authResult.userRole as Parameters<typeof permissionResolver.getEffectivePermissions>[1],
+    );
+    return { permissions };
+  } catch (err) {
+    return handleServiceError(err, set, "Failed to fetch permissions", 500);
+  }
 }
 
 /**

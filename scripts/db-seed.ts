@@ -730,6 +730,43 @@ async function main(): Promise<void> {
     } else {
       logger.success(`Database seeded with ${usersToSeed.length} static users (production mode).`);
     }
+
+    // Link each seeded user to their corresponding role in the userRoles junction table.
+    // Without this, dynamic RBAC permission resolution is bypassed for seeded users.
+    logger.step(isProd ? 6 : 7, "Linking users to roles via userRoles junction...");
+
+    // Build a name→id lookup for all roles
+    const allRoles = await db
+      .select({ id: schema.roles.id, name: schema.roles.name })
+      .from(schema.roles);
+    const roleByName = new Map(allRoles.map((r) => [r.name, r.id]));
+
+    // Fetch all users and link each to the role matching their `role` column
+    const allUsers = await db
+      .select({ id: schema.users.id, role: schema.users.role })
+      .from(schema.users);
+    let linkedCount = 0;
+    for (const user of allUsers) {
+      const roleId = roleByName.get(user.role ?? "user");
+      if (!roleId) continue;
+
+      // Insert only if not already linked (idempotent)
+      const exists = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(schema.userRoles)
+        .where(
+          and(eq(schema.userRoles.userId, user.id), eq(schema.userRoles.roleId, roleId)),
+        );
+      if ((exists[0]?.count ?? 0) === 0) {
+        try {
+          await db.insert(schema.userRoles).values({ userId: user.id, roleId });
+          linkedCount++;
+        } catch {
+          // Skip conflicts
+        }
+      }
+    }
+    logger.info(`Linked ${linkedCount} users to their RBAC roles`);
   } catch (error) {
     logger.error(error instanceof Error ? error.message : `Unknown seed failure: ${error}`);
     process.exitCode = 1;

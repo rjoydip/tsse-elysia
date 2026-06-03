@@ -73,7 +73,10 @@ export async function validateAuth(
     return { error: { status: 401, message: "Unauthorized" } };
   }
 
-  return { userId: session.user.id };
+  const currentUser = await userRepository.findById(session.user.id);
+  const userRole = currentUser?.role;
+
+  return { userId: session.user.id, userRole };
 }
 
 /**
