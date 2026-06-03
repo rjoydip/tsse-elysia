@@ -10,7 +10,7 @@ inputs:
     default: "true"
   bun-version-file:
     description: Path to bun version file
-    default: "package.json"
+    default: ".bun-version"
 
 outputs:
   cache-hit:
