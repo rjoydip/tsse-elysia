@@ -151,11 +151,51 @@ Tags follow [SemVer](https://semver.org/) format: `vMAJOR.MINOR.PATCH`
 
 ### Nightly Builds
 
-Dev builds are automatically created daily at midnight UTC:
+Dev builds are automatically created daily at midnight UTC via `.github/workflows/nightly.yml`.
 
-- Version: `0.0.0-dev.YYYYMMDD.commitCount`
-- Download from "Nightly Dev" GitHub Release
+**Schedule:** `cron: 0 0 * * *` (daily) + manual trigger via `workflow_dispatch`
+
+**Workflow:**
+
+```text
+[Schedule Trigger] → Quality Checks → Unit Tests ─┐
+                                        ├─ Build & Artifact ─┐
+                                        └─ E2E Tests ────────┤
+                                                            ↓
+                                              Create Nightly Release
+```
+
+**Jobs:**
+
+| Job       | Description                                      |
+| --------- | ------------------------------------------------ |
+| `quality` | Lint and typecheck (reuses `run-quality-checks`) |
+| `test`    | Unit tests with coverage, uploaded to Codecov    |
+| `build`   | Production build, uploaded as artifact (30 days) |
+| `e2e`     | End-to-end tests with Playwright                 |
+| `release` | Creates "Nightly" GitHub Release with artifacts  |
+
+**Version scheme:** `0.0.0-dev.YYYYMMDD.<short-sha>` — unique per day, no semver bump.
+
+**Artifacts:**
+- Full `dist/` build output
+- `.tar.gz` and `.zip` archives
+
+**Release management:**
+- Single "Nightly" GitHub Release (prerelease), overwritten daily
+- Old workflow runs pruned after 30 entries
 - **Not for production use**
+
+**Required secrets:**
+
+| Secret               | Purpose                                            |
+| -------------------- | -------------------------------------------------- |
+| `GITHUB_TOKEN`       | Built-in token (auto-set, needs `contents: write`) |
+| `BETTER_AUTH_SECRET` | Preview server for E2E tests                       |
+| `CODECOV_TOKEN`      | Coverage upload (optional, non-blocking)           |
+
+> Nightly workflows use `secrets.GITHUB_TOKEN` (aliased via `env: GH_TOKEN` for `gh` CLI compatibility).
+> No separate user-managed `GH_TOKEN` secret is needed — the built-in token provides `contents: write`.
 
 ## Manual Release
 

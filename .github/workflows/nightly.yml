@@ -1,0 +1,211 @@
+name: Nightly Dev Build
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DATABASE_TYPE: "sqlite"
+  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
+
+jobs:
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/run-quality-checks
+
+  test:
+    name: Unit Tests & Coverage
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: setup
+
+      - name: Run tests with coverage
+        run: bun test:coverage --run
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: nightly
+          name: nightly-coverage
+          fail_ci_if_error: false
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: remove
+        if: always()
+
+  build:
+    name: Build & Artifact
+    needs: quality
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date: ${{ steps.version.outputs.date }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-environment
+
+      - id: version
+        uses: ./.github/actions/compute-nightly-version
+
+      - name: Build application
+        run: bun run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tsse-elysia-nightly-${{ steps.version.outputs.version }}
+          path: dist/
+          retention-days: 30
+
+  e2e:
+    name: E2E Tests
+    needs: [quality, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: setup
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Download build artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tsse-elysia-nightly-${{ needs.build.outputs.version }}
+          path: dist/
+
+      - name: Resolve host IP
+        run: |
+          HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}') || HOST_IP="127.0.0.1"
+          echo "E2E_HOST=$HOST_IP" >> $GITHUB_ENV
+          echo "E2E_BASE_URL=http://$HOST_IP:4173" >> $GITHUB_ENV
+          echo "BETTER_AUTH_URL=http://$HOST_IP:4173/api/auth" >> $GITHUB_ENV
+
+      - name: Start preview server
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        run: |
+          bun run preview --port 4173 --host $E2E_HOST &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          for i in $(seq 1 30); do
+            if curl -sf http://$E2E_HOST:4173 > /dev/null 2>&1; then
+              echo "Server ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run E2E tests
+        run: bun test:e2e
+
+      - name: Stop preview server
+        if: always()
+        run: kill $SERVER_PID 2>/dev/null || true
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: remove
+        if: always()
+
+  release:
+    name: Create Nightly Release
+    needs: [build, test, e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tsse-elysia-nightly-${{ needs.build.outputs.version }}
+          path: dist/
+
+      - name: Create nightly archive
+        run: |
+          tar -czf tsse-elysia-nightly-${{ needs.build.outputs.version }}.tar.gz dist/
+          zip -r tsse-elysia-nightly-${{ needs.build.outputs.version }}.zip dist/
+
+      - name: Delete existing nightly release (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete "nightly" --yes --repo ${{ github.repository }} 2>/dev/null || true
+
+      - name: Delete existing nightly tag (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin --delete refs/tags/nightly 2>/dev/null || true
+
+      - name: Create nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "nightly" \
+            --title "Nightly Dev Build — ${{ needs.build.outputs.date }}" \
+            --notes "## Nightly Dev Build
+
+          **Version:** ${{ needs.build.outputs.version }}
+          **Date:** $(date -u '+%Y-%m-%d %H:%M UTC')
+          **Commit:** ${{ github.sha }}
+
+          ### ⚠️ Not for production use
+
+          This is a nightly development build with the latest changes.
+          It may contain unstable features, unfinished work, or bugs.
+
+          ### Artifacts
+
+          - \`dist/\` — Full production build output
+          - \`*.tar.gz\` — Tarball archive
+          - \`*.zip\` — ZIP archive
+
+          ### Changes included
+
+          ${{ github.event.head_commit.message || 'Latest commits from main branch.' }}" \
+            --prerelease \
+            tsse-elysia-nightly-${{ needs.build.outputs.version }}.tar.gz \
+            tsse-elysia-nightly-${{ needs.build.outputs.version }}.zip
+
+      - name: Prune old workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Keep only the latest 30 nightly artifacts
+          gh run list --workflow nightly.yml --branch main --limit 60 --json databaseId \
+            --jq '.[].databaseId' | tail -n +31 | while read id; do
+            gh run delete "$id" --repo ${{ github.repository }} --yes 2>/dev/null || true
+          done

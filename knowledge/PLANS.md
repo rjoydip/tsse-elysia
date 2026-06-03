@@ -64,8 +64,32 @@ Core focus:
 | 17    | Dashboard UI Polish                 | ✅     |
 | 18    | Dashboard Stability & HMR Fixes     | ✅     |
 | 19    | Production Seed & Env-Aware Seeding | ✅     |
+| 20    | Dashboard Code Review Fixes         | ✅     |
+| 21    | Nightly Dev Build Workflow          | ✅     |
+| 22    | Dynamic RBAC                        | ✅     |
 
 ---
+
+## Completed Phases
+
+### Phase 21 – Nightly Dev Build Workflow ✅
+
+**Completed:**
+
+- Created `.github/workflows/nightly.yml` with scheduled `cron: 0 0 * * *` + manual trigger
+- Runs quality checks, unit tests (coverage), E2E tests, and production build
+- Creates/updates a "Nightly" GitHub Release (prerelease) with build artifacts
+- Version scheme: `0.0.0-dev.YYYYMMDD.<short-sha>` (unique daily, no semver bump)
+- Automatically prunes old workflow runs (keeps last 30)
+- Decision doc: `DECISIONS.md:decision-040-nightly-dev-build-workflow`
+- CI/CD docs updated in `docs/infra/ci-cd.md` with full workflow details
+
+**Benefits:**
+
+- Daily regression detection via full test suite
+- Pre-built artifacts available without formal releases
+- Consistent cadence independent of PR merges
+- Manual trigger available for ad-hoc dev builds
 
 ## Active Focus
 
@@ -195,6 +219,14 @@ Core focus:
 - Permission resolver unit tests: `test/unit/services/roles/permission-resolver.service.test.ts` (13 tests)
 - Contract tests: `test/unit/contract/api/roles/roles.test.ts` (9 tests)
 - E2E tests: `.e2e/api/roles.spec.ts` (unauthorized, forbidden, admin access, dashboard metrics)
+
+#### Phase 20.8 – DB Permission Fetching, Dashboard Animations & Sidebar Refinements ✅
+
+- **DB-powered sidebar filtering**: New `GET /api/roles/permissions/mine` endpoint returns current user's effective permissions resolved from DB via `PermissionResolver`. New `useMyPermissions()` client hook fetches from endpoint, caches in `sessionStorage` (5 min TTL), falls back to hardcoded permissions on failure.
+- **NavGroup uses DB permissions**: Replaced static `usePermission().can()` with `useMyPermissions().can()` in `src/components/layout/nav-group.tsx`. Static `roles` array still used as fallback for items without `permission` field.
+- **Tasks visibility restricted**: Changed `permission: "tasks:read"` to `roles: ["user", "manager", "cashier"]` so Tasks only shows for those roles (excludes admin/superadmin).
+- **Roles dashboard animated**: Added staggered fadeIn+slideUp (`motion.div`) and bounce animated numbers (`AnimatedNumber`) to overview cards and tab content — matching dashboard overview animation pattern.
+- Full suite: **1473 pass, 0 fail**, lint clean, typecheck clean, React Doctor 100/100.
 
 ---
 
@@ -343,6 +375,7 @@ src/
 - [Phase 11: Database Refactoring](./plans/phase-11-db0-database-refactoring.md)
 - [Phase 13: Contract Testing](./plans/phase-13-contract-testing-implementation-plan.md)
 - [Phase 15: Replace Fake Dashboard Analytics with Real User Data](./plans/phase-15-dashboard-real-user-data.md)
+- [Phase 21: Nightly Dev Build Workflow](./.github/workflows/nightly.yml)
 
 ---
 
