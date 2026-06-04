@@ -41,7 +41,7 @@ describe("parseDockerfile", () => {
 
   it("should parse FROM image for each stage", () => {
     const result = parseDockerfile(SAMPLE_DOCKERFILE);
-    expect(result.stages[0].fromImage).toBe("oven/bun:alpine");
+    expect(result.stages[0].fromImage).toBe("oven/bun:canary-alpine");
     expect(result.stages[3].fromImage).toBe("scratch");
   });
 
@@ -60,9 +60,9 @@ describe("parseDockerfile", () => {
 describe("extractBaseImages", () => {
   it("should extract all unique base images", () => {
     const images = extractBaseImages(SAMPLE_DOCKERFILE);
-    expect(images).toContain("oven/bun:alpine");
+    expect(images).toContain("oven/bun:canary-alpine");
     expect(images).toContain("scratch");
-    expect(images.filter((img) => img === "oven/bun:alpine")).toHaveLength(1);
+    expect(images.filter((img) => img === "oven/bun:canary-alpine")).toHaveLength(1);
   });
 
   it("should return empty array for empty content", () => {
@@ -79,7 +79,7 @@ describe("extractBaseImages", () => {
 
 describe("usesBaseImage", () => {
   it("should detect oven/bun:alpine usage", () => {
-    expect(usesBaseImage(SAMPLE_DOCKERFILE, "oven/bun:alpine")).toBe(true);
+    expect(usesBaseImage(SAMPLE_DOCKERFILE, "oven/bun:canary-alpine")).toBe(true);
   });
 
   it("should detect scratch usage", () => {
@@ -91,7 +91,7 @@ describe("usesBaseImage", () => {
   });
 
   it("should be case-insensitive", () => {
-    expect(usesBaseImage(SAMPLE_DOCKERFILE, "OVEN/BUN:ALPINE")).toBe(true);
+    expect(usesBaseImage(SAMPLE_DOCKERFILE, "OVEN/BUN:CANARY-ALPINE")).toBe(true);
   });
 });
 

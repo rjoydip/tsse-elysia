@@ -142,7 +142,7 @@ export const isTest = isBun
  * CI environment detection.
  * Used to force SQLite in CI pipelines regardless of DATABASE_TYPE setting.
  */
-export const isCI = isNode ? process.env.CI === "true" : false;
+export const isCI = isBun ? Bun.env.CI === "true" : isNode ? process.env.CI === "true" : false;
 
 /**
  * Development environment detection.

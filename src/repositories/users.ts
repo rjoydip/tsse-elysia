@@ -6,6 +6,7 @@
 import { eq, ne, like, and, or, desc, sql, count, inArray } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db/schema/auth";
+import { userRoles, roles, rolePermissions, permissions } from "~/lib/db/schema/roles";
 import { MONTH_NAMES } from "~/config/date";
 import type { DbType } from "~/config/db";
 
@@ -379,6 +380,66 @@ export class UserRepository {
    */
   async update(id: string, data: Partial<typeof users.$inferInsert>): Promise<void> {
     await this.getDb().update(users).set(data).where(eq(users.id, id));
+  }
+
+  // ---- User-Role convenience methods ----
+
+  /**
+   * Assigns a role to a user via the user_role junction table.
+   */
+  async assignRole(userId: string, roleId: string): Promise<void> {
+    const existing = await this.getDb()
+      .select()
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await this.getDb().insert(userRoles).values({ userId, roleId });
+    }
+  }
+
+  /**
+   * Removes a role from a user.
+   */
+  async removeUserRole(userId: string, roleId: string): Promise<void> {
+    await this.getDb()
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+  }
+
+  /**
+   * Gets all role records assigned to a user.
+   */
+  async getUserRoles(userId: string): Promise<(typeof roles.$inferSelect)[]> {
+    const records: Array<{
+      user_role: typeof userRoles.$inferSelect;
+      role: typeof roles.$inferSelect;
+    }> = await this.getDb()
+      .select()
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, userId));
+    return records.map((r: { role: typeof roles.$inferSelect }) => r.role);
+  }
+
+  /**
+   * Gets all permission names assigned to a user via their roles.
+   */
+  async getUserPermissions(userId: string): Promise<string[]> {
+    const records: Array<{ permissionName: string | null }> = await this.getDb()
+      .select({ permissionName: permissions.name })
+      .from(userRoles)
+      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(userRoles.userId, userId));
+    return [
+      ...new Set(
+        records
+          .map((r: { permissionName: string | null }) => r.permissionName ?? "")
+          .filter(Boolean),
+      ),
+    ];
   }
 }
 

@@ -66,6 +66,10 @@ Core focus:
 | 19    | Production Seed & Env-Aware Seeding | ✅     |
 | 20    | Dashboard Code Review Fixes         | ✅     |
 | 21    | Nightly Dev Build Workflow          | ✅     |
+| 22    | Dynamic RBAC                        | ✅     |
+| 23    | Layered RBAC Refactoring            | ✅     |
+| 24    | RBAC Overhaul: Roles, Settings,     | ✅     |
+|       | Profile, Users Controllers          |        |
 
 ---
 
@@ -154,6 +158,152 @@ Core focus:
 - Auth store is never written with a partial session (no role flash)
 - All errors return proper JSON error responses
 - Faster UX with skeleton instead of spinner
+
+### Phase 20 – Dynamic RBAC Roles & Permissions ✅
+
+**Goal:** Connect the existing RBAC tables (`role`, `permission`, `role_permission`) to actual users, make permissions dynamic (DB-driven), create centralized authorization middleware, and build admin-facing role management UI.
+
+**Completed:**
+
+#### Phase 20.1 – Connect RBAC Tables to Users (Foundation) ✅
+
+- Added `user_roles` junction table linking `user` ↔ `role` (no `role_id` FK on `user` — avoids circular import)
+- Created migration (drizzle/0003_soft_wild_child.sql)
+- Extended `RolesRepository` with 5 new methods: `assignRoleToUser`, `removeRoleFromUser`, `getUserRoles`, `getRoleIdsForUser`, `findDefaultRole`
+- Extended `UserRepository` with 4 convenience methods: `assignRole`, `removeUserRole`, `getUserRoles`, `getUserPermissions`
+- Exported new types (`UserRole`, `NewUserRole`, `userRolesRelations`) from schema index
+
+#### Phase 20.2 – Dynamic Permission Resolver ✅
+
+- Created `PermissionResolver` service in `src/services/roles/permission-resolver.service.ts`
+- Resolves permissions from DB (role-based) with in-memory TTL cache
+- Supports `getUserPermissions(userId)`, `hasPermission(userId, permission)`, `hasRole(userId, role)`
+- `invalidateUser(userId)` / `invalidateAll()` for cache invalidation
+
+#### Phase 20.3 – Centralized Authorization Middleware ✅
+
+- Created Elysia plugin in `src/middlewares/authorization.ts`
+- Methods: `requireAuth()`, `requireRole()`, `requirePermission()`, `requireMinRole()`, `validateAdminAccess()`
+- Refactored roles routes to use middleware via controller delegation
+
+#### Phase 20.4 – Roles Controller Layer ✅
+
+- Created `src/controllers/roles/controller.ts` with 10 handler functions
+- Created `src/controllers/roles/index.ts` barrel export
+- Refactored `src/routes/api/roles/-core.ts` to delegate all endpoints to controller
+
+#### Phase 20.5 – Role/Permission Management Dashboard UI ✅
+
+- Refactored `/dashboard/roles` page using modern store/provider/table/dialog pattern
+- Created `src/lib/stores/dashboard/roles.ts` — TanStack Store for roles and permissions data
+- Created `src/features/roles/data/schema.ts` — Zod schemas for Role and Permission types
+- Created `src/features/roles/components/` with full component suite:
+  - `roles-provider.tsx` / `permissions-provider.tsx` — context providers
+  - `roles-table.tsx` / `permissions-table.tsx` — data tables with pagination/filtering
+  - `roles-columns.tsx` / `permissions-columns.tsx` — column definitions
+  - `roles-row-actions.tsx` / `permissions-row-actions.tsx` — dropdown menus
+  - `roles-action-dialog.tsx` / `permissions-action-dialog.tsx` — create/edit dialogs
+  - `roles-delete-dialog.tsx` / `permissions-delete-dialog.tsx` — delete confirmation dialogs
+  - `roles-primary-buttons.tsx` / `permissions-primary-buttons.tsx` — action buttons
+  - `roles-dialogs.tsx` / `permissions-dialogs.tsx` — dialog orchestrators
+  - `roles-overview-cards.tsx` — dashboard cards showing role/permission counts
+- Sidebar navigation entry for "Roles & Permissions" already existed
+
+#### Phase 20.6 – Role Assignment on User Creation/Management ✅
+
+- Updated `POST /api/users` to accept optional `roleId` and call `userRepository.assignRole`
+- Updated `PATCH /api/users/:id` to accept optional `roleId` and re-assign RBAC roles
+- Dashboard metrics endpoint now returns `totalRoles` and `totalPermissions`
+
+#### Phase 20.7 – Testing ✅
+
+- Repository unit tests: `test/unit/repositories/roles/roles.repository.test.ts` (12 tests)
+- Service unit tests: `test/unit/services/roles/roles.service.test.ts` (14 tests)
+- Permission resolver unit tests: `test/unit/services/roles/permission-resolver.service.test.ts` (13 tests)
+- Contract tests: `test/unit/contract/api/roles/roles.test.ts` (9 tests)
+- E2E tests: `.e2e/api/roles.spec.ts` (unauthorized, forbidden, admin access, dashboard metrics)
+
+#### Phase 20.8 – DB Permission Fetching, Dashboard Animations & Sidebar Refinements ✅
+
+- **DB-powered sidebar filtering**: New `GET /api/roles/permissions/mine` endpoint returns current user's effective permissions resolved from DB via `PermissionResolver`. New `useMyPermissions()` client hook fetches from endpoint, caches in `sessionStorage` (5 min TTL), falls back to hardcoded permissions on failure.
+- **NavGroup uses DB permissions**: Replaced static `usePermission().can()` with `useMyPermissions().can()` in `src/components/layout/nav-group.tsx`. Static `roles` array still used as fallback for items without `permission` field.
+- **Tasks visibility restricted**: Changed `permission: "tasks:read"` to `roles: ["user", "manager", "cashier"]` so Tasks only shows for those roles (excludes admin/superadmin).
+- **Roles dashboard animated**: Added staggered fadeIn+slideUp (`motion.div`) and bounce animated numbers (`AnimatedNumber`) to overview cards and tab content — matching dashboard overview animation pattern.
+- Full suite: **1473 pass, 0 fail**, lint clean, typecheck clean, React Doctor 100/100.
+
+---
+
+### Phase 24 – RBAC Overhaul: Roles, Settings, Profile, Users Controllers 💪 (Active)
+
+**Goal:** Refactor remaining routes to follow the layered architecture pattern (HTTP → Controller → Service → Repository), aligning them with Phase 20's RBAC infrastructure. Migrate route logic out of `-core.ts` files into proper controllers and services.
+
+**Completed:**
+
+#### Phase 24.1 – Settings Profile & Account Controllers ✅
+
+- Extracted settings routes from monolithic inline handlers into proper controller/service layers:
+  - Created `src/controllers/settings/controller.ts` with `getProfile`, `updateProfile`, `getAccount`, `updateAccount` handlers
+  - Created `src/services/dashboard/settings/profile.ts` with business logic for profile CRUD
+  - Created `src/services/dashboard/settings/account.ts` with account management logic
+- Refactored `src/routes/api/settings/-profile.ts` to delegate all endpoints to controller
+- Maintained backward compatibility with existing `DbType` dependency injection pattern
+
+#### Phase 24.2 – Roles Controller Layer ✅
+
+- Created `src/controllers/roles/controller.ts` with typed handler functions:
+  - `getRoles`, `createRole`, `updateRole`, `deleteRole`
+  - `getPermissions`, `createPermission`, `updatePermission`, `deletePermission`
+  - `getRolePermissions`, `updateRolePermissions`
+- Refactored `src/routes/api/roles/-core.ts` to delegate to controller
+- Aligned with auth middleware pattern from Phase 20 (`requireRole`, `requirePermission`)
+
+#### Phase 24.3 – Users Controller Layer ✅
+
+- Created `src/controllers/users/controller.ts` with typed handler functions:
+  - `getUsers`, `getUser`, `createUser`, `updateUser`, `deleteUser`
+  - `getCurrentUser`, `getUserRoles`, `updateUserRoles`
+- Refactored `src/routes/api/users/-core.ts` to delegate to controller
+- Added proper error handling for user CRUD operations
+
+#### Phase 24.4 – MCP API Keys Controller Layer ✅
+
+- Created `src/controllers/mcp/keys.controller.ts` with typed handler functions:
+  - `getApiKeys`, `createApiKey`, `updateApiKey`, `deleteApiKey`
+- Refactored `src/routes/api/mcp/-keys.ts` to delegate to controller
+- Aligned with existing `ApiKeysService` and `ApiKeysRepository`
+
+#### Phase 24.5 – Settings Display & Notifications Controllers ✅
+
+- Created `src/controllers/settings/display/controller.ts` with display settings handlers
+- Created `src/controllers/settings/notifications/controller.ts` with notification preferences handlers
+- Refactored settings display/notifications routes to delegate to controllers
+
+#### Phase 24.6 – Test Setup Fix (In-Memory DB Migrations) ✅
+
+- Fixed `test/setup.ts` which was silently failing to create database tables during test preload:
+  - **Root cause**: `runMigrations()` used `db.execute()` which doesn't exist on Drizzle LibSQL ORM instances. The Drizzle ORM exposes `db.run()` for raw SQL, not `db.execute()`. The error was silently caught by a catch block, causing all 6 dashboard contract tests to fail with "Failed query: select count(\*) from 'user'" because no tables existed in the in-memory database.
+  - **Fix**: Changed `runMigrations` to use `sqliteClient.execute()` (the raw LibSQL client) instead of the Drizzle ORM `db` instance. Added the `sqliteClient` named export to the dynamic import in `setup()`.
+  - **Impact**: All 1474 unit tests now pass (was 1468 before, 6 previously failing).
+- Added proper `TEST_AUTH_BYPASS` environment variable support for dashboard contract tests, allowing tests to authenticate without a real Better Auth session.
+
+**Files Changed:**
+
+- `test/setup.ts` — Fixed `db.execute` → `sqliteClient.execute` for migration DDL
+- Created `src/controllers/settings/controller.ts`
+- Created `src/services/dashboard/settings/profile.ts`
+- Created `src/services/dashboard/settings/account.ts`
+- Created `src/controllers/roles/controller.ts`
+- Created `src/controllers/users/controller.ts`
+- Created `src/controllers/settings/display/controller.ts`
+- Created `src/controllers/settings/notifications/controller.ts`
+- Created `src/controllers/mcp/keys.controller.ts`
+- Refactored `src/routes/api/settings/-profile.ts`
+- Refactored `src/routes/api/roles/-core.ts`
+- Refactored `src/routes/api/users/-core.ts`
+- Refactored `src/routes/api/mcp/-keys.ts`
+- Refactored settings display/notifications routes
+
+**Tests:** 1474 pass, 0 fail. Lint clean. Typecheck clean.
 
 ### Phase 19 – Production Seed & Environment-Aware Seeding ✅
 

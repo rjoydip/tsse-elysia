@@ -7,7 +7,9 @@
 import { Elysia } from "elysia";
 import { logger } from "~/lib/logger";
 import { userRepository } from "~/repositories/users";
+import { rolesRepository } from "~/repositories/roles.repository";
 import { validateAuthenticated } from "~/lib/dashboard/auth-utils";
+import { Result } from "~/lib/result";
 
 const metricsExample = {
   totalUsers: 1248,
@@ -36,6 +38,8 @@ export const metricsRoutes = new Elysia({
           suspendedUsers,
           usersThisMonth,
           activeNowCount,
+          allRolesResult,
+          allPermissionsResult,
         ] = await Promise.all([
           userRepository.count(),
           userRepository.countByStatus("active"),
@@ -43,10 +47,17 @@ export const metricsRoutes = new Elysia({
           userRepository.countByStatus("suspended"),
           userRepository.countUsersThisMonth(),
           userRepository.countUsersUpdatedLastHour(),
+          rolesRepository.findAllRoles(),
+          rolesRepository.findAllPermissions(),
         ]);
 
         const userGrowth =
           totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100 * 10) / 10 : 0;
+
+        const totalRoles = Result.isOk(allRolesResult) ? allRolesResult.value.length : 0;
+        const totalPermissions = Result.isOk(allPermissionsResult)
+          ? allPermissionsResult.value.length
+          : 0;
 
         return {
           totalUsers,
@@ -57,6 +68,8 @@ export const metricsRoutes = new Elysia({
           userGrowth,
           activeNow: activeNowCount,
           activeNowGrowth: 0,
+          totalRoles,
+          totalPermissions,
           timestamp: Date.now(),
         };
       } catch (error) {

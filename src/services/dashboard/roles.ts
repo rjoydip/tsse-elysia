@@ -4,6 +4,7 @@
  */
 
 import { rolesRepository, type IRolesRepository } from "~/repositories/roles.repository";
+import { permissionResolver } from "~/services/roles/permission-resolver.service";
 import { Result } from "~/lib/result";
 
 /**
@@ -53,7 +54,7 @@ export interface CreateRoleInput {
   name: string;
   description?: string;
   isDefault?: boolean;
-  permissionIds?: string;
+  permissionIds?: string[];
 }
 
 /**
@@ -63,7 +64,7 @@ export interface UpdateRoleInput {
   name?: string;
   description?: string;
   isDefault?: boolean;
-  permissionIds?: string;
+  permissionIds?: string[];
 }
 
 /**
@@ -83,6 +84,11 @@ export interface IRolesService {
   createRole(input: CreateRoleInput): Promise<RoleResponse>;
   updateRole(id: string, input: UpdateRoleInput): Promise<RoleResponse>;
   deleteRole(id: string): Promise<boolean>;
+
+  // User-Role methods
+  assignRoleToUser(userId: string, roleId: string): Promise<void>;
+  removeRoleFromUser(userId: string, roleId: string): Promise<boolean>;
+  getUserRoleIds(userId: string): Promise<string[]>;
 
   // Seed default permissions
   seedDefaultPermissions(): Promise<void>;
@@ -148,7 +154,7 @@ export class RolesService implements IRolesService {
   async getAllPermissions(): Promise<PermissionResponse[]> {
     const result = await this.repository.findAllPermissions();
     if (Result.isError(result)) {
-      return [];
+      throw new Error(result.error.message);
     }
     return result.value.map((p) => this.toPermissionResponse(p));
   }
@@ -177,6 +183,7 @@ export class RolesService implements IRolesService {
       throw new Error(result.error.message);
     }
 
+    permissionResolver.invalidateAll();
     return this.toPermissionResponse(result.value);
   }
 
@@ -193,6 +200,11 @@ export class RolesService implements IRolesService {
       throw new Error(result.error.message);
     }
 
+    // Only invalidate cache if the name changes (descriptions don't affect permission resolution)
+    if (input.name !== undefined) {
+      permissionResolver.invalidateAll();
+    }
+
     const updated = await this.repository.findPermissionById(id);
     if (Result.isError(updated)) {
       throw new Error("Permission not found");
@@ -206,6 +218,9 @@ export class RolesService implements IRolesService {
    */
   async deletePermission(id: string): Promise<boolean> {
     const result = await this.repository.deletePermission(id);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateAll();
+    }
     return Result.isOk(result);
   }
 
@@ -215,7 +230,7 @@ export class RolesService implements IRolesService {
   async getAllRoles(): Promise<RoleResponse[]> {
     const result = await this.repository.findAllRoles();
     if (Result.isError(result)) {
-      return [];
+      throw new Error(result.error.message);
     }
 
     const roles: RoleResponse[] = [];
@@ -256,9 +271,10 @@ export class RolesService implements IRolesService {
     const role = result.value;
 
     if (input.permissionIds && input.permissionIds.length > 0) {
-      const permIds = input.permissionIds.split(",").map((p) => p.trim());
-      await this.repository.setPermissionsForRole(role.id, permIds);
+      await this.repository.setPermissionsForRole(role.id, input.permissionIds);
     }
+
+    permissionResolver.invalidateAll();
 
     const updatedRole = await this.repository.findRoleById(role.id);
     if (Result.isError(updatedRole)) {
@@ -288,10 +304,13 @@ export class RolesService implements IRolesService {
     }
 
     if (input.permissionIds !== undefined) {
-      const permIds = input.permissionIds
-        ? input.permissionIds.split(",").map((p: string) => p.trim())
-        : [];
-      await this.repository.setPermissionsForRole(id, permIds);
+      await this.repository.setPermissionsForRole(id, input.permissionIds);
+    }
+
+    // Only invalidate cache when permission assignments or isDefault change
+    // (name/description updates don't affect effective permission resolution)
+    if (input.permissionIds !== undefined || input.isDefault !== undefined) {
+      permissionResolver.invalidateAll();
     }
 
     const updatedRole = await this.repository.findRoleById(id);
@@ -301,7 +320,7 @@ export class RolesService implements IRolesService {
 
     const roleResponse = await this.toRoleResponse(updatedRole.value);
     if (!roleResponse) {
-      throw new Error("Failed to update role response");
+      throw new Error("Failed to create role response");
     }
 
     return roleResponse;
@@ -312,6 +331,9 @@ export class RolesService implements IRolesService {
    */
   async deleteRole(id: string): Promise<boolean> {
     const result = await this.repository.deleteRole(id);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateAll();
+    }
     return Result.isOk(result);
   }
 
@@ -354,6 +376,42 @@ export class RolesService implements IRolesService {
         });
       }
     }
+
+    permissionResolver.invalidateAll();
+  }
+
+  /**
+   * Assigns a role to a user.
+   * @throws Error if the role does not exist
+   */
+  async assignRoleToUser(userId: string, roleId: string): Promise<void> {
+    const result = await this.repository.assignRoleToUser(userId, roleId);
+    if (Result.isError(result)) {
+      throw new Error(result.error.message);
+    }
+    permissionResolver.invalidateUser(userId);
+  }
+
+  /**
+   * Removes a role from a user.
+   */
+  async removeRoleFromUser(userId: string, roleId: string): Promise<boolean> {
+    const result = await this.repository.removeRoleFromUser(userId, roleId);
+    if (Result.isOk(result)) {
+      permissionResolver.invalidateUser(userId);
+    }
+    return Result.isOk(result);
+  }
+
+  /**
+   * Gets all role IDs assigned to a user.
+   */
+  async getUserRoleIds(userId: string): Promise<string[]> {
+    const result = await this.repository.getRoleIdsForUser(userId);
+    if (Result.isError(result)) {
+      return [];
+    }
+    return result.value;
   }
 }
 

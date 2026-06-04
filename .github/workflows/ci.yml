@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]' && (github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/'))
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor != 'dependabot[bot]' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
@@ -54,7 +54,7 @@ jobs:
             artifact_name: server-bun
             artifact_path: dist
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Environment
         uses: ./.github/actions/setup-environment
@@ -64,7 +64,7 @@ jobs:
           operation: setup
 
       - name: Run tests (${{ matrix.runtime }})
-        run: bun test:coverage --run
+        run: bun test --preload ./test/setup.ts --coverage --run
 
       - name: Build (${{ matrix.runtime }})
         run: bun run ${{ matrix.build_cmd }}
@@ -90,7 +90,7 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - uses: ./.github/actions/docker-build-scan
         with:

@@ -313,15 +313,17 @@ export const usersRoutes = new Elysia({
 
       const body = await request.json().catch(() => ({}));
 
-      const { firstName, lastName, username, email, phoneNumber, role, password } = body as {
-        firstName?: string;
-        lastName?: string;
-        username?: string;
-        email?: string;
-        phoneNumber?: string;
-        role?: string;
-        password?: string;
-      };
+      const { firstName, lastName, username, email, phoneNumber, role, roleId, password } =
+        body as {
+          firstName?: string;
+          lastName?: string;
+          username?: string;
+          email?: string;
+          phoneNumber?: string;
+          role?: string;
+          roleId?: string;
+          password?: string;
+        };
 
       if (!firstName || !lastName || !email || !password) {
         set.status = 400;
@@ -370,6 +372,11 @@ export const usersRoutes = new Elysia({
           status: "active" as UserStatus,
         });
 
+        // Link user to RBAC role if roleId is provided
+        if (roleId) {
+          await userRepository.assignRole(signUpResult.user.id, roleId);
+        }
+
         return { success: true, userId: signUpResult.user.id };
       } catch (error) {
         console.error("User creation error:", error);
@@ -412,13 +419,14 @@ export const usersRoutes = new Elysia({
 
       const body = await request.json().catch(() => ({}));
 
-      const { firstName, lastName, username, email, phoneNumber, role } = body as {
+      const { firstName, lastName, username, email, phoneNumber, role, roleId } = body as {
         firstName?: string;
         lastName?: string;
         username?: string;
         email?: string;
         phoneNumber?: string;
         role?: string;
+        roleId?: string;
       };
 
       if (!validatePhoneNumber(phoneNumber)) {
@@ -445,12 +453,24 @@ export const usersRoutes = new Elysia({
       if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
       if (role !== undefined) updates.role = role;
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(updates).length === 0 && roleId === undefined) {
         set.status = 400;
         return { error: "No fields to update" };
       }
 
-      await userRepository.update(params.id, updates);
+      if (Object.keys(updates).length > 0) {
+        await userRepository.update(params.id, updates);
+      }
+
+      // Update RBAC role assignment if roleId is provided
+      if (roleId !== undefined) {
+        // Remove existing roles first, then assign the new one
+        const existingRoles = await userRepository.getUserRoles(params.id);
+        for (const existingRole of existingRoles) {
+          await userRepository.removeUserRole(params.id, existingRole.id);
+        }
+        await userRepository.assignRole(params.id, roleId);
+      }
 
       const updatedUser = await userRepository.findById(params.id);
       return formatUserResponse(updatedUser);

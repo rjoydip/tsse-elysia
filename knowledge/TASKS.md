@@ -132,6 +132,22 @@ description: Execution-focused task tracker (source of truth for active work)
 - [x] E2E coverage (auth, UI, API, OpenAPI)
 - [x] OpenAPI spec + Scalar UI tests
 
+### Phase 24: Layered API Architecture (Controllers & Services)
+
+- [x] Create settings profile controller + service
+- [x] Create settings account service
+- [x] Refactor settings routes to delegate to controller
+- [x] Create roles controller
+- [x] Refactor roles routes to delegate to controller
+- [x] Create users controller
+- [x] Refactor users routes to delegate to controller
+- [x] Create MCP keys controller
+- [x] Refactor MCP keys routes to delegate to controller
+- [x] Create settings display controller
+- [x] Create settings notifications controller
+- [x] Fix `test/setup.ts` — use `sqliteClient.execute()` instead of `db.execute()` (Drizzle ORM doesn't expose `execute()`)
+- [x] All 1474 unit tests pass, lint clean, typecheck clean
+
 ### Phase 11: DB0 Database Refactoring
 
 - [x] Migrate database setup to use DB0 library

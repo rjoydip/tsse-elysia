@@ -22,59 +22,79 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import type { Permission } from "~/lib/auth/permissions";
 import {
   type NavCollapsible,
   type NavItem,
   type NavLink,
   type NavGroup as NavGroupProps,
 } from "./types";
-import { useAuthStore } from "~/lib/stores/auth";
+import { useMyPermissions } from "~/hooks/use-my-permissions";
+import { usePermission } from "~/hooks/use-permission";
 import { toast } from "sonner";
 
 /**
- * Get user role from auth store using the hook
+ * Check if item is visible based on dynamic permission or static role.
  */
-function useUserRole(): string {
-  const authState = useAuthStore();
-  if (authState.user?.role && authState.user.role.length > 0) {
-    return authState.user.role[0];
-  }
-  return "user";
+function isItemVisible(
+  item: NavItem,
+  userRole: string,
+  can: (perm: Permission) => boolean,
+): boolean {
+  // Permission-based check takes precedence
+  if (item.permission) return can(item.permission);
+  // Fall back to static role check
+  if (item.roles) return item.roles.includes(userRole as any);
+  return true;
 }
 
 /**
- * Check if item is visible for user role
+ * Check if group is visible based on dynamic permission or static role.
  */
-function isItemVisible(item: NavItem, userRole: string): boolean {
-  if (!item.roles) return true;
-  return item.roles.includes(userRole as any);
+function isGroupVisible(
+  group: NavGroupProps,
+  userRole: string,
+  can: (perm: Permission) => boolean,
+): boolean {
+  if (group.permission) return can(group.permission);
+  if (group.roles) return group.roles.includes(userRole as any);
+  return true;
 }
 
 /**
- * Filter items by role and handle disabled state
+ * Filter items by permission/role and handle disabled state.
  */
-function filterItems(items: NavItem[], userRole: string): NavItem[] {
-  return items.filter((item) => {
-    if (!isItemVisible(item, userRole)) return false;
+function filterItems(
+  items: NavItem[],
+  userRole: string,
+  can: (perm: Permission) => boolean,
+): NavItem[] {
+  return items.reduce<NavItem[]>((acc, item) => {
+    if (!isItemVisible(item, userRole, can)) return acc;
     if (item.items) {
-      const filteredSubItems = item.items.filter((subItem) => isItemVisible(subItem, userRole));
-      if (filteredSubItems.length === 0) return false;
-      item.items = filteredSubItems;
+      const filteredSubItems = item.items.filter((subItem) =>
+        isItemVisible(subItem, userRole, can),
+      );
+      if (filteredSubItems.length === 0) return acc;
+      acc.push({ ...item, items: filteredSubItems });
+    } else {
+      acc.push(item);
     }
-    return true;
-  });
+    return acc;
+  }, []);
 }
 
-export function NavGroup({ title, items, roles }: NavGroupProps) {
+export function NavGroup({ title, items, roles, permission }: NavGroupProps) {
   const { state, isMobile } = useSidebar();
   const href = useLocation({ select: (location) => location.href });
-  const userRole = useUserRole();
+  const { role } = usePermission();
+  const { can } = useMyPermissions();
 
-  if (roles && !roles.includes(userRole as any)) {
+  if (!isGroupVisible({ title, items, roles, permission }, role, can)) {
     return null;
   }
 
-  const filteredItems = filterItems(items, userRole);
+  const filteredItems = filterItems(items, role, can);
 
   return (
     <SidebarGroup>
@@ -192,7 +212,7 @@ function SidebarMenuCollapsedDropdown({ item, href }: { item: NavCollapsible; hr
             {item.icon && <item.icon />}
             <span>{item.title}</span>
             {item.badge && <NavBadge>{item.badge}</NavBadge>}
-            <ChevronRight className="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            <ChevronRight className="ms-auto transition-transform duration-200 group/data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start" sideOffset={4}>
