@@ -47,6 +47,11 @@ jobs:
             sleep 2
           done
 
+      - name: Seed essential users (server must be running)
+        env:
+          SEED_SERVER_URL: http://localhost:${{ env.E2E_PORT }}
+        run: bun run db:seed --prod
+
       - name: Create report directory
         run: mkdir -p reports
 
