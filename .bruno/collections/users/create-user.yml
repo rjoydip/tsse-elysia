@@ -16,7 +16,7 @@ http:
       {
         "firstName": "Test",
         "lastName": "User",
-        "email": "test-{{$isoTimestamp}}@example.com",
+        "email": "test-{{$timestamp}}@example.com",
         "password": "Test123!@#"
       }
   auth:
