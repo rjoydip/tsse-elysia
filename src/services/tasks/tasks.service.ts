@@ -108,12 +108,12 @@ export class TasksService implements ITasksService {
     userId: string,
     data: Partial<{
       title: string;
-      description: string;
+      description: string | null;
       status: string;
       priority: string;
       label: string;
-      dueDate: string;
-      assignee: string;
+      dueDate: string | null;
+      assignee: string | null;
     }>,
   ): Promise<TaskRow | null> {
     const updates: Partial<{
@@ -135,7 +135,8 @@ export class TasksService implements ITasksService {
     if (data.priority !== undefined) updates.priority = data.priority;
     if (data.label !== undefined) updates.label = data.label;
     if (data.dueDate !== undefined)
-      updates.dueDate = Math.floor(new Date(data.dueDate).getTime() / 1000);
+      updates.dueDate =
+        data.dueDate === null ? null : Math.floor(new Date(data.dueDate).getTime() / 1000);
     if (data.assignee !== undefined) updates.assignee = data.assignee;
 
     return this.repository.update(id, userId, updates);

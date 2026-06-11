@@ -37,14 +37,6 @@ export async function monthFromTimestamp(column: AnyColumn) {
   return sql<number>`cast(strftime('%m', ${column}, 'unixepoch') as integer)`.mapWith(Number);
 }
 
-/**
- * Converts a Date to a unix-epoch timestamp (seconds) for consistent
- * year-range comparisons across SQLite and PostgreSQL backends.
- *
- * @example
- *   const start = yearBoundary(2026, 0); // Jan 1, 2026 as epoch seconds
- *   const end   = yearBoundary(2027, 0); // Jan 1, 2027 as epoch seconds
- */
-export function yearBoundary(year: number): number {
-  return Math.floor(new Date(year, 0, 1).getTime() / 1000);
-}
+// Note: yearBoundary was removed because the repo passes raw Date objects
+// to gte/lt for dialect-agnostic timestamp comparisons. Date boundaries
+// are constructed inline as `new Date(year, 0, 1)`.

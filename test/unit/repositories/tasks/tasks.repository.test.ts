@@ -24,6 +24,34 @@ function chainWithGroupBy(data: unknown[]) {
 }
 
 /**
+ * Helper: builds a chainable mock that returns data from find (select → from → where).
+ */
+function chainFromWhere(data: unknown[]) {
+  return {
+    from: () => ({
+      where: () => Promise.resolve(data),
+    }),
+  };
+}
+
+/**
+ * Helper: builds a chainable mock for findAll (select → from → where → orderBy → limit → offset).
+ */
+function chainFromWhereOrderByLimitOffset(data: unknown[]) {
+  return {
+    from: () => ({
+      where: () => ({
+        orderBy: () => ({
+          limit: () => ({
+            offset: () => Promise.resolve(data),
+          }),
+        }),
+      }),
+    }),
+  };
+}
+
+/**
  * Helper: returns a select mock that returns different chain results for each call.
  * Falls back to an empty chain for any excess calls beyond the provided results,
  * so adding a query doesn't break existing tests.
@@ -49,7 +77,7 @@ describe("TasksRepository", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // stats() – aggregate task counts grouped by status / archivedAt / deletedAt
+  // stats() – aggregate task counts grouped by status / isArchived / isDeleted
   // ---------------------------------------------------------------------------
   describe("stats", () => {
     const emptyStats: TaskStats = {
@@ -73,12 +101,12 @@ describe("TasksRepository", () => {
     it("should count active tasks with correct status breakdown", async () => {
       mockDb.select.mockReturnValue(
         chainWithGroupBy([
-          { status: "todo", archivedAt: null, deletedAt: null, count: 2 },
-          { status: "in-progress", archivedAt: null, deletedAt: null, count: 4 },
-          { status: "review", archivedAt: null, deletedAt: null, count: 4 },
-          { status: "done", archivedAt: null, deletedAt: null, count: 5 },
-          { status: "backlog", archivedAt: null, deletedAt: null, count: 1 },
-          { status: "canceled", archivedAt: null, deletedAt: null, count: 2 },
+          { status: "todo", isArchived: 0, isDeleted: 0, count: 2 },
+          { status: "in-progress", isArchived: 0, isDeleted: 0, count: 4 },
+          { status: "review", isArchived: 0, isDeleted: 0, count: 4 },
+          { status: "done", isArchived: 0, isDeleted: 0, count: 5 },
+          { status: "backlog", isArchived: 0, isDeleted: 0, count: 1 },
+          { status: "canceled", isArchived: 0, isDeleted: 0, count: 2 },
         ]),
       );
 
@@ -98,7 +126,7 @@ describe("TasksRepository", () => {
 
     it("should count only canonical 'in-progress' under inProgress", async () => {
       mockDb.select.mockReturnValue(
-        chainWithGroupBy([{ status: "in-progress", archivedAt: null, deletedAt: null, count: 5 }]),
+        chainWithGroupBy([{ status: "in-progress", isArchived: 0, isDeleted: 0, count: 5 }]),
       );
 
       const result = await repository.stats("user-1");
@@ -111,8 +139,8 @@ describe("TasksRepository", () => {
     it("should count archived tasks separately and exclude from status counts", async () => {
       mockDb.select.mockReturnValue(
         chainWithGroupBy([
-          { status: "todo", archivedAt: 1_700_000_000, deletedAt: null, count: 3 },
-          { status: "done", archivedAt: 1_700_000_100, deletedAt: null, count: 2 },
+          { status: "todo", isArchived: 1, isDeleted: 0, count: 3 },
+          { status: "done", isArchived: 1, isDeleted: 0, count: 2 },
         ]),
       );
 
@@ -127,9 +155,7 @@ describe("TasksRepository", () => {
 
     it("should count deleted tasks separately and exclude from status and active", async () => {
       mockDb.select.mockReturnValue(
-        chainWithGroupBy([
-          { status: "done", archivedAt: null, deletedAt: 1_700_000_000, count: 4 },
-        ]),
+        chainWithGroupBy([{ status: "done", isArchived: 0, isDeleted: 1, count: 4 }]),
       );
 
       const result = await repository.stats("user-1");
@@ -143,10 +169,10 @@ describe("TasksRepository", () => {
     it("should handle mixed active + archived + deleted state correctly", async () => {
       mockDb.select.mockReturnValue(
         chainWithGroupBy([
-          { status: "todo", archivedAt: null, deletedAt: null, count: 5 }, // active
-          { status: "done", archivedAt: null, deletedAt: null, count: 3 }, // active
-          { status: "review", archivedAt: 1_700_000_000, deletedAt: null, count: 2 }, // archived
-          { status: "todo", archivedAt: null, deletedAt: 1_700_000_000, count: 1 }, // deleted
+          { status: "todo", isArchived: 0, isDeleted: 0, count: 5 }, // active
+          { status: "done", isArchived: 0, isDeleted: 0, count: 3 }, // active
+          { status: "review", isArchived: 1, isDeleted: 0, count: 2 }, // archived
+          { status: "todo", isArchived: 0, isDeleted: 1, count: 1 }, // deleted
         ]),
       );
 
@@ -163,7 +189,7 @@ describe("TasksRepository", () => {
 
     it("should handle large counts", async () => {
       mockDb.select.mockReturnValue(
-        chainWithGroupBy([{ status: "done", archivedAt: null, deletedAt: null, count: 1_000_000 }]),
+        chainWithGroupBy([{ status: "done", isArchived: 0, isDeleted: 0, count: 1_000_000 }]),
       );
 
       const result = await repository.stats("user-1");
@@ -174,7 +200,7 @@ describe("TasksRepository", () => {
 
     it("should ignore unknown statuses (not in status switch)", async () => {
       mockDb.select.mockReturnValue(
-        chainWithGroupBy([{ status: "unknown", archivedAt: null, deletedAt: null, count: 3 }]),
+        chainWithGroupBy([{ status: "unknown", isArchived: 0, isDeleted: 0, count: 3 }]),
       );
 
       const result = await repository.stats("user-1");
@@ -190,11 +216,11 @@ describe("TasksRepository", () => {
     });
 
     it("should aggregate multiple rows with the same status under one count", async () => {
-      // GroupBy may produce separate rows if archivedAt/deletedAt differ
+      // GroupBy may produce separate rows if isArchived/isDeleted differ
       mockDb.select.mockReturnValue(
         chainWithGroupBy([
-          { status: "todo", archivedAt: null, deletedAt: null, count: 2 },
-          { status: "todo", archivedAt: null, deletedAt: 1_700_000_000, count: 1 },
+          { status: "todo", isArchived: 0, isDeleted: 0, count: 2 },
+          { status: "todo", isArchived: 0, isDeleted: 1, count: 1 },
         ]),
       );
 
@@ -204,6 +230,78 @@ describe("TasksRepository", () => {
       expect(result.active).toBe(2);
       expect(result.deleted).toBe(1);
       expect(result.todo).toBe(2); // only active todos
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // findAll – list tasks with filters
+  // ---------------------------------------------------------------------------
+  describe("findAll", () => {
+    it("should filter by single status", async () => {
+      const tasksData = [{ id: "1", title: "Task 1", status: "todo" }];
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValueOnce(chainFromWhereOrderByLimitOffset(tasksData));
+      mockDb.select.mockReturnValueOnce(chainFromWhere([{ count: 1 }]));
+
+      const result = await repository.findAll("user-1", { status: ["todo"] });
+
+      expect(result.tasks).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it("should filter by multiple statuses", async () => {
+      const tasksData = [
+        { id: "1", title: "Task 1", status: "todo" },
+        { id: "2", title: "Task 2", status: "in-progress" },
+      ];
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValueOnce(chainFromWhereOrderByLimitOffset(tasksData));
+      mockDb.select.mockReturnValueOnce(chainFromWhere([{ count: 2 }]));
+
+      const result = await repository.findAll("user-1", { status: ["todo", "in-progress"] });
+
+      expect(result.tasks).toHaveLength(2);
+      expect(result.total).toBe(2);
+    });
+
+    it("should filter by priority and label combination", async () => {
+      const tasksData = [
+        { id: "1", title: "Bug fix", status: "todo", priority: "high", label: "bug" },
+      ];
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValueOnce(chainFromWhereOrderByLimitOffset(tasksData));
+      mockDb.select.mockReturnValueOnce(chainFromWhere([{ count: 1 }]));
+
+      const result = await repository.findAll("user-1", { priority: ["high"], label: ["bug"] });
+
+      expect(result.tasks).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it("should filter by search with partial match", async () => {
+      const tasksData = [{ id: "1", title: "Fix login redirect bug", status: "todo" }];
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValueOnce(chainFromWhereOrderByLimitOffset(tasksData));
+      mockDb.select.mockReturnValueOnce(chainFromWhere([{ count: 1 }]));
+
+      const result = await repository.findAll("user-1", { search: "login" });
+
+      expect(result.tasks).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it("should return empty when no tasks match filters", async () => {
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValueOnce(chainFromWhereOrderByLimitOffset([]));
+      mockDb.select.mockReturnValueOnce(chainFromWhere([{ count: 0 }]));
+
+      const result = await repository.findAll("user-1", {
+        status: ["done"],
+        priority: ["critical"],
+      });
+
+      expect(result.tasks).toHaveLength(0);
+      expect(result.total).toBe(0);
     });
   });
 

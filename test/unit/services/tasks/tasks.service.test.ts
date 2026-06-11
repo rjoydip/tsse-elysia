@@ -130,6 +130,38 @@ describe("TasksService", () => {
 
       expect(result).toBeNull();
     });
+
+    it("should convert dueDate string to epoch seconds", async () => {
+      const mockTaskRow = createMockTask({ id: "1" });
+      mockTasksRepository.update.mockResolvedValueOnce(mockTaskRow);
+
+      const result = await service.updateTask("1", "user-1", { dueDate: "2026-12-31" });
+
+      expect(mockTasksRepository.update).toHaveBeenCalledWith(
+        "1",
+        "user-1",
+        expect.objectContaining({
+          dueDate: 1798675200, // 2026-12-31T00:00:00.000Z in epoch seconds
+        }),
+      );
+      expect(result).toEqual(mockTaskRow);
+    });
+
+    it("should clear dueDate when passed null", async () => {
+      const mockTaskRow = createMockTask({ id: "1", dueDate: null });
+      mockTasksRepository.update.mockResolvedValueOnce(mockTaskRow);
+
+      const result = await service.updateTask("1", "user-1", { dueDate: null });
+
+      expect(mockTasksRepository.update).toHaveBeenCalledWith(
+        "1",
+        "user-1",
+        expect.objectContaining({
+          dueDate: null,
+        }),
+      );
+      expect(result).toEqual(mockTaskRow);
+    });
   });
 
   describe("archiveTask", () => {

@@ -21,6 +21,7 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, query }) => {
       const { error, session } = await validateSession(request, set);
       if (error) return error;
+      if (!session) return new Response("Unauthorized", { status: 401 });
 
       try {
         const status = query.status
@@ -36,7 +37,7 @@ export const tasksRoutes = new Elysia({
         const page = query.page ? Number(query.page) : 1;
         const pageSize = query.pageSize ? Number(query.pageSize) : 50;
 
-        const result = await tasksService.listTasks(session!.userId, {
+        const result = await tasksService.listTasks(session.userId, {
           status,
           priority,
           search: query.search,
@@ -91,7 +92,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const stats = await tasksService.getStats(session!.userId);
+        const stats = await tasksService.getStats(session.userId);
         return stats;
       } catch (err) {
         logger.error(
@@ -127,7 +128,7 @@ export const tasksRoutes = new Elysia({
 
       try {
         const year = query.year ? Number(query.year) : new Date().getFullYear();
-        const data = await tasksService.getMonthlyCounts(session!.userId, year);
+        const data = await tasksService.getMonthlyCounts(session.userId, year);
         return { year, data };
       } catch (err) {
         logger.error(
@@ -165,7 +166,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const task = await tasksService.getTask(params.id, session!.userId);
+        const task = await tasksService.getTask(params.id, session.userId);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };
@@ -201,16 +202,18 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, body }) => {
       const { error: authError, session } = await validateSession(request, set);
       if (authError) return authError;
+      if (!session) return new Response("Unauthorized", { status: 401 });
 
       const { error: validationError, data } = await validateCreateTaskRequest(
         body as Record<string, unknown>,
       );
       if (validationError) return validationError;
+      if (!data) return new Response("Invalid request data", { status: 400 });
 
       try {
         const task = await tasksService.createTask({
-          ...data!,
-          userId: session!.userId,
+          ...data,
+          userId: session.userId,
         });
         return task;
       } catch (err) {
@@ -251,9 +254,10 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, params, body }) => {
       const { error, session } = await validateSession(request, set);
       if (error) return error;
+      if (!session) return new Response("Unauthorized", { status: 401 });
 
       try {
-        const task = await tasksService.updateTask(params.id, session!.userId, body);
+        const task = await tasksService.updateTask(params.id, session.userId, body);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };
@@ -300,7 +304,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const task = await tasksService.archiveTask(params.id, session!.userId);
+        const task = await tasksService.archiveTask(params.id, session.userId);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };
@@ -341,7 +345,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const task = await tasksService.unarchiveTask(params.id, session!.userId);
+        const task = await tasksService.unarchiveTask(params.id, session.userId);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };
@@ -382,7 +386,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const task = await tasksService.deleteTask(params.id, session!.userId);
+        const task = await tasksService.deleteTask(params.id, session.userId);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };

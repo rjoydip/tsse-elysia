@@ -5,7 +5,7 @@
  */
 
 import { randomUUID } from "uncrypto";
-import { eq, and, desc, gte, lt, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, gte, lt, sql, isNull, inArray } from "drizzle-orm";
 import type { DbType } from "~/config/db";
 import { monthFromTimestamp } from "~/repositories/tasks/date-helpers";
 
@@ -179,13 +179,13 @@ export class TasksRepository implements ITasksRepository {
     }
 
     if (filters?.status?.length) {
-      conditions.push(sql`${tasksTable.status} IN ${filters.status}`);
+      conditions.push(inArray(tasksTable.status, filters.status as any));
     }
     if (filters?.priority?.length) {
-      conditions.push(sql`${tasksTable.priority} IN ${filters.priority}`);
+      conditions.push(inArray(tasksTable.priority, filters.priority as any));
     }
     if (filters?.label?.length) {
-      conditions.push(sql`${tasksTable.label} IN ${filters.label}`);
+      conditions.push(inArray(tasksTable.label, filters.label as any));
     }
     if (filters?.search) {
       conditions.push(sql`${tasksTable.title} LIKE ${`%${filters.search}%`}`);
@@ -301,19 +301,32 @@ export class TasksRepository implements ITasksRepository {
   }
 
   /**
-   * Archives a task by setting archivedAt timestamp.
+   * Shared helper: sets a timestamp column on a task and returns the updated row.
+   * Reduces the 6-line update+where+returning pattern to a single call.
    */
-  async archive(id: string, userId: string): Promise<TaskRow | null> {
+  private async _updateTimestamp(
+    id: string,
+    userId: string,
+    column: "archivedAt" | "deletedAt",
+    value: Date | null,
+  ): Promise<TaskRow | null> {
     const { db, tasksTable } = await this.init();
     const now = new Date();
 
     const [record] = await db
       .update(tasksTable)
-      .set({ archivedAt: now, updatedAt: now })
+      .set({ [column]: value, updatedAt: now })
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .returning();
 
     return record ?? null;
+  }
+
+  /**
+   * Archives a task by setting archivedAt timestamp.
+   */
+  async archive(id: string, userId: string): Promise<TaskRow | null> {
+    return this._updateTimestamp(id, userId, "archivedAt", new Date());
   }
 
   /**
@@ -321,32 +334,14 @@ export class TasksRepository implements ITasksRepository {
    * Preserves the task's original workflow status (doesn't reset to "todo").
    */
   async unarchive(id: string, userId: string): Promise<TaskRow | null> {
-    const { db, tasksTable } = await this.init();
-    const now = new Date();
-
-    const [record] = await db
-      .update(tasksTable)
-      .set({ archivedAt: null, updatedAt: now })
-      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
-      .returning();
-
-    return record ?? null;
+    return this._updateTimestamp(id, userId, "archivedAt", null);
   }
 
   /**
    * Soft-deletes a task by setting deletedAt timestamp.
    */
   async softDelete(id: string, userId: string): Promise<TaskRow | null> {
-    const { db, tasksTable } = await this.init();
-    const now = new Date();
-
-    const [record] = await db
-      .update(tasksTable)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
-      .returning();
-
-    return record ?? null;
+    return this._updateTimestamp(id, userId, "deletedAt", new Date());
   }
 
   /**
@@ -355,16 +350,19 @@ export class TasksRepository implements ITasksRepository {
   async stats(userId: string): Promise<TaskStats> {
     const { db, tasksTable } = await this.init();
 
+    const isArchived = sql<number>`CASE WHEN ${tasksTable.archivedAt} IS NOT NULL THEN 1 ELSE 0 END`;
+    const isDeleted = sql<number>`CASE WHEN ${tasksTable.deletedAt} IS NOT NULL THEN 1 ELSE 0 END`;
+
     const rows = await db
       .select({
         status: tasksTable.status,
-        archivedAt: tasksTable.archivedAt,
-        deletedAt: tasksTable.deletedAt,
+        isArchived,
+        isDeleted,
         count: sql<number>`count(*)`,
       })
       .from(tasksTable)
       .where(eq(tasksTable.userId, userId))
-      .groupBy(tasksTable.status, tasksTable.archivedAt, tasksTable.deletedAt);
+      .groupBy(tasksTable.status, isArchived, isDeleted);
 
     const result: TaskStats = {
       total: 0,
@@ -383,9 +381,9 @@ export class TasksRepository implements ITasksRepository {
       const count = Number(row.count);
       result.total += count;
 
-      if (row.deletedAt) {
+      if (row.isDeleted) {
         result.deleted += count;
-      } else if (row.archivedAt) {
+      } else if (row.isArchived) {
         result.archived += count;
       } else {
         result.active += count;

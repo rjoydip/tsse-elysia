@@ -4,7 +4,7 @@
  * Session validation is delegated to the shared auth controller.
  */
 
-import { validateSession } from "~/controllers/shared/auth";
+export { validateSession } from "~/controllers/shared/auth";
 
 /**
  * Formats a profile response with email from session.
@@ -15,5 +15,3 @@ export function formatProfileResponse(
 ) {
   return { ...profile, email };
 }
-
-export { validateSession };
