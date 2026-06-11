@@ -182,7 +182,7 @@ async function ensureRequiredTablesExist(client: ReturnType<typeof createClient>
     return;
   }
 
-  const requiredTables = ["user", "subscription_plan", "subscription"];
+  const requiredTables = ["user", "subscription_plan", "subscription", "tasks"];
   for (const tableName of requiredTables) {
     const result = await client.execute({
       sql: "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
@@ -669,6 +669,235 @@ function generateFakeUsers(
 }
 
 /**
+ * Task templates for seeding.
+ */
+const TASK_TEMPLATES = [
+  {
+    title: "Set up CI/CD pipeline",
+    description: "Configure GitHub Actions for automated builds and deployments",
+    status: "todo",
+    priority: "high",
+    label: "feature",
+  },
+  {
+    title: "Fix login redirect bug",
+    description: "Users are not redirected to the correct page after login",
+    status: "in progress",
+    priority: "critical",
+    label: "bug",
+  },
+  {
+    title: "Update API documentation",
+    description: "Add OpenAPI specs for the new endpoints",
+    status: "review",
+    priority: "medium",
+    label: "documentation",
+  },
+  {
+    title: "Refactor database queries",
+    description: "Optimize slow queries in the user repository",
+    status: "done",
+    priority: "high",
+    label: "feature",
+  },
+  {
+    title: "Add dark mode support",
+    description: "Implement theme toggle with system preference detection",
+    status: "backlog",
+    priority: "low",
+    label: "feature",
+  },
+  {
+    title: "Implement rate limiting",
+    description: "Add rate limiting middleware to API routes",
+    status: "todo",
+    priority: "high",
+    label: "feature",
+  },
+  {
+    title: "Fix mobile layout issues",
+    description: "Sidebar overlaps content on small screens",
+    status: "in progress",
+    priority: "medium",
+    label: "bug",
+  },
+  {
+    title: "Write unit tests for auth",
+    description: "Cover sign-up, sign-in, and session refresh flows",
+    status: "review",
+    priority: "high",
+    label: "feature",
+  },
+  {
+    title: "Upgrade dependencies",
+    description: "Bump all packages to latest compatible versions",
+    status: "backlog",
+    priority: "low",
+    label: "feature",
+  },
+  {
+    title: "Add search functionality",
+    description: "Full-text search across tasks and users",
+    status: "canceled",
+    priority: "medium",
+    label: "feature",
+  },
+  {
+    title: "Improve error messages",
+    description: "Show user-friendly error messages for API failures",
+    status: "todo",
+    priority: "medium",
+    label: "feature",
+  },
+  {
+    title: "Session expiry handling",
+    description: "Show a warning before session times out",
+    status: "in progress",
+    priority: "high",
+    label: "bug",
+  },
+  {
+    title: "Performance audit",
+    description: "Run Lighthouse and identify performance bottlenecks",
+    status: "review",
+    priority: "low",
+    label: "documentation",
+  },
+  {
+    title: "Database backup strategy",
+    description: "Automate daily backups to cloud storage",
+    status: "done",
+    priority: "high",
+    label: "feature",
+  },
+  {
+    title: "User onboarding flow",
+    description: "Design and implement first-time user experience",
+    status: "backlog",
+    priority: "medium",
+    label: "feature",
+  },
+];
+
+/**
+ * Seeds demo tasks for dev users.
+ * Creates tasks with varied statuses, priorities, and dates so the
+ * dashboard Kanban board, stats cards, and monthly chart show data.
+ */
+async function seedTasks(db: ReturnType<typeof drizzle>): Promise<void> {
+  // Fetch all users that have been seeded
+  const allUsers = await db
+    .select({ id: schema.users.id, email: schema.users.email })
+    .from(schema.users);
+
+  if (allUsers.length === 0) {
+    logger.warn("No users found, skipping task seeding");
+    return;
+  }
+
+  // Idempotent: only seed tasks for users without any
+  const usersWithTasks = await db
+    .select({ userId: schema.tasks.userId })
+    .from(schema.tasks)
+    .groupBy(schema.tasks.userId);
+  const userIdsWithTasks = new Set(usersWithTasks.map((r) => r.userId));
+  const usersToSeed = allUsers.filter((u) => !userIdsWithTasks.has(u.id));
+
+  if (usersToSeed.length === 0) {
+    logger.info("All users already have tasks, skipping");
+    return;
+  }
+
+  logger.info(
+    `Seeding tasks for ${usersToSeed.length} new user(s) (${allUsers.length - usersToSeed.length} already have tasks)`,
+  );
+
+  // Only use the fixed faker seed when seeding ALL users (fresh);
+  // incremental runs avoid it so generated UUIDs don't collide with existing rows.
+  if (usersToSeed.length === allUsers.length) {
+    faker.seed(20260409);
+  }
+  const now = Date.now();
+  let seededCount = 0;
+
+  for (const user of usersToSeed) {
+    // Give each user a subset of tasks (5–12)
+    const taskCount = faker.number.int({ min: 5, max: 12 });
+
+    for (let i = 0; i < taskCount; i++) {
+      const template = faker.helpers.arrayElement(TASK_TEMPLATES);
+
+      const daysAgo = faker.number.int({ min: 0, max: 365 });
+      const createdAt = new Date(
+        now - daysAgo * 86400000 - faker.number.int({ max: 86399 }) * 1000,
+      );
+
+      // Some tasks get due dates (past or future)
+      let dueDate: Date | null = null;
+      if (faker.datatype.boolean(0.6)) {
+        const dueOffset = faker.number.int({ min: -30, max: 60 });
+        dueDate = new Date(createdAt.getTime() + dueOffset * 86400000);
+      }
+
+      // Vary status: ~8% archived/canceled, rest as template.
+      // For "done" templates only 30% stay done — the rest get a
+      // non-done status so the monthly chart's "completed" line gets
+      // varied data.
+      const statusRoll = faker.number.int({ max: 99 });
+      let status = template.status;
+      if (statusRoll < 5) {
+        status = "archived";
+      } else if (statusRoll < 8) {
+        status = "canceled";
+      } else if (template.status === "done" && faker.datatype.boolean(0.3)) {
+        status = "done";
+      } else if (template.status === "done") {
+        status = faker.helpers.arrayElement(["todo", "in progress", "review", "backlog"]);
+      }
+
+      // Set updatedAt to reflect when the task was last changed.
+      // For done tasks, use a recent timestamp so the monthly chart
+      // shows them as completed in the current year.
+      let updatedAt: Date;
+      if (status === "done") {
+        const doneDaysAgo = faker.number.int({ min: 0, max: 90 });
+        updatedAt = new Date(now - doneDaysAgo * 86400000);
+      } else {
+        updatedAt = new Date(createdAt.getTime() + faker.number.int({ min: 0, max: 86400000 * 7 }));
+      }
+
+      try {
+        await db.insert(schema.tasks).values({
+          id: faker.string.uuid(),
+          title: template.title,
+          description: template.description,
+          status,
+          priority: template.priority,
+          label: template.label,
+          userId: user.id,
+          assignee: null,
+          dueDate: dueDate,
+          createdAt,
+          updatedAt,
+          archivedAt:
+            status === "archived" ? new Date(now - faker.number.int({ max: 30 }) * 86400000) : null,
+          deletedAt: null,
+        } as schema.NewTask);
+        seededCount++;
+      } catch {
+        // Skip conflicts
+      }
+    }
+  }
+
+  logger.info(
+    `Seeded ${seededCount} demo tasks for ${usersToSeed.length} user(s) (skipped ${
+      allUsers.length - usersToSeed.length
+    } with existing tasks)`,
+  );
+}
+
+/**
  * Main seed workflow.
  */
 async function main(): Promise<void> {
@@ -765,6 +994,11 @@ async function main(): Promise<void> {
       }
     }
     logger.info(`Linked ${linkedCount} users to their RBAC roles`);
+
+    if (!isProd) {
+      logger.step(isProd ? 7 : 8, "Seeding demo tasks for dashboard...");
+      await seedTasks(db);
+    }
   } catch (error) {
     logger.error(error instanceof Error ? error.message : `Unknown seed failure: ${error}`);
     process.exitCode = 1;

@@ -53,6 +53,9 @@ export {
   type UserSettingsNotifications,
 } from "./user-settings";
 
+// Tasks schema
+export { tasks, tasksRelations, type Task, type NewTask } from "./tasks";
+
 // Role and Permission schema
 export {
   permissions,
