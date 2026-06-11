@@ -386,6 +386,7 @@ export const usersRoutes = new Elysia({
           await userRepository.assignRole(userId, roleId);
         }
 
+        set.status = 201;
         return { success: true, userId };
       } catch (error) {
         console.error("User creation error:", error);
