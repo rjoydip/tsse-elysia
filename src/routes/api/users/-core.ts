@@ -353,17 +353,17 @@ export const usersRoutes = new Elysia({
           },
         });
 
-        if (signUpResult.error) {
-          set.status = 400;
-          return { error: signUpResult.error.message || "Failed to create user" };
-        }
+        // Better Auth server API may not return user object in some versions.
+        // If absent, look up the newly created user by email in the database.
+        const signUpData = signUpResult as { user?: { id?: string } } | null;
+        const userId = signUpData?.user?.id ?? (await userRepository.findByEmail(email))?.id;
 
-        if (!signUpResult.user) {
+        if (!userId) {
           set.status = 500;
-          return { error: "Failed to create user - no user returned" };
+          return { error: "Failed to create user - no user returned or found" };
         }
 
-        await userRepository.update(signUpResult.user.id, {
+        await userRepository.update(userId, {
           firstName,
           lastName,
           username: finalUsername,
@@ -374,19 +374,12 @@ export const usersRoutes = new Elysia({
 
         // Link user to RBAC role if roleId is provided
         if (roleId) {
-          await userRepository.assignRole(signUpResult.user.id, roleId);
+          await userRepository.assignRole(userId, roleId);
         }
 
-        return { success: true, userId: signUpResult.user.id };
+        return { success: true, userId };
       } catch (error) {
         console.error("User creation error:", error);
-        if (signUpResult?.user) {
-          try {
-            await auth.api.deleteAccount({ userId: signUpResult.user.id });
-          } catch {
-            console.error("Failed to cleanup orphaned account:", signUpResult.user.id);
-          }
-        }
         set.status = 500;
         return { error: "Failed to create user" };
       }
