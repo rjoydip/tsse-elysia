@@ -6,6 +6,7 @@
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
 import { userRepository } from "~/repositories/users";
+import { env } from "~/config/env";
 import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 
 const VALID_ROLES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
@@ -342,21 +343,29 @@ export const usersRoutes = new Elysia({
 
       const finalUsername = sanitizeUsername(username, firstName, lastName);
 
-      let signUpResult: Awaited<ReturnType<typeof auth.api.signUpEmail>> | null = null;
-
       try {
-        signUpResult = await auth.api.signUpEmail({
-          body: {
+        // Use internal HTTP fetch to the sign-up endpoint (same approach as db-seed.ts)
+        // Direct auth.api.signUpEmail may throw due to missing request context in some versions
+        const signUpResponse = await fetch(`${env.BETTER_AUTH_URL}/sign-up/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             email,
             password,
             name: `${firstName} ${lastName}`,
-          },
+          }),
         });
 
-        // Better Auth server API may not return user object in some versions.
-        // If absent, look up the newly created user by email in the database.
-        const signUpData = signUpResult as { user?: { id?: string } } | null;
-        const userId = signUpData?.user?.id ?? (await userRepository.findByEmail(email))?.id;
+        if (!signUpResponse.ok) {
+          const errBody = await signUpResponse.json().catch(() => ({}));
+          set.status = 400;
+          return {
+            error: errBody.message || errBody.error?.message || "Failed to create user",
+          };
+        }
+
+        const signUpData = await signUpResponse.json();
+        const userId = signUpData.user?.id ?? (await userRepository.findByEmail(email))?.id;
 
         if (!userId) {
           set.status = 500;
@@ -381,7 +390,7 @@ export const usersRoutes = new Elysia({
       } catch (error) {
         console.error("User creation error:", error);
         set.status = 500;
-        return { error: "Failed to create user" };
+        return { error: error instanceof Error ? error.message : "Failed to create user" };
       }
     },
     {

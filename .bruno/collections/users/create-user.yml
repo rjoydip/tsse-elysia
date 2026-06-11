@@ -34,6 +34,10 @@ runtime:
     - type: tests
       code: |-
         test("status is 201", () => expect(res.status).to.equal(201));
+        // Log response body on failure for debugging
+        if (res.status !== 201) {
+          console.log("Create user response:", JSON.stringify(res.body));
+        }
 
 settings:
   encodeUrl: true
