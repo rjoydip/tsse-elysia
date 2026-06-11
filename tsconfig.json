@@ -15,19 +15,17 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["bun-types", "node", "./tools/bruno-converters.d.ts"],
+    "types": ["bun-types", "node"],
     "paths": {
       "~/*": ["./src/*"],
       "~/e2e/*": ["./.e2e/*"],
       "~/test/*": ["./test/*"],
-      "~/scripts/*": ["./scripts/*"],
-      "~/tools/*": ["./tools/*"]
+      "~/scripts/*": ["./scripts/*"]
     }
   },
   "include": [
     ".e2e",
     "src",
-    "tools",
     "test",
     "scripts",
     "playwright.config.ts",

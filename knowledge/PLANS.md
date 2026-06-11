@@ -96,43 +96,25 @@ Core focus:
 
 ## Active Focus
 
-### Phase 25 – Bruno API Testing & Devkit Developer Toolkit ✅
+### Phase 25 – Bruno API Testing ✅
 
-**Goal:** Add Bruno API client (collection-based API testing & documentation) and Devkit (developer administration CLI/MCP toolkit) to the project, enabling API validation in CI and agent-driven developer operations.
+**Goal:** Add Bruno API client (collection-based API testing & documentation) to the project, enabling API validation in CI.
 
 **Completed:**
-
-#### Phase 25.1 – Bruno Workspace & API Collections ✅
 
 - Created Bruno workspace at `.bruno/` with collection structure for 8 API domains: auth, users, roles, settings, tasks, mcp, dashboard, system
 - Created environment files for local (`localhost:3000`) and CI (`localhost:4173`)
 - Created YAML request files with OpenCollection format (Git-friendly), each with request body, headers, and response tests
 - Created `scripts/generate-bruno-collections.ts` to regenerate collections from OpenAPI spec using `@usebruno/converters`
 - Created `.github/workflows/bruno-api.yml` CI workflow running `bru run --env ci` against preview server
+- Created `test/scripts/generate-bruno.test.ts` for Bruno collection structure validation
 - All 10 smoke-tagged requests pass end-to-end (including auth with Better Auth session extraction)
-
-#### Phase 25.2 – Devkit Developer Toolkit ✅
-
-- Created `tools/devkit/` with RPC modules (`db.ts`, `cache.ts`, `system.ts`)
-- Created CLI entry (`tools/devkit/cli.ts`) with 5 commands: `db:health`, `db:stats`, `cache:health`, `cache:stats`, `system:info`
-- Created MCP server (`tools/devkit/mcp.ts`) registering 5 developer tools via `@modelcontextprotocol/sdk`
-- CLI validated: `bun run devkit db:health` returns healthy DB status, `bun run devkit system:info` returns runtime details
-- Devkit is supplementary — existing MCP server in `src/lib/mcp/` remains untouched
-
-#### Phase 25.3 – Tests & Quality ✅
-
-- 21 new unit tests (devkit RPC definitions + Bruno collection structure)
-- 1583 total tests pass, lint clean, typecheck clean
-- Bruno E2E smoke tests: 10/10 requests pass, 10/10 tests pass
 
 **Files Created:**
 
 - `.bruno/workspace.yml`, `.bruno/environments/local.yml`, `.bruno/environments/ci.yml`, `.bruno/collections/tsse-elysia/*/*.yml` (14 collection files)
 - `.github/workflows/bruno-api.yml` (CI workflow)
 - `scripts/generate-bruno-collections.ts` (collection generation script)
-- `tools/bruno-converters.d.ts` (Bruno converters type declarations)
-- `tools/devkit/index.ts`, `tools/devkit/cli.ts`, `tools/devkit/mcp.ts`, `tools/devkit/rpc/db.ts`, `tools/devkit/rpc/cache.ts`, `tools/devkit/rpc/system.ts`
-- `test/unit/devkit/definition.test.ts`, `test/unit/devkit/rpc.test.ts`
 - `test/scripts/generate-bruno.test.ts` (Bruno collection structure tests)
 
 ## Active Focus
