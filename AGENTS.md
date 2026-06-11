@@ -277,7 +277,7 @@ All necessary information is in [README.md](./README.md), including:
 
 ```bash
 # Run Bruno smoke tests (requires running dev server)
-npx @usebruno/cli run --env local --tags smoke
+bun run bruno:smoke
 
 # Regenerate Bruno collections from OpenAPI spec
 bun run script:generate-bruno

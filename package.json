@@ -65,7 +65,10 @@
     "script:release": "bun run ./scripts/release.ts",
     "script:sync-tasks": "bun run ./scripts/sync-tasks.ts",
     "script:task-config": "bun run ./scripts/task-config.ts",
-    "script:generate-bruno": "bun run ./scripts/generate-bruno-collections.ts"
+    "script:generate-bruno": "bun run ./scripts/generate-bruno-collections.ts",
+    "bruno:run": "cd .bruno && npx @usebruno/cli run collections --env local --sequential",
+    "bruno:smoke": "cd .bruno && npx @usebruno/cli run collections --env local --tags smoke --sequential",
+    "bruno:ci": "cd .bruno && npx @usebruno/cli run collections --env ci --tags smoke --sequential"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.4.2",
@@ -77,7 +80,7 @@
     "@modelcontextprotocol/server": "^2.0.0-alpha.2",
     "@node-rs/argon2": "^2.0.2",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.214.0",
-    "@opentelemetry/sdk-trace-node": "^2.7.1",
+    "@opentelemetry/sdk-trace-node": "^2.8.0",
     "@radix-ui/react-accordion": "^1.2.13",
     "@radix-ui/react-alert-dialog": "^1.1.16",
     "@radix-ui/react-avatar": "^1.1.12",
@@ -170,7 +173,7 @@
     "comptime": "^0.1.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-seed": "^0.3.1",
-    "fallow": "^2.92.1",
+    "fallow": "^2.93.0",
     "fdir": "^6.5.0",
     "k6": "^0.0.0",
     "oxfmt": "^0.42.0",

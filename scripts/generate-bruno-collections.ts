@@ -79,7 +79,7 @@ async function generateCollection(openApiSpec: Record<string, unknown>): Promise
   writeFileSync(outputPath, JSON.stringify(rawCollection, null, 2));
   logger.success(`Collection written to: ${outputPath}`);
 
-  logger.info("Bruno collection generated successfully. Open in Bruno or use 'bru run'.");
+  logger.info("Bruno collection generated successfully. Open in Bruno or use 'bun run bruno:run'.");
 }
 
 /**

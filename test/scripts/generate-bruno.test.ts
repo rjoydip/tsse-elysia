@@ -70,37 +70,103 @@ describe("Bruno Collection Script", () => {
     const workflowPath = ".github/workflows/bruno-api.yml";
     expect(existsSync(workflowPath)).toBe(true);
     const content = readFileSync(workflowPath, "utf-8");
-    expect(content).toContain("Bruno CLI");
+    expect(content).toContain("Bruno API Tests");
     expect(content).toContain("@usebruno/cli");
-    expect(content).toContain("bru run");
+    expect(content).toContain("npx @usebruno/cli run collections");
+  });
+
+  it("should validate CI workflow commands reference valid scripts and paths", () => {
+    const workflowPath = ".github/workflows/bruno-api.yml";
+    const workflow = readFileSync(workflowPath, "utf-8");
+
+    // 1. Working directory path must exist
+    const wdMatch = workflow.match(/working-directory:\s*(\S+)/);
+    expect(wdMatch).not.toBeNull();
+    const wdPath = wdMatch![1];
+    expect(existsSync(wdPath)).toBe(true);
+
+    // 2. Environment is selected by name (--env ci) which looks for environments/ci.yml in the working dir
+    const envDir = join(wdPath, "environments");
+    expect(existsSync(envDir)).toBe(true);
+
+    // 3. Collection directory passed as arg must exist
+    const collectionPath = join(wdPath, "collections");
+    expect(existsSync(collectionPath)).toBe(true);
+
+    // 4. "bun run build" must exist in package.json
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    expect(pkg.scripts).toHaveProperty("build");
+
+    // 5. "bun run preview" must exist in package.json
+    expect(pkg.scripts).toHaveProperty("preview");
   });
 
   it("should generate collection JSON from OpenAPI spec via openApiToBruno", async () => {
     const outputFile = join(TEST_DIR, "collection.json");
 
-    // Mock @usebruno/converters module
+    // Fixture: realistic minimal OpenAPI spec
+    const spec = {
+      openapi: "3.0.0",
+      info: { title: "Test API", version: "1.0.0" },
+      paths: {
+        "/health": {
+          get: {
+            summary: "Health check",
+            tags: ["system"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+        "/users": {
+          get: {
+            summary: "List users",
+            tags: ["users"],
+            responses: { "200": { description: "OK" } },
+          },
+        },
+      },
+    };
+
+    // Mock @usebruno/converters with a converter that transforms the spec
     const mockConverters = {
-      openApiToBruno: async () => ({
-        name: "Test API",
-        requests: [{ name: "Health", method: "GET", url: "/health" }],
-      }),
+      openApiToBruno: async (spec: Record<string, unknown>) => {
+        const paths = (spec.paths as Record<string, Record<string, unknown>>) || {};
+        const requests = Object.entries(paths).map(([path, methods]) => {
+          const method = Object.keys(methods)[0];
+          const details = methods[method] as Record<string, unknown>;
+          return {
+            name: (details.summary as string) || path,
+            method: method.toUpperCase(),
+            url: path,
+          };
+        });
+        return {
+          name: (spec.info as Record<string, unknown>).title as string,
+          requests,
+        };
+      },
     };
 
     mock.module("@usebruno/converters", () => mockConverters);
 
-    // Import after mocking to use the mock
+    // Import after mocking
     const { openApiToBruno } = await import("@usebruno/converters");
 
-    // Execute the same logic as generateCollection()
-    const rawCollection = await openApiToBruno({ openapi: "3.0.0" });
+    // Execute the conversion logic (same as generateCollection())
+    const rawCollection = await openApiToBruno(spec);
     writeFileSync(outputFile, JSON.stringify(rawCollection, null, 2));
 
-    // Verify the output file
+    // Verify the output file is valid JSON with expected structure
     expect(existsSync(outputFile)).toBe(true);
     const written = JSON.parse(readFileSync(outputFile, "utf-8"));
     expect(written.name).toBe("Test API");
-    expect(written.requests).toHaveLength(1);
+    expect(written.requests).toHaveLength(2);
     expect(written.requests[0].url).toBe("/health");
+    expect(written.requests[1].url).toBe("/users");
+
+    // Verify paths from the spec are reflected in the output
+    const urls = written.requests.map((r: { url: string }) => r.url);
+    expect(urls).toContain("/health");
+    expect(urls).toContain("/users");
   });
 
   it("should set session_token in sign-in for authenticated requests", () => {
@@ -138,6 +204,6 @@ describe("Bruno Collection Script", () => {
     const signInPath = ".bruno/collections/auth/sign-in.yml";
     const signInContent = readFileSync(signInPath, "utf-8");
 
-    expect(signInContent).toContain("seq: 1");
+    expect(signInContent).toContain("seq: 0");
   });
 });

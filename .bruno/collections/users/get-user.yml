@@ -1,8 +1,9 @@
 info:
   name: Get User by ID
   type: http
-  seq: 3
+  seq: 5
   tags:
+    - smoke
     - users
 
 http:

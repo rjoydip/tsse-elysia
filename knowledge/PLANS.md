@@ -106,7 +106,7 @@ Core focus:
 - Created environment files for local (`localhost:3000`) and CI (`localhost:4173`)
 - Created YAML request files with OpenCollection format (Git-friendly), each with request body, headers, and response tests
 - Created `scripts/generate-bruno-collections.ts` to regenerate collections from OpenAPI spec using `@usebruno/converters`
-- Created `.github/workflows/bruno-api.yml` CI workflow running `bru run --env ci` against preview server
+- Created `.github/workflows/bruno-api.yml` CI workflow running `bun run bruno:ci` against preview server
 - Created `test/scripts/generate-bruno.test.ts` for Bruno collection structure validation
 - All 10 smoke-tagged requests pass end-to-end (including auth with Better Auth session extraction)
 

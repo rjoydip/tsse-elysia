@@ -3,6 +3,3 @@ info:
   type: collection
   description: API collection for TSSE Elysia — a full-stack TypeScript application
     using TanStack Start, Elysia, React 19, and Bun.
-vars:
-  - name: base_url
-    value: "{{base_url}}"
