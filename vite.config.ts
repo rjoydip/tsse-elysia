@@ -5,16 +5,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import evlog from "evlog/vite";
 import { comptime } from "comptime/vite";
-import { viteDevBridge } from "devframe/helpers/vite";
-
-/** Devframe definition for Vite Bridge integration */
-const devframe = {
-  id: "tsse-elysia-devkit",
-  name: "TSSE Elysia DevKit",
-  basePath: "/__devkit",
-  cli: { name: "devkit", description: "TSSE Elysia Developer Administration Toolkit" },
-  setup: () => {},
-};
 
 const host = import.meta.env.HOST || "localhost";
 const port = parseInt(import.meta.env.PORT || "3000", 10);
@@ -30,7 +20,6 @@ export default defineConfig(() => ({
     tanstackStart(),
     viteReact(),
     tailwindcss(),
-    viteDevBridge(devframe as any),
   ],
   ssr: {
     noExternal: ["drizzle-orm"],

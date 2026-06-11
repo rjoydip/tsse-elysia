@@ -1,10 +1,4 @@
-/**
- * Devkit RPC definition using devframe's defineRpcFunction.
- * These RPCs can be consumed by devframe if fully supported in future versions,
- * or by custom CLI/MCP adapters.
- */
-
-import { defineRpcFunction } from "devframe";
+import { defineRpcFunction } from "./helpers";
 
 /**
  * Database health RPC.

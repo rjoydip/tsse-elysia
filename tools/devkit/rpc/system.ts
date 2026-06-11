@@ -1,9 +1,4 @@
-/**
- * Devkit RPC definition using devframe's defineRpcFunction.
- * Provides system information and environment inspection.
- */
-
-import { defineRpcFunction } from "devframe";
+import { defineRpcFunction } from "./helpers";
 
 /**
  * System info RPC.

@@ -1,9 +1,4 @@
-/**
- * Devkit RPC definition using devframe's defineRpcFunction.
- * Provides cache health inspection capabilities.
- */
-
-import { defineRpcFunction } from "devframe";
+import { defineRpcFunction } from "./helpers";
 
 /**
  * Cache health RPC.

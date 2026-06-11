@@ -113,7 +113,7 @@ Core focus:
 
 #### Phase 25.2 – Devkit Developer Toolkit ✅
 
-- Created `tools/devkit/` with RPC modules (`db.ts`, `cache.ts`, `system.ts`) using `defineRpcFunction` from `devframe`
+- Created `tools/devkit/` with RPC modules (`db.ts`, `cache.ts`, `system.ts`)
 - Created CLI entry (`tools/devkit/cli.ts`) with 5 commands: `db:health`, `db:stats`, `cache:health`, `cache:stats`, `system:info`
 - Created MCP server (`tools/devkit/mcp.ts`) registering 5 developer tools via `@modelcontextprotocol/sdk`
 - CLI validated: `bun run devkit db:health` returns healthy DB status, `bun run devkit system:info` returns runtime details
@@ -134,8 +134,6 @@ Core focus:
 - `tools/devkit/index.ts`, `tools/devkit/cli.ts`, `tools/devkit/mcp.ts`, `tools/devkit/rpc/db.ts`, `tools/devkit/rpc/cache.ts`, `tools/devkit/rpc/system.ts`
 - `test/unit/devkit/definition.test.ts`, `test/unit/devkit/rpc.test.ts`
 - `test/scripts/generate-bruno.test.ts` (Bruno collection structure tests)
-
-**Devframe Note:** `devframe` v0.5.4 has known packaging issues — `defineDevframe` not exported from main entry, `h3` adapter broken. Devkit uses `defineRpcFunction` for RPC definitions only; CLI and MCP wiring done manually with existing SDK.
 
 ## Active Focus
 

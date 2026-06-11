@@ -10,7 +10,6 @@ description: All notable changes to this project
 - Add Bruno API testing workspace with 8 API domain collections (auth, users, roles, settings, tasks, mcp, dashboard, system), local/CI environments, and CI workflow
 - Add Bruno collection generation script from OpenAPI spec using `@usebruno/converters`
 - Add Devkit developer toolkit (CLI + MCP) with database health, cache health, and system info commands
-- Add devframe Vite Bridge integration — mounts Devkit at `/__devkit` in the Vite dev server for agent-native tool access
 - Add production-aware seed script with `--prod` flag and graph seed data (monthly/weekly registration timestamps)
 - Add full-page skeleton for role-based dashboard (replaces spinner during auth resolution)
 - Add lazy getter pattern to all 4 settings repositories (prevents client-side crashes)
