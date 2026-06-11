@@ -54,10 +54,10 @@ jobs:
       - name: Run Bruno smoke tests
         run: |
           bru run \
-            --env ci \
+            --env-file ../environments/ci.yml \
             --tags smoke \
-            --reporter-junit .bruno/reports/junit.xml \
-            --reporter-html .bruno/reports/report.html
+            --reporter-junit ../reports/junit.xml \
+            --reporter-html ../reports/report.html
         working-directory: .bruno/collections
 
       - name: Upload Bruno report
