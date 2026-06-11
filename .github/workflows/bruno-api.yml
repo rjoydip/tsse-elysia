@@ -54,6 +54,7 @@ jobs:
 
       - name: Create report directory
         run: mkdir -p reports
+        working-directory: .bruno/collections
 
       - name: Run Bruno smoke tests
         run: |
