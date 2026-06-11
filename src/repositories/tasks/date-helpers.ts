@@ -1,23 +1,13 @@
 /**
  * Date helpers for database-agnostic time-based queries.
  * Abstracts SQLite strftime() and PostgreSQL EXTRACT() behind a common interface.
- * Uses lazy env check to avoid import-order issues at module init.
+ * The env config is imported statically — it's process-level data, not affected by HMR.
  */
 
 import { sql, type AnyColumn } from "drizzle-orm";
+import { env } from "~/config/env";
 
-let _dbType: "sqlite" | "postgres" | null = null;
-
-/**
- * Returns the database type from environment, caching it after first call.
- */
-async function dbType(): Promise<"sqlite" | "postgres"> {
-  if (!_dbType) {
-    const { env } = await import("~/config/env");
-    _dbType = (env.DATABASE_TYPE || "sqlite") as "sqlite" | "postgres";
-  }
-  return _dbType;
-}
+const DB_TYPE = (env.DATABASE_TYPE || "sqlite") as "sqlite" | "postgres";
 
 /**
  * Returns a SQL expression that extracts the month number (1–12) from a
@@ -29,9 +19,8 @@ async function dbType(): Promise<"sqlite" | "postgres"> {
  *   // SQLite:  cast(strftime('%m', tasks.createdAt, 'unixepoch') as integer)
  *   // PG:      EXTRACT(MONTH FROM tasks.createdAt)
  */
-export async function monthFromTimestamp(column: AnyColumn) {
-  const type = await dbType();
-  if (type === "postgres") {
+export function monthFromTimestamp(column: AnyColumn) {
+  if (DB_TYPE === "postgres") {
     return sql<number>`EXTRACT(MONTH FROM ${column})`.mapWith(Number);
   }
   return sql<number>`cast(strftime('%m', ${column}, 'unixepoch') as integer)`.mapWith(Number);

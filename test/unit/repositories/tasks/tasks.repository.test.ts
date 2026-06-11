@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from "bun:test";
 import { TasksRepository } from "~/repositories/tasks/tasks.repository";
 import { tasks } from "~/lib/db/schema/tasks";
-import type { TaskStats, MonthlyTaskCount } from "~/repositories/tasks/tasks.repository";
+import type { TaskStats, MonthlyTaskCount, TaskRow } from "~/repositories/tasks/tasks.repository";
 
 /**
  * Helper: builds a chainable mock that returns data from groupBy.
@@ -35,6 +35,19 @@ function chainFromWhere(data: unknown[]) {
 }
 
 /**
+ * Helper: builds a chainable mock that returns data from select → from → where → limit.
+ */
+function chainSelectFromWhereLimit(data: unknown[]) {
+  return {
+    from: () => ({
+      where: () => ({
+        limit: () => Promise.resolve(data),
+      }),
+    }),
+  };
+}
+
+/**
  * Helper: builds a chainable mock for findAll (select → from → where → orderBy → limit → offset).
  */
 function chainFromWhereOrderByLimitOffset(data: unknown[]) {
@@ -52,9 +65,38 @@ function chainFromWhereOrderByLimitOffset(data: unknown[]) {
 }
 
 /**
+ * Helper: builds a chainable mock for insert → values → returning.
+ */
+function chainInsertValuesReturning(data: unknown[]) {
+  return {
+    values: () => ({
+      returning: () => Promise.resolve(data),
+    }),
+  };
+}
+
+/**
+ * Helper: builds a chainable mock for update → set → where → returning.
+ */
+function chainUpdateSetWhereReturning(data: unknown[]) {
+  return {
+    set: () => ({
+      where: () => ({
+        returning: () => Promise.resolve(data),
+      }),
+    }),
+  };
+}
+
+/**
  * Helper: returns a select mock that returns different chain results for each call.
  * Falls back to an empty chain for any excess calls beyond the provided results,
  * so adding a query doesn't break existing tests.
+ *
+ * Limitation: relies on exact call order rather than query shape.
+ * Adding or reordering queries inside `getMonthlyCounts` shifts which mock
+ * result each call receives, silently breaking tests. The fallback chain
+ * mitigates the most common breakage (extra calls).
  */
 function selectMockForQueries(results: unknown[][]) {
   const chains = results.map((data) => chainWithGroupBy(data));
@@ -68,10 +110,14 @@ function selectMockForQueries(results: unknown[][]) {
 
 describe("TasksRepository", () => {
   let repository: TasksRepository;
-  let mockDb: { select: ReturnType<typeof vi.fn> };
+  let mockDb: {
+    select: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
-    mockDb = { select: vi.fn() };
+    mockDb = { select: vi.fn(), insert: vi.fn(), update: vi.fn() };
     // Inject mock db + real tasks schema so eq(tasks.col) works
     repository = new TasksRepository(mockDb as any, tasks);
   });
@@ -302,6 +348,173 @@ describe("TasksRepository", () => {
 
       expect(result.tasks).toHaveLength(0);
       expect(result.total).toBe(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // findById – fetch single task with ownership check
+  // ---------------------------------------------------------------------------
+  describe("findById", () => {
+    const now = new Date();
+    const mockTask: TaskRow = {
+      id: "1",
+      title: "Test task",
+      description: null,
+      status: "todo",
+      priority: "medium",
+      label: "feature",
+      dueDate: null,
+      userId: "user-1",
+      assignee: null,
+      createdAt: now,
+      updatedAt: now,
+      archivedAt: null,
+      deletedAt: null,
+    };
+
+    it("should return the task when found", async () => {
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValue(chainSelectFromWhereLimit([mockTask]));
+
+      const result = await repository.findById("1", "user-1");
+
+      expect(result).toEqual(mockTask);
+    });
+
+    it("should return null when task not found", async () => {
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValue(chainSelectFromWhereLimit([]));
+
+      const result = await repository.findById("nonexistent", "user-1");
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null when task belongs to another user", async () => {
+      mockDb.select = vi.fn();
+      mockDb.select.mockReturnValue(chainSelectFromWhereLimit([]));
+
+      const result = await repository.findById("1", "other-user");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // create – insert a new task
+  // ---------------------------------------------------------------------------
+  describe("create", () => {
+    it("should create a task with required fields only", async () => {
+      const now = new Date();
+      const mockCreated: TaskRow = {
+        id: "new-id",
+        title: "New task",
+        description: null,
+        status: "todo",
+        priority: "medium",
+        label: "feature",
+        dueDate: null,
+        userId: "user-1",
+        assignee: null,
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+        deletedAt: null,
+      };
+      mockDb.insert = vi.fn();
+      mockDb.insert.mockReturnValue(chainInsertValuesReturning([mockCreated]));
+
+      const result = await repository.create({ title: "New task", userId: "user-1" });
+
+      expect(result).toEqual(mockCreated);
+      expect(result.id).toBeDefined();
+      expect(result.status).toBe("todo");
+    });
+
+    it("should create a task with all optional fields", async () => {
+      const now = new Date();
+      const dueDate = new Date("2026-12-31");
+      const mockCreated: TaskRow = {
+        id: "new-id",
+        title: "Full task",
+        description: "A description",
+        status: "in-progress",
+        priority: "high",
+        label: "bug",
+        dueDate,
+        userId: "user-1",
+        assignee: "user-2",
+        createdAt: now,
+        updatedAt: now,
+        archivedAt: null,
+        deletedAt: null,
+      };
+      mockDb.insert = vi.fn();
+      mockDb.insert.mockReturnValue(chainInsertValuesReturning([mockCreated]));
+
+      const result = await repository.create({
+        title: "Full task",
+        description: "A description",
+        status: "in-progress",
+        priority: "high",
+        label: "bug",
+        dueDate,
+        userId: "user-1",
+        assignee: "user-2",
+      });
+
+      expect(result).toEqual(mockCreated);
+      expect(result.description).toBe("A description");
+      expect(result.assignee).toBe("user-2");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // update – modify an existing task
+  // ---------------------------------------------------------------------------
+  describe("update", () => {
+    const now = new Date();
+    const mockUpdated: TaskRow = {
+      id: "1",
+      title: "Updated title",
+      description: null,
+      status: "todo",
+      priority: "medium",
+      label: "feature",
+      dueDate: null,
+      userId: "user-1",
+      assignee: null,
+      createdAt: now,
+      updatedAt: now,
+      archivedAt: null,
+      deletedAt: null,
+    };
+
+    it("should update partial fields", async () => {
+      mockDb.update = vi.fn();
+      mockDb.update.mockReturnValue(chainUpdateSetWhereReturning([mockUpdated]));
+
+      const result = await repository.update("1", "user-1", { title: "Updated title" });
+
+      expect(result).toEqual(mockUpdated);
+    });
+
+    it("should return null when task does not exist", async () => {
+      mockDb.update = vi.fn();
+      mockDb.update.mockReturnValue(chainUpdateSetWhereReturning([]));
+
+      const result = await repository.update("nonexistent", "user-1", { title: "Updated" });
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null when task belongs to another user", async () => {
+      mockDb.update = vi.fn();
+      mockDb.update.mockReturnValue(chainUpdateSetWhereReturning([]));
+
+      const result = await repository.update("1", "other-user", { status: "done" });
+
+      expect(result).toBeNull();
     });
   });
 

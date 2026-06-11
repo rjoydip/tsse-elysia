@@ -7,6 +7,7 @@
 import { randomUUID } from "uncrypto";
 import { eq, and, desc, gte, lt, sql, isNull, inArray } from "drizzle-orm";
 import type { DbType } from "~/config/db";
+import { dbLogger } from "~/lib/logger";
 import { monthFromTimestamp } from "~/repositories/tasks/date-helpers";
 
 /**
@@ -407,7 +408,9 @@ export class TasksRepository implements ITasksRepository {
             result.canceled += count;
             break;
           default:
-            // Unknown status — counted in active but not in any status bucket
+            // Unknown status — counted in active but not in any status bucket.
+            // Flagging via dbLogger so data-integrity issues don't get silently lost.
+            dbLogger.warn("stats: unknown task status", { status: row.status, count });
             break;
         }
       }
@@ -427,61 +430,62 @@ export class TasksRepository implements ITasksRepository {
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
 
-    // Build the month SQL expression once (dialect-agnostic)
-    const createdAtMonth = await monthFromTimestamp(tasksTable.createdAt);
-    const updatedAtMonth = await monthFromTimestamp(tasksTable.updatedAt);
-    const archivedAtMonth = await monthFromTimestamp(tasksTable.archivedAt);
+    // Build the month SQL expressions (dialect-agnostic via monthFromTimestamp)
+    const createdAtMonth = monthFromTimestamp(tasksTable.createdAt);
+    const updatedAtMonth = monthFromTimestamp(tasksTable.updatedAt);
+    const archivedAtMonth = monthFromTimestamp(tasksTable.archivedAt);
 
-    // Get created tasks per month
-    const createdRows = await db
-      .select({
-        month: createdAtMonth,
-        count: sql<number>`count(*)`,
-      })
-      .from(tasksTable)
-      .where(
-        and(
-          eq(tasksTable.userId, userId),
-          gte(tasksTable.createdAt, yearStart),
-          lt(tasksTable.createdAt, yearEnd),
-        ),
-      )
-      .groupBy(createdAtMonth);
+    // Run 3 aggregate queries in parallel to reduce wall-clock time.
+    // Each scans tasks for a different timestamp column (createdAt, updatedAt
+    // when status='done', archivedAt), so a single GROUP BY isn't possible.
+    // Promise.all makes them concurrent instead of sequential.
+    const [createdRows, completedRows, archivedRows] = await Promise.all([
+      db
+        .select({
+          month: createdAtMonth,
+          count: sql<number>`count(*)`,
+        })
+        .from(tasksTable)
+        .where(
+          and(
+            eq(tasksTable.userId, userId),
+            gte(tasksTable.createdAt, yearStart),
+            lt(tasksTable.createdAt, yearEnd),
+          ),
+        )
+        .groupBy(createdAtMonth),
+      db
+        .select({
+          month: updatedAtMonth,
+          count: sql<number>`count(*)`,
+        })
+        .from(tasksTable)
+        .where(
+          and(
+            eq(tasksTable.userId, userId),
+            eq(tasksTable.status, "done"),
+            gte(tasksTable.updatedAt, yearStart),
+            lt(tasksTable.updatedAt, yearEnd),
+          ),
+        )
+        .groupBy(updatedAtMonth),
+      db
+        .select({
+          month: archivedAtMonth,
+          count: sql<number>`count(*)`,
+        })
+        .from(tasksTable)
+        .where(
+          and(
+            eq(tasksTable.userId, userId),
+            gte(tasksTable.archivedAt, yearStart),
+            lt(tasksTable.archivedAt, yearEnd),
+          ),
+        )
+        .groupBy(archivedAtMonth),
+    ]);
 
-    // Get completed tasks per month
-    const completedRows = await db
-      .select({
-        month: updatedAtMonth,
-        count: sql<number>`count(*)`,
-      })
-      .from(tasksTable)
-      .where(
-        and(
-          eq(tasksTable.userId, userId),
-          eq(tasksTable.status, "done"),
-          gte(tasksTable.updatedAt, yearStart),
-          lt(tasksTable.updatedAt, yearEnd),
-        ),
-      )
-      .groupBy(updatedAtMonth);
-
-    // Get archived tasks per month
-    const archivedRows = await db
-      .select({
-        month: archivedAtMonth,
-        count: sql<number>`count(*)`,
-      })
-      .from(tasksTable)
-      .where(
-        and(
-          eq(tasksTable.userId, userId),
-          gte(tasksTable.archivedAt, yearStart),
-          lt(tasksTable.archivedAt, yearEnd),
-        ),
-      )
-      .groupBy(archivedAtMonth);
-
-    // Build a complete 12-month result
+    // Build a complete 12-month result from the 3 result sets
     const months: MonthlyTaskCount[] = [];
     for (let m = 1; m <= 12; m++) {
       months.push({

@@ -839,14 +839,14 @@ async function seedTasks(db: ReturnType<typeof drizzle>): Promise<void> {
         dueDate = new Date(createdAt.getTime() + dueOffset * 86400000);
       }
 
-      // Vary status: ~8% archived/canceled, rest as template.
-      // For "done" templates only 30% stay done — the rest get a
-      // non-done status so the monthly chart's "completed" line gets
-      // varied data.
+      // Archive state is tracked by `archivedAt`, not by the status column.
+      // The status column must always be one of the 6 canonical values.
+      // ~8% of tasks get archived/canceled; rest keep their template status.
       const statusRoll = faker.number.int({ max: 99 });
+      const isArchived = statusRoll < 5;
       let status = template.status;
-      if (statusRoll < 5) {
-        status = "archived";
+      if (isArchived) {
+        // keep original status — archivedAt tracks the archive state
       } else if (statusRoll < 8) {
         status = "canceled";
       } else if (template.status === "done" && faker.datatype.boolean(0.3)) {
@@ -879,8 +879,7 @@ async function seedTasks(db: ReturnType<typeof drizzle>): Promise<void> {
           dueDate: dueDate,
           createdAt,
           updatedAt,
-          archivedAt:
-            status === "archived" ? new Date(now - faker.number.int({ max: 30 }) * 86400000) : null,
+          archivedAt: isArchived ? new Date(now - faker.number.int({ max: 30 }) * 86400000) : null,
           deletedAt: null,
         } as schema.NewTask);
         seededCount++;

@@ -21,7 +21,6 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, query }) => {
       const { error, session } = await validateSession(request, set);
       if (error) return error;
-      if (!session) return new Response("Unauthorized", { status: 401 });
 
       try {
         const status = query.status
@@ -202,7 +201,6 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, body }) => {
       const { error: authError, session } = await validateSession(request, set);
       if (authError) return authError;
-      if (!session) return new Response("Unauthorized", { status: 401 });
 
       const { error: validationError, data } = await validateCreateTaskRequest(
         body as Record<string, unknown>,

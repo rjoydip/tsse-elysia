@@ -75,6 +75,39 @@ describe("useMonthlyTasks data flow", () => {
     await expect(fetchPromise).rejects.toThrow("Aborted");
   });
 
+  it("should abort previous request when year dependency changes (simulated re-render)", async () => {
+    // Simulate the hook's useEffect cleanup: when `year` changes, the previous
+    // effect's cleanup aborts the old controller before the new effect runs.
+    const controller1 = new AbortController();
+    const controller2 = new AbortController();
+
+    const mockFetch = vi.fn();
+    // Track which signals were aborted
+    const abortHandlers: Array<() => void> = [];
+
+    mockFetch.mockImplementation((_url: string, opts?: { signal?: AbortSignal }) => {
+      return new Promise((_resolve, reject) => {
+        const handler = () => reject(new DOMException("Aborted", "AbortError"));
+        abortHandlers.push(handler);
+        opts?.signal?.addEventListener("abort", handler);
+      });
+    });
+
+    // First effect run: fetch with year=2025
+    const fetch1 = mockFetch("/api/tasks/monthly?year=2025", { signal: controller1.signal });
+
+    // Simulate cleanup of first effect: abort the old controller
+    controller1.abort();
+    await expect(fetch1).rejects.toThrow("Aborted");
+
+    // Simulate second effect run: fetch with year=2026
+    mockFetch("/api/tasks/monthly?year=2026", { signal: controller2.signal });
+
+    // Second fetch should still resolve (its controller was not aborted)
+    // Since we return a hanging promise, we just verify it hasn't rejected yet
+    expect(controller2.signal.aborted).toBe(false);
+  });
+
   it("should use current year when year param changes", async () => {
     const mockFetch = vi.fn().mockImplementation((url: string) => {
       const year = url.includes("year=2025") ? 2025 : 2026;
