@@ -252,7 +252,6 @@ export const tasksRoutes = new Elysia({
     async ({ set, request, params, body }) => {
       const { error, session } = await validateSession(request, set);
       if (error) return error;
-      if (!session) return new Response("Unauthorized", { status: 401 });
 
       try {
         const task = await tasksService.updateTask(params.id, session.userId, body);
@@ -271,12 +270,12 @@ export const tasksRoutes = new Elysia({
       params: t.Object({ id: t.String() }),
       body: t.Object({
         title: t.Optional(t.String()),
-        description: t.Optional(t.String()),
+        description: t.Optional(t.Nullable(t.String())),
         status: t.Optional(t.String()),
         priority: t.Optional(t.String()),
         label: t.Optional(t.String()),
-        dueDate: t.Optional(t.String()),
-        assignee: t.Optional(t.String()),
+        dueDate: t.Optional(t.Nullable(t.String())),
+        assignee: t.Optional(t.Nullable(t.String())),
       }),
       detail: {
         summary: "Update task",
