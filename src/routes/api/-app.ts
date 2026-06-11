@@ -17,6 +17,7 @@ import { authCoreRoutes } from "./auth/-core";
 import { settingsRoutes } from "./settings/-core";
 import { usersRoutes } from "./users/-core";
 import { rolesRoutes } from "./roles/-core";
+import { tasksRoutes } from "./tasks/-core";
 import {
   metricsRoutes,
   analyticsRoutes,
@@ -71,6 +72,7 @@ export const createApiRoutes = () =>
     .use(settingsRoutes)
     .use(usersRoutes)
     .use(rolesRoutes)
+    .use(tasksRoutes)
     .use(metricsRoutes)
     .use(analyticsRoutes)
     .use(recentActivityRoutes)

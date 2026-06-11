@@ -20,6 +20,7 @@ import {
   DashboardResource,
 } from "~/services/dashboard/main";
 import type { DashboardMetrics } from "~/repositories/dashboard";
+import { UserTaskDashboard } from "~/features/user-dashboard/user-task-dashboard";
 import { MonthlyUsersOverview } from "./monthly-user-overview";
 import { RecentUsers } from "./recent-users";
 import { Analytics } from "./analytics";
@@ -27,7 +28,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { currencyConfig } from "~/config";
 import { AnimatedNumber } from "./shared/animated-number";
-import { DashboardState, DashboardMetricCard } from "./shared/role-view-states";
+import { DashboardState } from "./shared/role-view-states";
 
 /**
  * Props for the role-specific dashboard views.
@@ -38,63 +39,10 @@ export interface RoleBasedDashboardProps {
 
 /**
  * Basic Dashboard - For regular users.
- * Shows minimal metrics and simple interface.
+ * Shows task stats cards and monthly task chart.
  */
-export function BasicDashboard({ userCount = 0 }: RoleBasedDashboardProps) {
-  const { role } = usePermission();
-  const { metrics, loading, error } = useDashboardMetrics();
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Welcome, {role}</h2>
-          <span className="text-sm text-muted-foreground">Basic View</span>
-        </div>
-        <DashboardState variant="loading" view="basic" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Welcome, {role}</h2>
-          <span className="text-sm text-muted-foreground">Basic View</span>
-        </div>
-        <DashboardState variant="error" view="basic" />
-        <div className="text-center text-muted-foreground mt-4">
-          Failed to load dashboard data: {error}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Welcome, {role}</h2>
-        <span className="text-sm text-muted-foreground">Basic View</span>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <DashboardMetricCard
-          headerStyle="basic"
-          title="Your Activity"
-          value={userCount.toLocaleString() ?? 0}
-          subtitle="Total users"
-          icon={null}
-        />
-        <DashboardMetricCard
-          headerStyle="basic"
-          title="Pending Tasks"
-          value={metrics?.inactiveUsers?.toLocaleString() ?? 0}
-          subtitle="Inactive users"
-          icon={null}
-        />
-      </div>
-    </div>
-  );
+export function BasicDashboard(_props: RoleBasedDashboardProps) {
+  return <UserTaskDashboard />;
 }
 
 /**
