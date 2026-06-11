@@ -7,13 +7,14 @@
  */
 
 import { describe, it, expect, beforeAll } from "bun:test";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 
 const COLLECTION_DIR = join(import.meta.dirname, "..", "..", ".bruno", "collections");
 const ENV_FILE = join(import.meta.dirname, "..", "..", ".bruno", "environments", "local.yml");
 const REPORT_DIR = join(import.meta.dirname, "..", "..", ".bruno", "reports");
+const REPORT_JSON = join(REPORT_DIR, "e2e-report.json");
 
 /**
  * Runs a Bruno CLI command and returns the result.
@@ -52,36 +53,32 @@ describe("Bruno auth token flow", () => {
     }
   });
 
-  it("should run smoke tests and authenticate successfully", async () => {
+  it("should authenticate and return 200 for all smoke-tagged requests", async () => {
     expect(existsSync(COLLECTION_DIR)).toBe(true);
     expect(existsSync(ENV_FILE)).toBe(true);
 
-    // Step 1: Run sign-in first to establish a session
-    const signInResult = await runBruno([
+    // Run all smoke-tagged requests in a single session (seq: 0 sign-in runs first)
+    const result = await runBruno([
       "run",
       "--env-file",
-      join(import.meta.dirname, "..", "..", ".bruno", "environments", "local.yml"),
-      "--tags",
-      "auth",
-    ]);
-    expect(signInResult.stdout).toContain("sign-in");
-    // Sign-in should pass (exit 0) and set session_token
-    expect(signInResult.exitCode).toBe(0);
-
-    // Step 2: Run authenticated smoke requests (they reuse session_token)
-    const authedResult = await runBruno([
-      "run",
-      "--env-file",
-      join(import.meta.dirname, "..", "..", ".bruno", "environments", "local.yml"),
+      ENV_FILE,
       "--tags",
       "smoke",
-      "--sequential",
+      "--reporter-json",
+      REPORT_JSON,
     ]);
-    expect(authedResult.stdout).toContain("sign-in");
-    expect(authedResult.stdout).toContain("session_token");
-    // Verify at least one authenticated request returned 200
-    expect(authedResult.stdout).toContain("200");
-    // Verify the run completed successfully
-    expect(authedResult.exitCode).toBe(0);
+    expect(result.exitCode).toBe(0);
+
+    // Parse the JSON reporter for per-request validation
+    expect(existsSync(REPORT_JSON)).toBe(true);
+    const report = JSON.parse(readFileSync(REPORT_JSON, "utf-8"));
+
+    // Each request in the report should have status 200
+    const requests = report?.requests || report?.results || [];
+    expect(requests.length).toBeGreaterThan(0);
+
+    for (const req of requests) {
+      expect(req.status).toBe(200);
+    }
   });
 });
