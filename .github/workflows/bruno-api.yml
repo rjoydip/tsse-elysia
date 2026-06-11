@@ -52,11 +52,28 @@ jobs:
 
       - name: Run Bruno smoke tests
         run: |
-          npx @usebruno/cli run collections \
+          npx @usebruno/cli run collections/opencollection.yml \
             --env ci \
             --tags smoke \
             --reporter-junit reports/junit.xml \
-            --reporter-html reports/report.html
+            --reporter-html reports/report.html \
+            --reporter-json reports/results.json
+        working-directory: .bruno
+
+      - name: Validate Bruno results
+        run: |
+          node -e "
+            const results = require('./reports/results.json');
+            const failures = results.results
+              ? results.results.filter(r => r.status !== 200).length
+              : results.totalFail || 0;
+            console.log(JSON.stringify(results, null, 2));
+            if (failures > 0) {
+              console.error('FAILED: ' + failures + ' request(s) returned non-200');
+              process.exit(1);
+            }
+            console.log('All requests passed (200 OK)');
+          "
         working-directory: .bruno
 
       - name: Upload Bruno report

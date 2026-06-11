@@ -4,6 +4,7 @@ info:
   seq: 1
   tags:
     - tasks
+    - smoke
 
 http:
   method: GET

@@ -4,6 +4,7 @@ info:
   seq: 2
   tags:
     - mcp
+    - smoke
 
 http:
   method: GET

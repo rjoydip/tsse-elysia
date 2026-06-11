@@ -5,6 +5,7 @@ info:
   tags:
     - tasks
     - dashboard
+    - smoke
 
 http:
   method: GET

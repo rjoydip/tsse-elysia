@@ -11,9 +11,9 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 
-const COLLECTION_DIR = join(import.meta.dirname, "..", "..", ".bruno", "collections");
-const ENV_FILE = join(import.meta.dirname, "..", "..", ".bruno", "environments", "local.yml");
-const REPORT_DIR = join(import.meta.dirname, "..", "..", ".bruno", "reports");
+const BRUNO_DIR = join(import.meta.dirname, "..", "..", ".bruno");
+const COLLECTION_FILE = join(BRUNO_DIR, "collections", "opencollection.yml");
+const REPORT_DIR = join(BRUNO_DIR, "reports");
 const REPORT_JSON = join(REPORT_DIR, "e2e-report.json");
 
 /**
@@ -22,7 +22,7 @@ const REPORT_JSON = join(REPORT_DIR, "e2e-report.json");
 function runBruno(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
     const proc = spawn("npx", ["@usebruno/cli", ...args], {
-      cwd: COLLECTION_DIR,
+      cwd: BRUNO_DIR,
       env: { ...process.env, FORCE_COLOR: "0" },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -54,14 +54,14 @@ describe("Bruno auth token flow", () => {
   });
 
   it("should authenticate and return 200 for all smoke-tagged requests", async () => {
-    expect(existsSync(COLLECTION_DIR)).toBe(true);
-    expect(existsSync(ENV_FILE)).toBe(true);
+    expect(existsSync(COLLECTION_FILE)).toBe(true);
 
     // Run all smoke-tagged requests in a single session (seq: 0 sign-in runs first)
     const result = await runBruno([
       "run",
-      "--env-file",
-      ENV_FILE,
+      COLLECTION_FILE,
+      "--env",
+      "local",
       "--tags",
       "smoke",
       "--reporter-json",

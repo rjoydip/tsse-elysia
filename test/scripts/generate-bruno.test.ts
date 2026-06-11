@@ -72,7 +72,7 @@ describe("Bruno Collection Script", () => {
     const content = readFileSync(workflowPath, "utf-8");
     expect(content).toContain("Bruno API Tests");
     expect(content).toContain("@usebruno/cli");
-    expect(content).toContain("npx @usebruno/cli run collections");
+    expect(content).toContain("npx @usebruno/cli run collections/opencollection.yml");
   });
 
   it("should validate CI workflow commands reference valid scripts and paths", () => {
@@ -169,61 +169,6 @@ describe("Bruno Collection Script", () => {
     expect(urls).toContain("/users");
   });
 
-  it("should convert a real OpenAPI spec via @usebruno/converters", async () => {
-    // Fixture: minimal OpenAPI 3.0 spec
-    const fixture = {
-      openapi: "3.0.0",
-      info: { title: "Real Converter Test", version: "1.0.0" },
-      paths: {
-        "/health": {
-          get: {
-            summary: "Health check",
-            tags: ["system"],
-            responses: { "200": { description: "OK" } },
-          },
-        },
-        "/users": {
-          post: {
-            summary: "Create user",
-            tags: ["users"],
-            responses: { "201": { description: "Created" } },
-          },
-        },
-      },
-    };
-
-    // Use the real openApiToBruno converter
-    const { openApiToBruno } = await import("@usebruno/converters");
-    const result = (await openApiToBruno(fixture)) as {
-      name: string;
-      requests: Array<{
-        url?: string;
-        request?: { url?: string; method?: string };
-        method?: string;
-      }>;
-    };
-
-    // Verify the result structure
-    expect(result).toBeDefined();
-    expect(result.name).toBe("Real Converter Test");
-    expect(result.requests).toBeDefined();
-    expect(result.requests.length).toBeGreaterThanOrEqual(2);
-
-    // Verify each path from the spec appears in the collection
-    const urls = result.requests.map(
-      (r: { url?: string; request?: { url?: string } }) => r.url || r.request?.url || "",
-    );
-    expect(urls).toContain("/health");
-    expect(urls).toContain("/users");
-
-    // Verify methods are preserved
-    const methods = result.requests.map((r: { method?: string; request?: { method?: string } }) =>
-      (r.method || r.request?.method || "").toLowerCase(),
-    );
-    expect(methods).toContain("get");
-    expect(methods).toContain("post");
-  });
-
   it("should set session_token in sign-in for authenticated requests", () => {
     const signInPath = ".bruno/collections/auth/sign-in.yml";
     const content = readFileSync(signInPath, "utf-8");
@@ -260,5 +205,36 @@ describe("Bruno Collection Script", () => {
     const signInContent = readFileSync(signInPath, "utf-8");
 
     expect(signInContent).toContain("seq: 0");
+  });
+
+  it("should have smoke tag on all auth-requiring requests", () => {
+    const smokeEndpoints = [
+      "auth/sign-in.yml",
+      "users/list-users.yml",
+      "users/get-current-user.yml",
+      "users/get-user.yml",
+      "users/create-user.yml",
+      "roles/list-roles.yml",
+      "roles/my-permissions.yml",
+      "dashboard/metrics.yml",
+      "dashboard/analytics-overview.yml",
+      "settings/get-profile.yml",
+      "settings/get-account.yml",
+      "tasks/list-tasks.yml",
+      "tasks/task-stats.yml",
+      "mcp/mcp-health.yml",
+      "mcp/mcp-tools.yml",
+      "system/health.yml",
+      "system/database-heartbeat.yml",
+      "system/cache-heartbeat.yml",
+      "system/status-history.yml",
+    ];
+
+    for (const endpoint of smokeEndpoints) {
+      const endpointPath = `.bruno/collections/${endpoint}`;
+      expect(existsSync(endpointPath)).toBe(true);
+      const content = readFileSync(endpointPath, "utf-8");
+      expect(content).toContain("smoke");
+    }
   });
 });

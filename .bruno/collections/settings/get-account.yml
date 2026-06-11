@@ -4,6 +4,7 @@ info:
   seq: 2
   tags:
     - settings
+    - smoke
 
 http:
   method: GET
