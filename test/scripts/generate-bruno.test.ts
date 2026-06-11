@@ -72,7 +72,7 @@ describe("Bruno Collection Script", () => {
     const content = readFileSync(workflowPath, "utf-8");
     expect(content).toContain("Bruno API Tests");
     expect(content).toContain("@usebruno/cli");
-    expect(content).toContain("npx @usebruno/cli run collections/opencollection.yml");
+    expect(content).toContain("npx @usebruno/cli run .");
   });
 
   it("should validate CI workflow commands reference valid scripts and paths", () => {
@@ -80,24 +80,25 @@ describe("Bruno Collection Script", () => {
     const workflow = readFileSync(workflowPath, "utf-8");
 
     // 1. Working directory path must exist
-    const wdMatch = workflow.match(/working-directory:\s*(\S+)/);
-    expect(wdMatch).not.toBeNull();
-    const wdPath = wdMatch![1];
-    expect(existsSync(wdPath)).toBe(true);
+    const wdMatches = [...workflow.matchAll(/working-directory:\s*(\S+)/g)];
+    expect(wdMatches.length).toBeGreaterThanOrEqual(1);
+    for (const match of wdMatches) {
+      expect(existsSync(match[1])).toBe(true);
+    }
 
-    // 2. Environment is selected by name (--env ci) which looks for environments/ci.yml in the working dir
-    const envDir = join(wdPath, "environments");
-    expect(existsSync(envDir)).toBe(true);
+    // 2. Environment file referenced via --env-file must exist
+    const envFileMatch = workflow.match(/--env-file\s+(\S+)/);
+    expect(envFileMatch).not.toBeNull();
+    // Resolve relative paths from the first working-directory
+    const wdPath = wdMatches[0]![1];
+    const envFilePath = join(wdPath, envFileMatch![1]);
+    expect(existsSync(envFilePath)).toBe(true);
 
-    // 3. Collection directory passed as arg must exist
-    const collectionPath = join(wdPath, "collections");
-    expect(existsSync(collectionPath)).toBe(true);
-
-    // 4. "bun run build" must exist in package.json
+    // 3. "bun run build" must exist in package.json
     const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
     expect(pkg.scripts).toHaveProperty("build");
 
-    // 5. "bun run preview" must exist in package.json
+    // 4. "bun run preview" must exist in package.json
     expect(pkg.scripts).toHaveProperty("preview");
   });
 

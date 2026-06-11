@@ -66,9 +66,9 @@
     "script:sync-tasks": "bun run ./scripts/sync-tasks.ts",
     "script:task-config": "bun run ./scripts/task-config.ts",
     "script:generate-bruno": "bun run ./scripts/generate-bruno-collections.ts",
-    "bruno:run": "cd .bruno && npx @usebruno/cli run collections/opencollection.yml --env local",
-    "bruno:smoke": "cd .bruno && npx @usebruno/cli run collections/opencollection.yml --env local --tags smoke",
-    "bruno:ci": "cd .bruno && npx @usebruno/cli run collections/opencollection.yml --env ci --tags smoke"
+    "bruno:run": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml -r",
+    "bruno:smoke": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml --tags smoke -r",
+    "bruno:ci": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/ci.yml --tags smoke -r"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.4.2",

@@ -65,10 +65,10 @@ Variables are set via `after-response` scripts using `bru.setVar()` and persist 
 
 ```bash
 # All requests (dev)
-cd .bruno && npx @usebruno/cli run collections/opencollection.yml --env local
+cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml -r
 
 # Smoke tests only (dev)
-cd .bruno && npx @usebruno/cli run collections/opencollection.yml --env local --tags smoke
+cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml --tags smoke -r
 
 # CI (from repo root via npm)
 bun run bruno:ci

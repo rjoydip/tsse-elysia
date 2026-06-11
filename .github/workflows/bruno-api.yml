@@ -48,17 +48,18 @@ jobs:
           done
 
       - name: Create report directory
-        run: mkdir -p .bruno/reports
+        run: mkdir -p reports
 
       - name: Run Bruno smoke tests
         run: |
-          npx @usebruno/cli run collections/opencollection.yml \
-            --env ci \
+          npx @usebruno/cli run . \
+            --env-file ../environments/ci.yml \
             --tags smoke \
+            -r \
             --reporter-junit reports/junit.xml \
             --reporter-html reports/report.html \
             --reporter-json reports/results.json
-        working-directory: .bruno
+        working-directory: .bruno/collections
 
       - name: Validate Bruno results
         run: |
@@ -74,14 +75,14 @@ jobs:
             }
             console.log('All requests passed (200 OK)');
           "
-        working-directory: .bruno
+        working-directory: .bruno/collections
 
       - name: Upload Bruno report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bruno-report
-          path: .bruno/reports/
+          path: .bruno/collections/reports/
           retention-days: 7
 
       - name: Stop preview server
