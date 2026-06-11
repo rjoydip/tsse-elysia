@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, "..");
-const BRUNO_DIR = join(PROJECT_ROOT, ".bruno", "collections", "tsse-elysia");
+const BRUNO_DIR = join(PROJECT_ROOT, ".bruno", "collections");
 
 /**
  * Logger for the generation process.
@@ -64,10 +64,10 @@ async function getOpenApiSpec(): Promise<Record<string, unknown>> {
 /**
  * Generates Bruno collection files from an OpenAPI spec.
  */
-function generateCollection(openApiSpec: Record<string, unknown>): void {
+async function generateCollection(openApiSpec: Record<string, unknown>): Promise<void> {
   logger.step("Converting OpenAPI spec to Bruno collection");
 
-  const rawCollection = openApiToBruno(openApiSpec);
+  const rawCollection = await openApiToBruno(openApiSpec);
 
   // Ensure output directory exists
   if (!existsSync(BRUNO_DIR)) {
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
 
   try {
     const openApiSpec = await getOpenApiSpec();
-    generateCollection(openApiSpec);
+    await generateCollection(openApiSpec);
   } catch (error) {
     logger.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

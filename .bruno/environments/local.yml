@@ -3,9 +3,3 @@ variables:
   - name: base_url
     value: http://localhost:3000/api
     enabled: true
-  - name: auth_url
-    value: http://localhost:3000/api/auth
-    enabled: true
-  - name: base_host
-    value: http://localhost:3000
-    enabled: true

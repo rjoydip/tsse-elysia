@@ -1,6 +1,6 @@
 name: TSSE Elysia
 version: "1.0"
 collections:
-  - dir: collections/tsse-elysia
+  - dir: collections
 environments:
   - dir: environments

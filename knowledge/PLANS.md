@@ -112,7 +112,7 @@ Core focus:
 
 **Files Created:**
 
-- `.bruno/workspace.yml`, `.bruno/environments/local.yml`, `.bruno/environments/ci.yml`, `.bruno/collections/tsse-elysia/*/*.yml` (14 collection files)
+- `.bruno/workspace.yml`, `.bruno/environments/local.yml`, `.bruno/environments/ci.yml`, `.bruno/collections/*/*.yml` (14 collection files)
 - `.github/workflows/bruno-api.yml` (CI workflow)
 - `scripts/generate-bruno-collections.ts` (collection generation script)
 - `test/scripts/generate-bruno.test.ts` (Bruno collection structure tests)

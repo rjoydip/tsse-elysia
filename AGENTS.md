@@ -275,15 +275,13 @@ All necessary information is in [README.md](./README.md), including:
 
 ### Bruno API testing
 
+```bash
 # Run Bruno smoke tests (requires running dev server)
-
 npx @usebruno/cli run --env local --tags smoke
 
 # Regenerate Bruno collections from OpenAPI spec
-
 bun run script:generate-bruno
-
-````
+```
 
 ## Recommended Workflow
 
@@ -310,7 +308,7 @@ SQLITE_URL=file:.artifacts/tsse-elysia.db
 BETTER_AUTH_SECRET=your-secret-key
 GH_TOKEN=ghp_xxx  # For GitHub MCP integration
 REDIS_URL=redis://localhost:6379  # Or rediss://...@....upstash.io:6379
-````
+```
 
 ### Key Variables
 

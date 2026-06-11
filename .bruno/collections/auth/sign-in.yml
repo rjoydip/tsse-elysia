@@ -10,6 +10,7 @@ http:
   method: POST
   url: "{{base_url}}/auth/sign-in/email"
   body:
+    # Must match ESSENTIAL_USERS in scripts/db-seed.ts
     type: json
     data: |-
       {
@@ -36,7 +37,7 @@ runtime:
             }
           }
         }
-        bru.setVar("session_cookie", token);
+        bru.setVar("session_token", token);
 
 settings:
   encodeUrl: true

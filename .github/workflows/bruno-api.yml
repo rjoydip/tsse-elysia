@@ -35,6 +35,8 @@ jobs:
         run: bun run build
 
       - name: Start preview server
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
           bun run preview --port $E2E_PORT --host 0.0.0.0 &
           for i in $(seq 1 30); do
@@ -56,7 +58,7 @@ jobs:
             --tags smoke \
             --reporter-junit .bruno/reports/junit.xml \
             --reporter-html .bruno/reports/report.html
-        working-directory: .bruno/collections/tsse-elysia
+        working-directory: .bruno/collections
 
       - name: Upload Bruno report
         if: ${{ !cancelled() }}
