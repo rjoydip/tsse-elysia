@@ -7,6 +7,10 @@ description: All notable changes to this project
 
 ### 🚀 Enhancements
 
+- Add Bruno API testing workspace with 8 API domain collections (auth, users, roles, settings, tasks, mcp, dashboard, system), local/CI environments, and CI workflow
+- Add Bruno collection generation script from OpenAPI spec using `@usebruno/converters`
+- Add Devkit developer toolkit (CLI + MCP) with database health, cache health, and system info commands
+- Add devframe Vite Bridge integration — mounts Devkit at `/__devkit` in the Vite dev server for agent-native tool access
 - Add production-aware seed script with `--prod` flag and graph seed data (monthly/weekly registration timestamps)
 - Add full-page skeleton for role-based dashboard (replaces spinner during auth resolution)
 - Add lazy getter pattern to all 4 settings repositories (prevents client-side crashes)
@@ -85,6 +89,7 @@ description: All notable changes to this project
 - Split monolithic schema into modular files
 - Reorganize lib directory structure
 - Move business logic to services layer
+- Move Devkit and Bruno type declarations from `src/` to `tools/` directory
 
 ### 📖 Documentation
 
@@ -95,6 +100,8 @@ description: All notable changes to this project
 - Add Fallow MCP integration knowledge document
 - Add DECISION 017 and 018 for GitHub Actions workflow changes
 - Update folder structure and tech stack in documentation
+- Add Devkit CLI/MCP usage reference to AGENTS.md
+- Add Phase 25 (Bruno + Devkit integration) to PLANS.md
 
 ### 🏡 Chore
 
@@ -108,6 +115,7 @@ description: All notable changes to this project
 - Add unit tests for dashboard tabs component
 - Add E2E tests for dashboard tabs functionality
 - Add unit tests for PostgreSQL replica configuration ([#17](https://github.com/rjoydip/tsse-elysia/pull/17))
+- Add unit tests for Devkit RPC definitions and Bruno collection structure (21 tests)
 
 ### 🏗️ Infrastructure
 
@@ -126,6 +134,7 @@ description: All notable changes to this project
 - Add pr-review.yml for automated PR reviews
 - Add issue-triage.yml for automated issue triage
 - Add docker-scan job for container security
+- Add Bruno API smoke test workflow (`bruno-api.yml`)
 
 ### ❤️ Contributors
 

@@ -113,9 +113,9 @@ Core focus:
 
 #### Phase 25.2 – Devkit Developer Toolkit ✅
 
-- Created `src/devkit/` with RPC modules (`db.ts`, `cache.ts`, `system.ts`) using `defineRpcFunction` from `devframe`
-- Created CLI entry (`src/devkit/cli.ts`) with 5 commands: `db:health`, `db:stats`, `cache:health`, `cache:stats`, `system:info`
-- Created MCP server (`src/devkit/mcp.ts`) registering 5 developer tools via `@modelcontextprotocol/sdk`
+- Created `tools/devkit/` with RPC modules (`db.ts`, `cache.ts`, `system.ts`) using `defineRpcFunction` from `devframe`
+- Created CLI entry (`tools/devkit/cli.ts`) with 5 commands: `db:health`, `db:stats`, `cache:health`, `cache:stats`, `system:info`
+- Created MCP server (`tools/devkit/mcp.ts`) registering 5 developer tools via `@modelcontextprotocol/sdk`
 - CLI validated: `bun run devkit db:health` returns healthy DB status, `bun run devkit system:info` returns runtime details
 - Devkit is supplementary — existing MCP server in `src/lib/mcp/` remains untouched
 
@@ -130,8 +130,8 @@ Core focus:
 - `.bruno/workspace.yml`, `.bruno/environments/local.yml`, `.bruno/environments/ci.yml`, `.bruno/collections/tsse-elysia/*/*.yml` (14 collection files)
 - `.github/workflows/bruno-api.yml` (CI workflow)
 - `scripts/generate-bruno-collections.ts` (collection generation script)
-- `src/types/bruno-converters.d.ts` (Bruno converters type declarations)
-- `src/devkit/index.ts`, `src/devkit/cli.ts`, `src/devkit/mcp.ts`, `src/devkit/rpc/db.ts`, `src/devkit/rpc/cache.ts`, `src/devkit/rpc/system.ts`
+- `tools/bruno-converters.d.ts` (Bruno converters type declarations)
+- `tools/devkit/index.ts`, `tools/devkit/cli.ts`, `tools/devkit/mcp.ts`, `tools/devkit/rpc/db.ts`, `tools/devkit/rpc/cache.ts`, `tools/devkit/rpc/system.ts`
 - `test/unit/devkit/definition.test.ts`, `test/unit/devkit/rpc.test.ts`
 - `test/scripts/generate-bruno.test.ts` (Bruno collection structure tests)
 

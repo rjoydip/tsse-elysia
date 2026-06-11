@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { dbHealthRpc, dbStatsRpc } from "~/devkit/rpc/db";
-import { cacheHealthRpc, cacheStatsRpc } from "~/devkit/rpc/cache";
-import { systemInfoRpc } from "~/devkit/rpc/system";
+import { dbHealthRpc, dbStatsRpc } from "../../../tools/devkit/rpc/db";
+import { cacheHealthRpc, cacheStatsRpc } from "../../../tools/devkit/rpc/cache";
+import { systemInfoRpc } from "../../../tools/devkit/rpc/system";
 
 describe("Devkit RPC - DB", () => {
   it("should define db:health RPC with correct structure", () => {

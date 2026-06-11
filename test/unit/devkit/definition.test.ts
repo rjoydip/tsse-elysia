@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import { rpcMap, rpcNames } from "~/devkit/index";
+import { rpcMap, rpcNames } from "../../../tools/devkit/index";
 
 describe("Devkit Module", () => {
   it("should export an rpcMap with all tools", () => {

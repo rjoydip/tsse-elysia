@@ -66,8 +66,8 @@
     "script:sync-tasks": "bun run ./scripts/sync-tasks.ts",
     "script:task-config": "bun run ./scripts/task-config.ts",
     "script:generate-bruno": "bun run ./scripts/generate-bruno-collections.ts",
-    "devkit": "bun run ./src/devkit/cli.ts --",
-    "devkit:mcp": "bun run ./src/devkit/mcp.ts"
+    "devkit": "bun run ./tools/devkit/cli.ts --",
+    "devkit:mcp": "bun run ./tools/devkit/mcp.ts"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.4.2",
