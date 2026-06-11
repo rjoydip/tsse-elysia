@@ -55,7 +55,6 @@ jobs:
           npx @usebruno/cli run collections \
             --env ci \
             --tags smoke \
-            --sequential \
             --reporter-junit reports/junit.xml \
             --reporter-html reports/report.html
         working-directory: .bruno
