@@ -3,7 +3,7 @@
  * Shows created, completed, and archived task counts by month with a year dropdown.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { motion } from "motion/react";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
@@ -39,11 +39,15 @@ export function MonthlyTaskChart() {
   const debouncedLoading = useDebouncedLoading(loading);
   const years = getYearOptions();
 
-  // Keep last known good data so the chart stays visible during year-switch loading
+  // Keep last known good data so the chart stays visible during year-switch loading.
+  // Written in a useEffect rather than during render to avoid React calling it
+  // multiple times in dev strict mode.
   const lastData = useRef<MonthlyTaskData[]>([]);
-  if (!loading && data.length > 0) {
-    lastData.current = data;
-  }
+  useEffect(() => {
+    if (!loading && data.length > 0) {
+      lastData.current = data;
+    }
+  }, [loading, data]);
 
   const hasEverLoaded = lastData.current.length > 0;
 

@@ -28,7 +28,7 @@ vi.mock("~/repositories/tasks/tasks.repository", () => ({
  * Creates a complete mock TaskRow with defaults for all required fields.
  */
 function createMockTask(overrides: Partial<TaskRow> = {}): TaskRow {
-  const now = Math.floor(Date.now() / 1000);
+  const now = new Date();
   return {
     id: "1",
     title: "Test task",
@@ -138,7 +138,7 @@ describe("TasksService", () => {
         id: "1",
         title: "Archived",
         userId: "user-1",
-        archivedAt: Date.now(),
+        archivedAt: new Date(),
       });
       mockTasksRepository.archive.mockResolvedValueOnce(mockTaskRow);
 
@@ -172,7 +172,7 @@ describe("TasksService", () => {
         id: "1",
         title: "Deleted",
         userId: "user-1",
-        deletedAt: Date.now(),
+        deletedAt: new Date(),
       });
       mockTasksRepository.softDelete.mockResolvedValueOnce(mockTaskRow);
 

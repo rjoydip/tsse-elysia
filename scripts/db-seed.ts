@@ -682,7 +682,7 @@ const TASK_TEMPLATES = [
   {
     title: "Fix login redirect bug",
     description: "Users are not redirected to the correct page after login",
-    status: "in progress",
+    status: "in-progress",
     priority: "critical",
     label: "bug",
   },
@@ -717,7 +717,7 @@ const TASK_TEMPLATES = [
   {
     title: "Fix mobile layout issues",
     description: "Sidebar overlaps content on small screens",
-    status: "in progress",
+    status: "in-progress",
     priority: "medium",
     label: "bug",
   },
@@ -752,7 +752,7 @@ const TASK_TEMPLATES = [
   {
     title: "Session expiry handling",
     description: "Show a warning before session times out",
-    status: "in progress",
+    status: "in-progress",
     priority: "high",
     label: "bug",
   },
@@ -852,7 +852,7 @@ async function seedTasks(db: ReturnType<typeof drizzle>): Promise<void> {
       } else if (template.status === "done" && faker.datatype.boolean(0.3)) {
         status = "done";
       } else if (template.status === "done") {
-        status = faker.helpers.arrayElement(["todo", "in progress", "review", "backlog"]);
+        status = faker.helpers.arrayElement(["todo", "in-progress", "review", "backlog"]);
       }
 
       // Set updatedAt to reflect when the task was last changed.

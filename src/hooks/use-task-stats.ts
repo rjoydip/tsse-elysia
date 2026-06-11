@@ -23,7 +23,11 @@ export interface TaskStats {
 }
 
 /**
- * Hook that fetches task stats from the API.
+ * Hook that fetches task stats from the API on mount.
+ *
+ * The empty dependency array (`[]`) is intentional — stats data changes slowly and
+ * the dashboard re-mounts on navigation, so a single fetch per visit is sufficient.
+ * If real-time updates are needed later, add a polling interval or a websocket event.
  */
 export function useTaskStats() {
   const [stats, setStats] = useState<TaskStats | null>(null);

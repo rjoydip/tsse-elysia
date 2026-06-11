@@ -25,10 +25,15 @@ function chainWithGroupBy(data: unknown[]) {
 
 /**
  * Helper: returns a select mock that returns different chain results for each call.
+ * Falls back to an empty chain for any excess calls beyond the provided results,
+ * so adding a query doesn't break existing tests.
  */
 function selectMockForQueries(results: unknown[][]) {
   const chains = results.map((data) => chainWithGroupBy(data));
   const mock = vi.fn();
+  // Default: return empty chain for any unconfigured call
+  mock.mockImplementation(() => chainWithGroupBy([]));
+  // Override first N calls with the provided chains
   chains.forEach((c) => mock.mockReturnValueOnce(c));
   return mock;
 }
@@ -69,8 +74,7 @@ describe("TasksRepository", () => {
       mockDb.select.mockReturnValue(
         chainWithGroupBy([
           { status: "todo", archivedAt: null, deletedAt: null, count: 2 },
-          { status: "in progress", archivedAt: null, deletedAt: null, count: 1 },
-          { status: "in-progress", archivedAt: null, deletedAt: null, count: 3 },
+          { status: "in-progress", archivedAt: null, deletedAt: null, count: 4 },
           { status: "review", archivedAt: null, deletedAt: null, count: 4 },
           { status: "done", archivedAt: null, deletedAt: null, count: 5 },
           { status: "backlog", archivedAt: null, deletedAt: null, count: 1 },
@@ -85,19 +89,16 @@ describe("TasksRepository", () => {
       expect(result.archived).toBe(0);
       expect(result.deleted).toBe(0);
       expect(result.todo).toBe(2);
-      expect(result.inProgress).toBe(4); // "in progress" + "in-progress"
+      expect(result.inProgress).toBe(4);
       expect(result.review).toBe(4);
       expect(result.done).toBe(5);
       expect(result.backlog).toBe(1);
       expect(result.canceled).toBe(2);
     });
 
-    it("should bill both 'in progress' and 'in-progress' under inProgress", async () => {
+    it("should count only canonical 'in-progress' under inProgress", async () => {
       mockDb.select.mockReturnValue(
-        chainWithGroupBy([
-          { status: "in progress", archivedAt: null, deletedAt: null, count: 2 },
-          { status: "in-progress", archivedAt: null, deletedAt: null, count: 3 },
-        ]),
+        chainWithGroupBy([{ status: "in-progress", archivedAt: null, deletedAt: null, count: 5 }]),
       );
 
       const result = await repository.stats("user-1");

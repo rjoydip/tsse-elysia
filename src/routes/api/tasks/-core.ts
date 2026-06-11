@@ -253,7 +253,7 @@ export const tasksRoutes = new Elysia({
       if (error) return error;
 
       try {
-        const task = await tasksService.updateTask(params.id, session!.userId, body as any);
+        const task = await tasksService.updateTask(params.id, session!.userId, body);
         if (!task) {
           set.status = 404;
           return { error: "Task not found" };

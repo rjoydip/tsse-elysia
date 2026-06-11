@@ -116,7 +116,19 @@ export class TasksService implements ITasksService {
       assignee: string;
     }>,
   ): Promise<TaskRow | null> {
-    const updates: Partial<TaskRow> = {};
+    const updates: Partial<{
+      title: string;
+      description: string | null;
+      status: string;
+      priority: string;
+      label: string;
+      dueDate: number | null;
+      assignee: string | null;
+      createdAt: number;
+      updatedAt: number;
+      archivedAt: number | null;
+      deletedAt: number | null;
+    }> = {};
     if (data.title !== undefined) updates.title = data.title;
     if (data.description !== undefined) updates.description = data.description;
     if (data.status !== undefined) updates.status = data.status;

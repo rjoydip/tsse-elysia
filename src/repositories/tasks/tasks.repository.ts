@@ -7,6 +7,7 @@
 import { randomUUID } from "uncrypto";
 import { eq, and, desc, gte, lt, sql, isNull } from "drizzle-orm";
 import type { DbType } from "~/config/db";
+import { monthFromTimestamp } from "~/repositories/tasks/date-helpers";
 
 /**
  * Task status values used in the workflow.
@@ -14,7 +15,6 @@ import type { DbType } from "~/config/db";
 export const TASK_STATUSES = [
   "backlog",
   "todo",
-  "in progress",
   "in-progress",
   "review",
   "done",
@@ -34,24 +34,9 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const TASK_LABELS = ["bug", "feature", "documentation"] as const;
 export type TaskLabel = (typeof TASK_LABELS)[number];
 
-/**
- * Task row type matching the database schema.
- */
-export interface TaskRow {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  label: string;
-  dueDate: number | null;
-  userId: string;
-  assignee: string | null;
-  createdAt: number;
-  updatedAt: number;
-  archivedAt: number | null;
-  deletedAt: number | null;
-}
+import type { tasks as TasksTable, Task as TaskRow } from "~/lib/db/schema/tasks";
+
+export type { TaskRow };
 
 /**
  * Filter parameters for listing tasks.
@@ -109,7 +94,23 @@ export interface ITasksRepository {
     userId: string;
     assignee?: string;
   }): Promise<TaskRow>;
-  update(id: string, userId: string, data: Partial<TaskRow>): Promise<TaskRow | null>;
+  update(
+    id: string,
+    userId: string,
+    data: Partial<{
+      title: string;
+      description: string | null;
+      status: string;
+      priority: string;
+      label: string;
+      dueDate: number | null;
+      assignee: string | null;
+      createdAt: number;
+      updatedAt: number;
+      archivedAt: number | null;
+      deletedAt: number | null;
+    }>,
+  ): Promise<TaskRow | null>;
   archive(id: string, userId: string): Promise<TaskRow | null>;
   unarchive(id: string, userId: string): Promise<TaskRow | null>;
   softDelete(id: string, userId: string): Promise<TaskRow | null>;
@@ -122,30 +123,39 @@ export interface ITasksRepository {
  */
 export class TasksRepository implements ITasksRepository {
   private _db: DbType | null = null;
-  private _tasksTable: any = null;
+  private _tasksTable: typeof TasksTable | null = null;
 
   /**
    * Creates a new TasksRepository instance.
    * Optional db parameter for DI/testing with mock db.
    */
-  constructor(db?: DbType, tasksTable?: any) {
+  constructor(db?: DbType, tasksTable?: typeof TasksTable) {
     if (db) this._db = db;
     if (tasksTable) this._tasksTable = tasksTable;
   }
 
+  /** Cached init promise to fire each dynamic import at most once. */
+  private _initPromise: Promise<{ db: DbType; tasksTable: typeof TasksTable }> | null = null;
+
   /**
    * Lazy initializer for db to avoid HMR issues and client-side imports.
+   * Caches the promise so the dynamic import fires only once per instance.
    */
-  private async init(): Promise<{ db: DbType; tasksTable: any }> {
-    if (!this._db) {
-      const dbModule = await import("~/config/db");
-      this._db = dbModule.db as DbType;
+  private async init(): Promise<{ db: DbType; tasksTable: typeof TasksTable }> {
+    if (!this._initPromise) {
+      this._initPromise = (async () => {
+        if (!this._db) {
+          const dbModule = await import("~/config/db");
+          this._db = dbModule.db as DbType;
+        }
+        if (!this._tasksTable) {
+          const schemaModule = await import("~/lib/db/schema/tasks");
+          this._tasksTable = schemaModule.tasks as typeof TasksTable;
+        }
+        return { db: this._db, tasksTable: this._tasksTable };
+      })();
     }
-    if (!this._tasksTable) {
-      const schemaModule = await import("~/lib/db/schema/tasks");
-      this._tasksTable = schemaModule.tasks;
-    }
-    return { db: this._db, tasksTable: this._tasksTable };
+    return this._initPromise;
   }
 
   /**
@@ -200,7 +210,7 @@ export class TasksRepository implements ITasksRepository {
     ]);
 
     return {
-      tasks: tasksResult as unknown as TaskRow[],
+      tasks: tasksResult,
       total: Number(countResult[0]?.count ?? 0),
     };
   }
@@ -217,7 +227,7 @@ export class TasksRepository implements ITasksRepository {
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .limit(1);
 
-    return (result[0] as unknown as TaskRow) ?? null;
+    return result[0] ?? null;
   }
 
   /**
@@ -234,7 +244,7 @@ export class TasksRepository implements ITasksRepository {
     assignee?: string;
   }): Promise<TaskRow> {
     const { db, tasksTable } = await this.init();
-    const now = Math.floor(Date.now() / 1000);
+    const now = new Date();
 
     const [record] = await db
       .insert(tasksTable)
@@ -245,7 +255,7 @@ export class TasksRepository implements ITasksRepository {
         status: data.status ?? "todo",
         priority: data.priority ?? "medium",
         label: data.label ?? "feature",
-        dueDate: data.dueDate ? Math.floor(data.dueDate.getTime() / 1000) : null,
+        dueDate: data.dueDate ?? null,
         userId: data.userId,
         assignee: data.assignee ?? null,
         createdAt: now,
@@ -255,15 +265,31 @@ export class TasksRepository implements ITasksRepository {
       })
       .returning();
 
-    return record as unknown as TaskRow;
+    return record;
   }
 
   /**
    * Updates a task (ownership check enforced).
    */
-  async update(id: string, userId: string, data: Partial<TaskRow>): Promise<TaskRow | null> {
+  async update(
+    id: string,
+    userId: string,
+    data: Partial<{
+      title: string;
+      description: string | null;
+      status: string;
+      priority: string;
+      label: string;
+      dueDate: number | null;
+      assignee: string | null;
+      createdAt: number;
+      updatedAt: number;
+      archivedAt: number | null;
+      deletedAt: number | null;
+    }>,
+  ): Promise<TaskRow | null> {
     const { db, tasksTable } = await this.init();
-    const now = Math.floor(Date.now() / 1000);
+    const now = new Date();
 
     const [record] = await db
       .update(tasksTable)
@@ -271,7 +297,7 @@ export class TasksRepository implements ITasksRepository {
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .returning();
 
-    return (record as unknown as TaskRow) ?? null;
+    return record ?? null;
   }
 
   /**
@@ -279,31 +305,32 @@ export class TasksRepository implements ITasksRepository {
    */
   async archive(id: string, userId: string): Promise<TaskRow | null> {
     const { db, tasksTable } = await this.init();
-    const now = Math.floor(Date.now() / 1000);
+    const now = new Date();
 
     const [record] = await db
       .update(tasksTable)
-      .set({ archivedAt: now, status: "archived", updatedAt: now })
+      .set({ archivedAt: now, updatedAt: now })
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .returning();
 
-    return (record as unknown as TaskRow) ?? null;
+    return record ?? null;
   }
 
   /**
    * Unarchives a task by clearing archivedAt.
+   * Preserves the task's original workflow status (doesn't reset to "todo").
    */
   async unarchive(id: string, userId: string): Promise<TaskRow | null> {
     const { db, tasksTable } = await this.init();
-    const now = Math.floor(Date.now() / 1000);
+    const now = new Date();
 
     const [record] = await db
       .update(tasksTable)
-      .set({ archivedAt: null, status: "todo", updatedAt: now })
+      .set({ archivedAt: null, updatedAt: now })
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .returning();
 
-    return (record as unknown as TaskRow) ?? null;
+    return record ?? null;
   }
 
   /**
@@ -311,15 +338,15 @@ export class TasksRepository implements ITasksRepository {
    */
   async softDelete(id: string, userId: string): Promise<TaskRow | null> {
     const { db, tasksTable } = await this.init();
-    const now = Math.floor(Date.now() / 1000);
+    const now = new Date();
 
     const [record] = await db
       .update(tasksTable)
-      .set({ deletedAt: now, status: "deleted", updatedAt: now })
+      .set({ deletedAt: now, updatedAt: now })
       .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
       .returning();
 
-    return (record as unknown as TaskRow) ?? null;
+    return record ?? null;
   }
 
   /**
@@ -366,7 +393,6 @@ export class TasksRepository implements ITasksRepository {
           case "todo":
             result.todo += count;
             break;
-          case "in progress":
           case "in-progress":
             result.inProgress += count;
             break;
@@ -382,6 +408,9 @@ export class TasksRepository implements ITasksRepository {
           case "canceled":
             result.canceled += count;
             break;
+          default:
+            // Unknown status — counted in active but not in any status bucket
+            break;
         }
       }
     }
@@ -395,13 +424,20 @@ export class TasksRepository implements ITasksRepository {
   async getMonthlyCounts(userId: string, year: number): Promise<MonthlyTaskCount[]> {
     const { db, tasksTable } = await this.init();
 
+    // Use Date boundaries for comparison; Drizzle converts to the appropriate
+    // native type per dialect (unix-epoch integer for SQLite, TIMESTAMP for PG).
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
+
+    // Build the month SQL expression once (dialect-agnostic)
+    const createdAtMonth = await monthFromTimestamp(tasksTable.createdAt);
+    const updatedAtMonth = await monthFromTimestamp(tasksTable.updatedAt);
+    const archivedAtMonth = await monthFromTimestamp(tasksTable.archivedAt);
 
     // Get created tasks per month
     const createdRows = await db
       .select({
-        month: sql<number>`cast(strftime('%m', ${tasksTable.createdAt}, 'unixepoch') as integer)`,
+        month: createdAtMonth,
         count: sql<number>`count(*)`,
       })
       .from(tasksTable)
@@ -412,12 +448,12 @@ export class TasksRepository implements ITasksRepository {
           lt(tasksTable.createdAt, yearEnd),
         ),
       )
-      .groupBy(sql`strftime('%m', ${tasksTable.createdAt}, 'unixepoch')`);
+      .groupBy(createdAtMonth);
 
     // Get completed tasks per month
     const completedRows = await db
       .select({
-        month: sql<number>`cast(strftime('%m', ${tasksTable.updatedAt}, 'unixepoch') as integer)`,
+        month: updatedAtMonth,
         count: sql<number>`count(*)`,
       })
       .from(tasksTable)
@@ -429,12 +465,12 @@ export class TasksRepository implements ITasksRepository {
           lt(tasksTable.updatedAt, yearEnd),
         ),
       )
-      .groupBy(sql`strftime('%m', ${tasksTable.updatedAt}, 'unixepoch')`);
+      .groupBy(updatedAtMonth);
 
     // Get archived tasks per month
     const archivedRows = await db
       .select({
-        month: sql<number>`cast(strftime('%m', ${tasksTable.archivedAt}, 'unixepoch') as integer)`,
+        month: archivedAtMonth,
         count: sql<number>`count(*)`,
       })
       .from(tasksTable)
@@ -445,7 +481,7 @@ export class TasksRepository implements ITasksRepository {
           lt(tasksTable.archivedAt, yearEnd),
         ),
       )
-      .groupBy(sql`strftime('%m', ${tasksTable.archivedAt}, 'unixepoch')`);
+      .groupBy(archivedAtMonth);
 
     // Build a complete 12-month result
     const months: MonthlyTaskCount[] = [];

@@ -1,16 +1,14 @@
 /**
  * Unit tests for RolesRepository with Result types.
- * Uses vi.mock to mock the database dependency.
- * Note: withDatabaseError wraps thrown errors in DatabaseError,
- * so NotFoundError is only expected from methods that check
- * preconditions (like findRoleById called from assignRoleToUser).
+ * Uses constructor injection to mock the database dependency,
+ * avoiding vi.mock which permanently pollutes the global module cache
+ * and breaks other test files.
  */
 
 import { describe, test, expect, beforeEach, vi } from "bun:test";
 import { Result, DatabaseError } from "~/lib/result";
 import { RolesRepository } from "~/repositories/roles.repository";
 
-// Mock db before importing the repository (vi.mock is hoisted by Bun)
 const mockDb = {
   select: vi.fn(),
   insert: vi.fn(),
@@ -18,16 +16,12 @@ const mockDb = {
   delete: vi.fn(),
 };
 
-vi.mock("~/config/db", () => ({
-  db: mockDb,
-}));
-
 describe("RolesRepository", () => {
   let repository: RolesRepository;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    repository = new RolesRepository();
+    repository = new RolesRepository(mockDb as any);
   });
 
   describe("findAllPermissions", () => {

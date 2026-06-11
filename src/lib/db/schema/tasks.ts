@@ -10,24 +10,15 @@ import { users } from "./auth";
 /**
  * Tasks table - stores user-created tasks.
  * Supports soft-delete (deletedAt) and archive (archivedAt) states
- * while maintaining a workflow status (todo, in-progress, review, done, canceled).
+ * while maintaining a workflow status (backlog, todo, in-progress, review, done, canceled).
+ * Archive and delete state is tracked by the archivedAt/deletedAt columns, not by status.
  */
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
   status: text("status", {
-    enum: [
-      "backlog",
-      "todo",
-      "in progress",
-      "in-progress",
-      "review",
-      "done",
-      "canceled",
-      "archived",
-      "deleted",
-    ],
+    enum: ["backlog", "todo", "in-progress", "review", "done", "canceled"],
   })
     .notNull()
     .default("todo"),
