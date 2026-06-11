@@ -1,0 +1,23 @@
+info:
+  name: Task Stats
+  type: http
+  seq: 2
+  tags:
+    - tasks
+    - dashboard
+
+http:
+  method: GET
+  url: "{{base_url}}/tasks/stats"
+  auth:
+    type: bearer
+    token: "{{session_token}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200", () => expect(res.status).to.equal(200));
+
+settings:
+  encodeUrl: true

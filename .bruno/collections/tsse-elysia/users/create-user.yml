@@ -1,0 +1,31 @@
+info:
+  name: Create User
+  type: http
+  seq: 4
+  tags:
+    - users
+    - admin
+
+http:
+  method: POST
+  url: "{{base_url}}/users"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Test User",
+        "email": "test-{{$isoTimestamp}}@example.com",
+        "password": "Test123!@#"
+      }
+  auth:
+    type: bearer
+    token: "{{session_token}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 201", () => expect(res.status).to.equal(201));
+
+settings:
+  encodeUrl: true

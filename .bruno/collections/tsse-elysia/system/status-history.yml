@@ -1,0 +1,19 @@
+info:
+  name: Status History
+  type: http
+  seq: 4
+  tags:
+    - system
+
+http:
+  method: GET
+  url: "{{base_url}}/status/history"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200", () => expect(res.status).to.equal(200));
+
+settings:
+  encodeUrl: true

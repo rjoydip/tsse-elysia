@@ -1,0 +1,23 @@
+info:
+  name: Dashboard Metrics
+  type: http
+  seq: 1
+  tags:
+    - smoke
+    - dashboard
+
+http:
+  method: GET
+  url: "{{base_url}}/dashboard/metrics"
+  auth:
+    type: bearer
+    token: "{{session_token}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200", () => expect(res.status).to.equal(200));
+
+settings:
+  encodeUrl: true

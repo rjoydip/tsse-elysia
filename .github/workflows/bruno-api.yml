@@ -1,0 +1,76 @@
+name: Bruno API Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: bruno-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_TYPE: "sqlite"
+  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
+  E2E_PORT: "4173"
+
+jobs:
+  bruno-tests:
+    name: Bruno API Tests
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: setup
+
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
+
+      - name: Build
+        run: bun run build
+
+      - name: Start preview server
+        run: |
+          bun run preview --port $E2E_PORT --host 0.0.0.0 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:$E2E_PORT > /dev/null 2>&1; then
+              echo "Server http://localhost:$E2E_PORT is ready"
+              break
+            fi
+            echo "Waiting for server... ($i)"
+            sleep 2
+          done
+
+      - name: Create report directory
+        run: mkdir -p .bruno/reports
+
+      - name: Run Bruno smoke tests
+        run: |
+          bru run \
+            --env ci \
+            --tags smoke \
+            --reporter-junit .bruno/reports/junit.xml \
+            --reporter-html .bruno/reports/report.html
+        working-directory: .bruno/collections/tsse-elysia
+
+      - name: Upload Bruno report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bruno-report
+          path: .bruno/reports/
+          retention-days: 7
+
+      - name: Stop preview server
+        if: always()
+        run: pkill -f "bun run preview" || true
+
+      - uses: ./.github/actions/setup-database
+        if: always()
+        with:
+          operation: remove

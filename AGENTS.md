@@ -273,6 +273,27 @@ All necessary information is in [README.md](./README.md), including:
 
 > Note: Find tech stack details here [Tech Stack](./README.md#tech-stack)
 
+### Devkit Developer Toolkit
+
+```bash
+# CLI commands
+bun run devkit db:health   # Check database health
+bun run devkit db:stats    # Get table statistics
+bun run devkit cache:health # Check cache health
+bun run devkit cache:stats  # Get cache stats
+bun run devkit system:info  # Get system info
+
+# MCP server for AI agents
+bun run devkit:mcp         # Start Devkit MCP server
+
+# Bruno API testing
+# Run Bruno smoke tests (requires running dev server)
+npx @usebruno/cli run --env local --tags smoke
+
+# Regenerate Bruno collections from OpenAPI spec
+bun run script:generate-bruno
+```
+
 ## Recommended Workflow
 
 1. For any task, first check [PLANS.md](./knowledge/PLANS.md) to see if it's already planned

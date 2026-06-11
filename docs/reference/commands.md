@@ -123,7 +123,7 @@ This document lists all available npm scripts in `package.json`.
 | ------------------------------- | --------------------------------------------- | -------------------------- |
 | `script:setup`                  | `bun run ./scripts/setup.ts`                  | Run setup script           |
 | `script:cleanup`                | `bun run ./scripts/cleanup.ts`                | Run cleanup script         |
-| `script:patch:server`           | `bun run ./scripts/patch-server.mjs`          | Patch server script        |
+| `script:patch:server`           | `bun run ./scripts/patch-server.ts`           | Patch server script        |
 | `script:decision:new`           | `bun scripts/new-decision.ts`                 | Create new decision record |
 | `script:check-db`               | `bun run ./scripts/check-db.ts`               | Check database status      |
 | `script:fix-migrations`         | `bun run ./scripts/fix-migrations.ts`         | Fix database migrations    |

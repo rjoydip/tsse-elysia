@@ -1,0 +1,42 @@
+info:
+  name: Sign In
+  type: http
+  seq: 1
+  tags:
+    - smoke
+    - auth
+
+http:
+  method: POST
+  url: "{{base_url}}/auth/sign-in/email"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "super.admin@tsse.local",
+        "password": "superadmin123"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        // Extract session cookie from response headers
+        var token = "";
+        if (res.headers) {
+          var cookieHeader = res.headers["set-cookie"];
+          if (Array.isArray(cookieHeader)) {
+            cookieHeader = cookieHeader.join("; ");
+          }
+          if (typeof cookieHeader === "string") {
+            var parts = cookieHeader.split("better-auth.session_token=");
+            if (parts.length > 1) {
+              var val = parts[1].split(";")[0];
+              token = decodeURIComponent(val);
+            }
+          }
+        }
+        bru.setVar("session_cookie", token);
+
+settings:
+  encodeUrl: true
