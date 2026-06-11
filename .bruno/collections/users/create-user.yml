@@ -14,7 +14,8 @@ http:
     type: json
     data: |-
       {
-        "name": "Test User",
+        "firstName": "Test",
+        "lastName": "User",
         "email": "test-{{$isoTimestamp}}@example.com",
         "password": "Test123!@#"
       }
@@ -27,8 +28,8 @@ runtime:
     - type: after-response
       code: |-
         // Extract created user ID for downstream requests (e.g., get-user.yml)
-        if (res.body && res.body.id) {
-          bru.setVar("user_id", res.body.id);
+        if (res.body && res.body.userId) {
+          bru.setVar("user_id", res.body.userId);
         }
     - type: tests
       code: |-
