@@ -65,6 +65,7 @@
     "script:release": "bun run ./scripts/release.ts",
     "script:sync-tasks": "bun run ./scripts/sync-tasks.ts",
     "script:task-config": "bun run ./scripts/task-config.ts",
+    "script:generate-schema": "bun run ./scripts/generate-schema.ts",
     "script:generate-bruno": "bun run ./scripts/generate-bruno-collections.ts",
     "bruno:run": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml -r",
     "bruno:smoke": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml --tags smoke -r",

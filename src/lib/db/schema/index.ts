@@ -1,9 +1,14 @@
 /**
- * Database schema index.
- * Aggregates all schema definitions for easy importing.
+ * Database schema loader.
+ * Re-exports all tables, relations, and types from the dialect-specific schema.
+ *
+ * All tables are generated from portable DSL definitions via the code generator.
+ * Relations and type aliases are maintained manually in each submodule proxy file.
+ *
+ * @see scripts/generate-schema.ts
  */
 
-// Auth schema (users, sessions, accounts, verifications)
+// Auth schema
 export {
   users,
   sessions,
@@ -18,7 +23,7 @@ export {
   type Verification,
 } from "./auth";
 
-// Subscriptions schema (subscriptionPlans, subscriptions)
+// Subscriptions schema
 export {
   subscriptionPlans,
   subscriptions,
@@ -28,7 +33,7 @@ export {
   type Subscription,
 } from "./subscriptions";
 
-// MCP schema (mcpApiKeys, serviceHealth)
+// MCP schema
 export {
   mcpApiKeys,
   serviceHealth,
@@ -37,7 +42,7 @@ export {
   type ServiceHealth,
 } from "./mcp";
 
-// User settings schema (profile, account, display, notifications)
+// User settings schema
 export {
   userSettingsProfile,
   userSettingsAccount,

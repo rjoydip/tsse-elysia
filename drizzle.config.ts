@@ -1,7 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 import { fdir } from "fdir";
 
-const dbType = process.env.DATABASE_TYPE || "sqlite";
+const dbType = (process.env.DATABASE_TYPE || "sqlite") as "sqlite" | "postgres";
 const sqliteDbUrl = process.env.SQLITE_URL || "file:.artifacts/tsse-elysia.db";
 
 const postgresUrl =
@@ -12,10 +12,12 @@ const postgresUrl =
     process.env.POSTGRES_PORT || 5432
   }/${process.env.POSTGRES_DB || "tsse_dev"}`;
 
+const schemaDir = dbType === "postgres" ? "./src/lib/db/schema/pg" : "./src/lib/db/schema/sqlite";
+const outDir = dbType === "postgres" ? "./drizzle/pg" : "./drizzle/sqlite";
+
 const schemas = new fdir()
   .withBasePath()
-  .withDirs()
-  .glob("./src/lib/db/schema/*.ts")
+  .glob(`${schemaDir}/*.ts`)
   .crawl()
   .sync()
   .filter((p) => !p.endsWith("index.ts"))
@@ -23,7 +25,7 @@ const schemas = new fdir()
 
 export default defineConfig({
   schema: schemas,
-  out: "./drizzle",
+  out: outDir,
   dialect: dbType === "postgres" ? "postgresql" : "sqlite",
   dbCredentials: {
     url: dbType === "postgres" ? postgresUrl : sqliteDbUrl,

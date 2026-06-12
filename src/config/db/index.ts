@@ -2,14 +2,8 @@
  * Database connection and initialization using Drizzle ORM with LibSQL.
  * Supports SQLite (local/in-memory/Turso) and PostgreSQL based on environment.
  *
- * SQLite Configuration:
- * - If SQLITE_URL is set, use it (supports Turso, file paths, etc.)
- * - If POSTGRES_URL is set, use it (Superbase, file paths, etc.)
- * - Otherwise use sqlite database (`fallback`)
- *
- * PostgreSQL Configuration:
- * - Used in production when POSTGRES_URL is available
- * - Supports read replicas via POSTGRES_REPLICAS env var
+ * SQLite uses @libsql/client + drizzle-orm/libsql directly for full schema support.
+ * PostgreSQL uses pg pool + drizzle-orm/node-postgres with read-replica support.
  *
  * Only initializes on server-side (typeof window === "undefined")
  * to prevent client-side bundle from including database code.
@@ -48,7 +42,7 @@ let sqliteClient: Client | undefined;
 let pgPoolPrimary: Pool | undefined;
 
 /**
- * PostgreSQL read replica pools - dynamic array based on env config
+ * PostgreSQL read replica pools — dynamic array based on env config
  */
 let pgPoolsReplicas: Pool[] = [];
 
@@ -66,46 +60,34 @@ let db: any;
  * Gets the database type based on environment configuration.
  *
  * Priority order:
- * 1. If SQLITE_URL is set -> SQLite (supports Turso or file)
- * 2. If POSTGRES_URL is set (non-dev) -> PostgreSQL
- * 3. Otherwise -> SQLite (in-memory)
+ * 1. If SQLITE_URL is set → SQLite (supports Turso or file)
+ * 2. If POSTGRES_URL is set (non-dev) → PostgreSQL
+ * 3. Otherwise → SQLite (in-memory)
  *
  * @returns The configured database type
  */
 export function getDatabaseType(): DatabaseType {
-  // If SQLITE_URL is explicitly set, use SQLite (Turso, file, etc.)
   if (env.SQLITE_URL) {
     return "sqlite";
   }
-
-  // CI always uses SQLite regardless of DATABASE_TYPE setting
   if (isCI) {
     return "sqlite";
   }
-
-  // Check DATABASE_TYPE env var, default to sqlite
   const dbType = env.DATABASE_TYPE || "sqlite";
-
-  // Local development: respect DATABASE_TYPE flag
   if (isDev) {
     if (dbType === "postgres" && env.POSTGRES_URL) {
       return "postgres";
     }
     return "sqlite";
   }
-
-  // Stage/QA/Prod: use PostgreSQL if URL is available
   if ((isStage || isQA || isProduction) && env.POSTGRES_URL) {
     return "postgres";
   }
-
-  // Default fallback to SQLite
   return "sqlite";
 }
 
 /**
  * Creates a SQLite database connection using LibSQL client.
- * Supports file-based, in-memory, and Turso/remote databases.
  * Falls back to in-memory database if SQLITE_URL is not set.
  *
  * @returns SQLite database client and Drizzle ORM
@@ -117,7 +99,6 @@ function createSQLiteConnection(): {
   const url = env.SQLITE_URL || ":memory:";
   const authToken = env.SQLITE_AUTH_TOKEN;
 
-  // Use LibSQL client for SQLite
   sqliteClient = createClient({
     url,
     authToken,
@@ -144,14 +125,8 @@ async function createPostgresConnection(): Promise<{
 }> {
   const connectionString = env.POSTGRES_URL || buildPostgresConnectionString();
 
-  /**
-   * Dynamically import `pg` Pool only on the server side.
-   * Static import at the top-level would cause Vite to bundle `pg`
-   * into the client bundle, which fails because `pg` is a Node.js module.
-   */
   const { Pool: PgPool } = await import("pg");
 
-  // Primary (write) pool
   pgPoolPrimary = new PgPool({
     connectionString,
     max: 20,
@@ -159,7 +134,6 @@ async function createPostgresConnection(): Promise<{
     connectionTimeoutMillis: 2000,
   });
 
-  // Dynamic read replicas from POSTGRES_REPLICAS env var (JSON array)
   const replicaUrls: string[] = env.POSTGRES_REPLICAS || [];
   pgPoolsReplicas = replicaUrls.map((url: string) => {
     return new PgPool({
@@ -170,10 +144,8 @@ async function createPostgresConnection(): Promise<{
     });
   });
 
-  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
-  // Primary (write) Drizzle instance
   db = drizzlePg(pgPoolPrimary, {
     schema,
   });
@@ -192,7 +164,6 @@ function buildPostgresConnectionString(): string {
   const user = env.POSTGRES_USER || "tsse";
   const password = env.POSTGRES_PASSWORD || "";
   const database = env.POSTGRES_DB || "tsse_dev";
-
   return `postgresql://${user}:${password}@${host}:${port}/${database}`;
 }
 
@@ -214,17 +185,14 @@ export function getWriteDb() {
  * @returns A read Drizzle ORM instance (from replica or primary)
  */
 export async function getReadDb() {
-  // No replicas configured, use primary
   if (pgPoolsReplicas.length === 0) {
     return db;
   }
 
-  // Round-robin selection between available replicas
   const index = replicaRoundRobinIndex % pgPoolsReplicas.length;
   replicaRoundRobinIndex++;
   const selectedPool = pgPoolsReplicas[index];
 
-  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
   return drizzlePg(selectedPool, {
@@ -254,7 +222,6 @@ export function getDatabasePools() {
 export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
   const configs: DatabasePoolConfig[] = [];
 
-  // Primary pool (always for writes)
   if (pgPoolPrimary) {
     configs.push({
       name: "primary",
@@ -263,10 +230,8 @@ export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
     });
   }
 
-  // Replica pools
   const replicaUrls: string[] = env.POSTGRES_REPLICAS || [];
 
-  // If no replicas configured, primary also serves reads
   if (replicaUrls.length === 0 && pgPoolPrimary) {
     configs.push({
       name: "primary-read",
@@ -288,16 +253,15 @@ export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
 
 /**
  * Initializes the database based on environment configuration.
- * This function handles the decision between SQLite and PostgreSQL.
+ * Handles the decision between SQLite and PostgreSQL.
  *
  * @returns The initialized Drizzle ORM instance
  */
 export async function initializeDatabase() {
-  if (db) return db; // Return existing instance if already initialized
+  if (db) return db;
 
   const dbType = getDatabaseType();
 
-  // Initialize only in server-side context
   if (typeof window !== "undefined") {
     dbLogger.warn("Database initialization skipped: client-side context");
     return db;
@@ -330,7 +294,6 @@ const DB_PG_REPLICAS_KEY = "___tsse_elysia_pg_replicas";
 if (typeof window === "undefined") {
   const globalStore = globalThis as Record<string, unknown>;
 
-  // Restore persisted instances after HMR module re-evaluation
   if (globalStore[DB_INSTANCE_KEY]) {
     db = globalStore[DB_INSTANCE_KEY] as typeof db;
     sqliteClient = globalStore[DB_SQLITE_KEY] as typeof sqliteClient;
@@ -338,12 +301,10 @@ if (typeof window === "undefined") {
     pgPoolsReplicas = globalStore[DB_PG_REPLICAS_KEY] as typeof pgPoolsReplicas;
   }
 
-  // Initialize only once per process
   if (!globalStore[DB_INIT_KEY]) {
     globalStore[DB_INIT_KEY] = true;
     await initializeDatabase();
 
-    // Persist instances to survive HMR
     globalStore[DB_INSTANCE_KEY] = db;
     globalStore[DB_SQLITE_KEY] = sqliteClient;
     globalStore[DB_PG_PRIMARY_KEY] = pgPoolPrimary;
@@ -351,6 +312,5 @@ if (typeof window === "undefined") {
   }
 }
 
-// Export for use in other modules (auth, migrations, etc.)
 export { sqliteClient, pgPoolPrimary, pgPoolsReplicas, db, schema };
 export type DbType = NonNullable<typeof db>;
