@@ -1,0 +1,101 @@
+name: Bruno API Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: bruno-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_TYPE: "sqlite"
+  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
+  E2E_PORT: "4173"
+
+jobs:
+  bruno-tests:
+    name: Bruno API Tests
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/setup-environment
+
+      - uses: ./.github/actions/setup-database
+        with:
+          operation: setup
+
+      - name: Build
+        run: bun run build
+
+      - name: Start preview server
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BASE_URL: http://localhost:${{ env.E2E_PORT }}
+          BETTER_AUTH_URL: http://localhost:${{ env.E2E_PORT }}/api/auth
+        run: |
+          bun run preview --port ${{ env.E2E_PORT }} --host 0.0.0.0 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:${{ env.E2E_PORT }}/api/reference?format=json > /dev/null 2>&1; then
+              echo "Server http://localhost:${{ env.E2E_PORT }} is ready"
+              break
+            fi
+            echo "Waiting for server... ($i)"
+            sleep 2
+          done
+
+      - name: Seed essential users (server must be running)
+        env:
+          SEED_SERVER_URL: http://localhost:${{ env.E2E_PORT }}
+        run: bun run db:seed --prod
+
+      - name: Create report directory
+        run: mkdir -p reports
+        working-directory: .bruno/collections
+
+      - name: Run Bruno smoke tests
+        run: |
+          npx @usebruno/cli run . \
+            --env-file ../environments/ci.yml \
+            --tags smoke \
+            -r \
+            --reporter-junit reports/junit.xml \
+            --reporter-html reports/report.html \
+            --reporter-json reports/results.json
+        working-directory: .bruno/collections
+
+      - name: Validate Bruno results
+        run: |
+          node -e "
+            const results = require('./reports/results.json');
+            const failures = results.results
+              ? results.results.filter(r => r.status !== 200).length
+              : results.totalFail || 0;
+            console.log(JSON.stringify(results, null, 2));
+            if (failures > 0) {
+              console.error('FAILED: ' + failures + ' request(s) returned non-200');
+              process.exit(1);
+            }
+            console.log('All requests passed (200 OK)');
+          "
+        working-directory: .bruno/collections
+
+      - name: Upload Bruno report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bruno-report
+          path: .bruno/collections/reports/
+          retention-days: 7
+
+      - name: Stop preview server
+        if: always()
+        run: pkill -f "bun run preview" || true
+
+      - uses: ./.github/actions/setup-database
+        if: always()
+        with:
+          operation: remove

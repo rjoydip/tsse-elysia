@@ -1,0 +1,20 @@
+info:
+  name: MCP Tools
+  type: http
+  seq: 2
+  tags:
+    - mcp
+    - smoke
+
+http:
+  method: GET
+  url: "{{base_url}}/mcp/tools"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200", () => expect(res.status).to.equal(200));
+
+settings:
+  encodeUrl: true

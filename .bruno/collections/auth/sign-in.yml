@@ -1,0 +1,47 @@
+info:
+  name: Sign In
+  type: http
+  seq: 0
+  tags:
+    - smoke
+    - auth
+
+http:
+  method: POST
+  url: "{{base_url}}/auth/sign-in/email"
+  body:
+    # Must match ESSENTIAL_USERS in scripts/db-seed.ts
+    type: json
+    data: |-
+      {
+        "email": "super.admin@tsse.local",
+        "password": "superadmin123"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        // Extract session token from set-cookie header (case-insensitive)
+        var token = "";
+        if (res.headers) {
+          var cookieHeader = res.headers["set-cookie"] || res.headers["Set-Cookie"];
+          if (Array.isArray(cookieHeader)) {
+            cookieHeader = cookieHeader.join("; ");
+          }
+          if (typeof cookieHeader === "string") {
+            var match = cookieHeader.match(/better-auth\.session_token=([^;]+)/);
+            if (match) {
+              token = decodeURIComponent(match[1]);
+            }
+          }
+        }
+        // Fail fast: if token wasn't extracted, clear it so downstream requests don't use stale data
+        if (!token) {
+          bru.setVar("session_token", "");
+          throw new Error("Failed to extract session_token from sign-in response");
+        }
+        bru.setVar("session_token", token);
+
+settings:
+  encodeUrl: true

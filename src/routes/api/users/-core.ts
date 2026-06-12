@@ -6,6 +6,7 @@
 import { Elysia, t } from "elysia";
 import { auth } from "~/lib/auth";
 import { userRepository } from "~/repositories/users";
+import { env } from "~/config/env";
 import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 
 const VALID_ROLES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
@@ -342,28 +343,36 @@ export const usersRoutes = new Elysia({
 
       const finalUsername = sanitizeUsername(username, firstName, lastName);
 
-      let signUpResult: Awaited<ReturnType<typeof auth.api.signUpEmail>> | null = null;
-
       try {
-        signUpResult = await auth.api.signUpEmail({
-          body: {
+        // Use internal HTTP fetch to the sign-up endpoint (same approach as db-seed.ts)
+        // Direct auth.api.signUpEmail may throw due to missing request context in some versions
+        const signUpResponse = await fetch(`${env.BETTER_AUTH_URL}/sign-up/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             email,
             password,
             name: `${firstName} ${lastName}`,
-          },
+          }),
         });
 
-        if (signUpResult.error) {
+        if (!signUpResponse.ok) {
+          const errBody = await signUpResponse.json().catch(() => ({}));
           set.status = 400;
-          return { error: signUpResult.error.message || "Failed to create user" };
+          return {
+            error: errBody.message || errBody.error?.message || "Failed to create user",
+          };
         }
 
-        if (!signUpResult.user) {
+        const signUpData = await signUpResponse.json();
+        const userId = signUpData.user?.id ?? (await userRepository.findByEmail(email))?.id;
+
+        if (!userId) {
           set.status = 500;
-          return { error: "Failed to create user - no user returned" };
+          return { error: "Failed to create user - no user returned or found" };
         }
 
-        await userRepository.update(signUpResult.user.id, {
+        await userRepository.update(userId, {
           firstName,
           lastName,
           username: finalUsername,
@@ -374,21 +383,15 @@ export const usersRoutes = new Elysia({
 
         // Link user to RBAC role if roleId is provided
         if (roleId) {
-          await userRepository.assignRole(signUpResult.user.id, roleId);
+          await userRepository.assignRole(userId, roleId);
         }
 
-        return { success: true, userId: signUpResult.user.id };
+        set.status = 201;
+        return { success: true, userId };
       } catch (error) {
         console.error("User creation error:", error);
-        if (signUpResult?.user) {
-          try {
-            await auth.api.deleteAccount({ userId: signUpResult.user.id });
-          } catch {
-            console.error("Failed to cleanup orphaned account:", signUpResult.user.id);
-          }
-        }
         set.status = 500;
-        return { error: "Failed to create user" };
+        return { error: error instanceof Error ? error.message : "Failed to create user" };
       }
     },
     {

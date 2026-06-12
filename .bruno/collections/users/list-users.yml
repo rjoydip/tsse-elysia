@@ -1,0 +1,30 @@
+info:
+  name: List Users
+  type: http
+  seq: 2
+  tags:
+    - smoke
+    - users
+
+http:
+  method: GET
+  url: "{{base_url}}/users"
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: pageSize
+      value: "10"
+      type: query
+  auth:
+    type: bearer
+    token: "{{session_token}}"
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200", () => expect(res.status).to.equal(200));
+
+settings:
+  encodeUrl: true

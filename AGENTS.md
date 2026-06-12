@@ -273,6 +273,16 @@ All necessary information is in [README.md](./README.md), including:
 
 > Note: Find tech stack details here [Tech Stack](./README.md#tech-stack)
 
+### Bruno API testing
+
+```bash
+# Run Bruno smoke tests (requires running dev server)
+bun run bruno:smoke
+
+# Regenerate Bruno collections from OpenAPI spec
+bun run script:generate-bruno
+```
+
 ## Recommended Workflow
 
 1. For any task, first check [PLANS.md](./knowledge/PLANS.md) to see if it's already planned

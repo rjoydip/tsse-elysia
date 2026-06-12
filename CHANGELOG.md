@@ -7,6 +7,8 @@ description: All notable changes to this project
 
 ### 🚀 Enhancements
 
+- Add Bruno API testing workspace with 8 API domain collections (auth, users, roles, settings, tasks, mcp, dashboard, system), local/CI environments, and CI workflow
+- Add Bruno collection generation script from OpenAPI spec using `@usebruno/converters`
 - Add production-aware seed script with `--prod` flag and graph seed data (monthly/weekly registration timestamps)
 - Add full-page skeleton for role-based dashboard (replaces spinner during auth resolution)
 - Add lazy getter pattern to all 4 settings repositories (prevents client-side crashes)
@@ -126,6 +128,7 @@ description: All notable changes to this project
 - Add pr-review.yml for automated PR reviews
 - Add issue-triage.yml for automated issue triage
 - Add docker-scan job for container security
+- Add Bruno API smoke test workflow (`bruno-api.yml`)
 
 ### ❤️ Contributors
 

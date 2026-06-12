@@ -96,6 +96,29 @@ Core focus:
 
 ## Active Focus
 
+### Phase 25 – Bruno API Testing ✅
+
+**Goal:** Add Bruno API client (collection-based API testing & documentation) to the project, enabling API validation in CI.
+
+**Completed:**
+
+- Created Bruno workspace at `.bruno/` with collection structure for 8 API domains: auth, users, roles, settings, tasks, mcp, dashboard, system
+- Created environment files for local (`localhost:3000`) and CI (`localhost:4173`)
+- Created YAML request files with OpenCollection format (Git-friendly), each with request body, headers, and response tests
+- Created `scripts/generate-bruno-collections.ts` to regenerate collections from OpenAPI spec using `@usebruno/converters`
+- Created `.github/workflows/bruno-api.yml` CI workflow running `bun run bruno:ci` against preview server
+- Created `test/scripts/generate-bruno.test.ts` for Bruno collection structure validation
+- All 10 smoke-tagged requests pass end-to-end (including auth with Better Auth session extraction)
+
+**Files Created:**
+
+- `.bruno/workspace.yml`, `.bruno/environments/local.yml`, `.bruno/environments/ci.yml`, `.bruno/collections/*/*.yml` (14 collection files)
+- `.github/workflows/bruno-api.yml` (CI workflow)
+- `scripts/generate-bruno-collections.ts` (collection generation script)
+- `test/scripts/generate-bruno.test.ts` (Bruno collection structure tests)
+
+## Active Focus
+
 ### Phase 15 – Dashboard Real User Data ✅
 
 **Completed:**

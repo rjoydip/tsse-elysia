@@ -1,0 +1,43 @@
+info:
+  name: Create User
+  type: http
+  seq: 4
+  tags:
+    - smoke
+    - users
+    - admin
+
+http:
+  method: POST
+  url: "{{base_url}}/users"
+  body:
+    type: json
+    data: |-
+      {
+        "firstName": "Test",
+        "lastName": "User",
+        "email": "test-{{$timestamp}}@example.com",
+        "password": "Test123!@#"
+      }
+  auth:
+    type: bearer
+    token: "{{session_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        // Extract created user ID for downstream requests (e.g., get-user.yml)
+        if (res.body && res.body.userId) {
+          bru.setVar("user_id", res.body.userId);
+        }
+    - type: tests
+      code: |-
+        test("status is 201", () => expect(res.status).to.equal(201));
+        // Log response body on failure for debugging
+        if (res.status !== 201) {
+          console.log("Create user response:", JSON.stringify(res.body));
+        }
+
+settings:
+  encodeUrl: true

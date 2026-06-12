@@ -468,7 +468,7 @@ async function seedRoles(db: ReturnType<typeof drizzle>): Promise<void> {
  * This ensures proper password hashing and account creation.
  */
 async function seedUsers(userList: typeof ESSENTIAL_USERS): Promise<void> {
-  const BASE_URL = "http://localhost:3000";
+  const BASE_URL = process.env.SEED_SERVER_URL || "http://localhost:3000";
 
   for (const admin of userList) {
     logger.info(`Creating user: ${admin.email}`);
