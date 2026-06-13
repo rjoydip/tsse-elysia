@@ -100,9 +100,18 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
   const pagination: PaginationState = useMemo(() => {
     const rawPage = (search as SearchRecord)[pageKey];
     const rawPageSize = (search as SearchRecord)[pageSizeKey];
-    const pageNum = typeof rawPage === "number" ? rawPage : Number(rawPage) || defaultPage;
+    const pageNum =
+      typeof rawPage === "number"
+        ? rawPage
+        : Number.isNaN(Number(rawPage))
+          ? defaultPage
+          : Number(rawPage);
     const pageSizeNum =
-      typeof rawPageSize === "number" ? rawPageSize : Number(rawPageSize) || defaultPageSize;
+      typeof rawPageSize === "number"
+        ? rawPageSize
+        : Number.isNaN(Number(rawPageSize))
+          ? defaultPageSize
+          : Number(rawPageSize);
     return { pageIndex: Math.max(0, pageNum - 1), pageSize: pageSizeNum };
   }, [search, pageKey, pageSizeKey, defaultPage, defaultPageSize]);
 
@@ -128,7 +137,7 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
   const onGlobalFilterChange: OnChangeFn<string> | undefined = globalFilterEnabled
     ? (updater) => {
         const next = typeof updater === "function" ? updater(globalFilter ?? "") : updater;
-        const value = trimGlobal ? next.trim() : next;
+        const value = next ? (trimGlobal ? next.trim() : next) : "";
         setGlobalFilter(value);
         navigate({
           search: (prev) => ({
@@ -173,7 +182,11 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
   ) => {
     const currentPage = (search as SearchRecord)[pageKey];
     const pageNum =
-      typeof currentPage === "number" ? currentPage : Number(currentPage) || defaultPage;
+      typeof currentPage === "number"
+        ? currentPage
+        : Number.isNaN(Number(currentPage))
+          ? defaultPage
+          : Number(currentPage);
     if (pageCount > 0 && pageNum > pageCount) {
       navigate({
         replace: true,

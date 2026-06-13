@@ -86,7 +86,6 @@
       "devDependencies": {
         "@electric-sql/pglite": "^0.5.2",
         "@faker-js/faker": "^10.4.0",
-        "@libsql/client": "^0.17.3",
         "@playwright/test": "^1.60.0",
         "@rsbuild/core": "^2.0.12",
         "@tailwindcss/vite": "^4.3.1",
