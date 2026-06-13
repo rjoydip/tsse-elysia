@@ -1,18 +1,13 @@
-import { createClient } from "@libsql/client";
+import { PGlite } from "@electric-sql/pglite";
 import { dbLogger } from "~/lib/logger";
 
-const client = createClient({
-  url: "file:.artifacts/tsse-elysia.db",
-});
+const client = new PGlite();
 
-await client.execute({
-  sql: `CREATE TABLE IF NOT EXISTS __drizzle_migrations (
-    id INTEGER PRIMARY KEY,
-    hash TEXT NOT NULL,
-    created_at BIGINT NOT NULL
-  )`,
-  args: [],
-});
+await client.exec(`CREATE TABLE IF NOT EXISTS __drizzle_migrations (
+  id SERIAL PRIMARY KEY,
+  hash TEXT NOT NULL,
+  created_at BIGINT NOT NULL
+)`);
 
 dbLogger.log("Ensured __drizzle_migrations table exists");
 
@@ -24,18 +19,18 @@ const migrations = [
   ["0004", "true_warstar"],
 ];
 
-// Use INSERT OR IGNORE to skip existing
+// Use INSERT ... ON CONFLICT DO NOTHING to skip existing
 for (const [id, hash] of migrations) {
-  const result = await client.execute({
-    sql: `INSERT OR IGNORE INTO __drizzle_migrations (id, hash, created_at) VALUES (?, ?, ?)`,
-    args: [Number(id), hash, Date.now()],
-  });
-  if (result.rowsAffected && result.rowsAffected > 0) {
+  const result = await client.query(
+    "INSERT INTO __drizzle_migrations (id, hash, created_at) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING",
+    [Number(id), hash, Date.now()],
+  );
+  if (result.rows?.length) {
     dbLogger.log(`Inserted migration: ${id}`);
   } else {
     dbLogger.log(`Migration ${id} already exists, skipping`);
   }
 }
 
-const result = await client.execute("SELECT * FROM __drizzle_migrations ORDER BY id");
+const result = await client.query("SELECT * FROM __drizzle_migrations ORDER BY id");
 dbLogger.log(`Current migrations: ${JSON.stringify(result.rows)}`);

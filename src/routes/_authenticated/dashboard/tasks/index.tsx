@@ -13,8 +13,8 @@ function TasksWithGuard() {
 }
 
 const taskSearchSchema = z.object({
-  page: z.number().optional().catch(1),
-  pageSize: z.number().optional().catch(10),
+  page: z.coerce.number().optional().catch(1),
+  pageSize: z.coerce.number().optional().catch(10),
   status: z
     .array(z.enum(statuses.map((status) => status.value)))
     .optional()

@@ -27,7 +27,7 @@ function getUserRole(session: unknown): UserRole {
  * Type guard to check if a string is a valid role.
  */
 function isValidRole(role: string): role is UserRole {
-  return ["superadmin", "admin", "manager", "cashier", "user"].includes(role);
+  return ["admin", "manager", "cashier", "user"].includes(role);
 }
 
 /**

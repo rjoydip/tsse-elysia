@@ -55,7 +55,7 @@ users/
 ```typescript
 // User types (Zod schema)
 type UserStatus = "active" | "inactive" | "invited" | "suspended";
-type UserRole = "superadmin" | "admin" | "cashier" | "manager";
+type UserRole = "admin" | "cashier" | "manager";
 
 interface User {
   id: string;

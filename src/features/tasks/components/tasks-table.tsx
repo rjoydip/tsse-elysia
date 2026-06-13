@@ -77,6 +77,7 @@ export function TasksTable({ data }: DataTableProps) {
       pagination,
     },
     enableRowSelection: true,
+    autoResetPageIndex: false,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,

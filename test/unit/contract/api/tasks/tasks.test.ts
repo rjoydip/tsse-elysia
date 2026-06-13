@@ -8,6 +8,9 @@ import { describe, it, expect, afterAll, beforeEach, beforeAll } from "bun:test"
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
+import { registerSetup } from "~/test/helpers/db-setup";
+
+registerSetup();
 
 const app = apiRoutes;
 
@@ -22,8 +25,8 @@ const TEST_USER_EMAIL = "test@example.com";
  */
 async function ensureTestUser(): Promise<void> {
   const { db } = await import("~/config/db");
-  const { users } = await import("~/lib/db/schema/auth");
-  const { tasks: tasksTable } = await import("~/lib/db/schema/tasks");
+  const { users } = await import("~/lib/db");
+  const { tasks: tasksTable } = await import("~/lib/db");
   const { eq } = await import("drizzle-orm");
 
   // Clean up any tasks from previous test runs

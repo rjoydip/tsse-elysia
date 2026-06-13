@@ -376,7 +376,7 @@ export function TeamDashboard(_props: RoleBasedDashboardProps) {
 }
 
 /**
- * Full Dashboard - For admins and superadmins.
+ * Full Dashboard - For admins.
  * Shows all metrics and management options.
  */
 export function FullDashboard(_props: RoleBasedDashboardProps) {

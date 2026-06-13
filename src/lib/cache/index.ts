@@ -340,8 +340,8 @@ export async function isCached(key: string): Promise<boolean> {
  * Supports multiple storage backends based on environment configuration:
  *
  * - Redis:    When REDIS_URL is set in environment
- * - LRU:     When DATABASE_TYPE is "sqlite" (in-memory cache)
- * - Postgres: When DATABASE_TYPE is "postgres" with db0 connector
+ * - LRU:     Default in-memory cache
+ * - Postgres: When POSTGRES_URL or NEON_DATABASE_URL is set
  *
  * Provides a unified API for key-value storage operations across all backends.
  * The storage is optional — when no backend is configured, all operations
@@ -413,12 +413,10 @@ function getBackendConfig(): {
     return { backend: "redis", url: env.REDIS_URL };
   }
 
-  // Priority 2: PostgreSQL is configured
-  if (env.DATABASE_TYPE === "postgres") {
-    const postgresUrl = env.POSTGRES_URL;
-    if (postgresUrl) {
-      return { backend: "postgres", url: postgresUrl };
-    }
+  // Priority 2: PostgreSQL is configured (any PG driver)
+  if (env.POSTGRES_URL || env.NEON_DATABASE_URL) {
+    const postgresUrl = env.POSTGRES_URL || env.NEON_DATABASE_URL!;
+    return { backend: "postgres", url: postgresUrl };
   }
 
   // Default: SQLite (use LRU cache for in-memory storage)

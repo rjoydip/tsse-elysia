@@ -86,9 +86,19 @@ export function createEvlogLogger(options: LoggerOptions = {}): WrappedLogger {
 
   /**
    * Core logging function that handles both context and error objects.
+   * In production, all evlog calls are skipped — use console for critical errors.
    */
   const log = (level: LogLevel, message: string, data?: Record<string, unknown> | Error) => {
     if (!shouldLog(level)) {
+      return;
+    }
+
+    if (isProduction) {
+      // In production, use console for critical errors only; skip evlog entirely
+      if (level === "error" || level === "fatal") {
+        const err = data instanceof Error ? data : undefined;
+        console.error(`[${prefix}] ${message}`, err ?? "");
+      }
       return;
     }
 

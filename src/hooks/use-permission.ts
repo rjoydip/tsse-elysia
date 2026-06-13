@@ -36,7 +36,7 @@ function getUserRole(authState: { user: { role?: string[] } | null }): UserRole 
  * Type guard to check if a string is a valid role.
  */
 function isValidRole(role: string): role is UserRole {
-  return ["superadmin", "admin", "manager", "cashier", "user"].includes(role);
+  return ["admin", "manager", "cashier", "user"].includes(role);
 }
 
 /**
@@ -55,7 +55,7 @@ export interface UsePermissionReturn {
   hasMinRole: (minRole: UserRole) => boolean;
   /** All permissions the current user has */
   permissions: Permission[];
-  /** Whether user is an admin (admin or superadmin) */
+  /** Whether user is an admin */
   isAdmin: boolean;
   /** Whether user is a manager or higher */
   isManager: boolean;

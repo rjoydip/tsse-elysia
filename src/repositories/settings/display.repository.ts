@@ -7,7 +7,7 @@
 import { eq } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { nanoid } from "nanoid";
-import { userSettingsDisplay } from "~/lib/db/schema/user-settings";
+import { userSettingsDisplay } from "~/lib/db";
 import { Result, DatabaseError, NotFoundError } from "~/lib/result";
 import type { DbType } from "~/config/db";
 

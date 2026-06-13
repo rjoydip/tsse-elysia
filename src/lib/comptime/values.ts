@@ -14,23 +14,22 @@ export const ROLE_HIERARCHY_VALUES: Record<string, number> = {
   cashier: 1,
   manager: 2,
   admin: 3,
-  superadmin: 4,
 };
 
 /**
  * Admin-level roles that can manage users.
  */
-export const ADMIN_ROLES_VALUES = ["admin", "superadmin"] as const;
+export const ADMIN_ROLES_VALUES = ["admin"] as const;
 
 /**
  * Manager-level roles that can view team analytics.
  */
-export const MANAGER_ROLES_VALUES = ["manager", "admin", "superadmin"] as const;
+export const MANAGER_ROLES_VALUES = ["manager", "admin"] as const;
 
 /**
  * All roles for iteration purposes.
  */
-export const ALL_ROLES_VALUES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
+export const ALL_ROLES_VALUES = ["user", "cashier", "manager", "admin"] as const;
 
 /**
  * Dashboard view types.

@@ -100,8 +100,9 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
   const pagination: PaginationState = useMemo(() => {
     const rawPage = (search as SearchRecord)[pageKey];
     const rawPageSize = (search as SearchRecord)[pageSizeKey];
-    const pageNum = typeof rawPage === "number" ? rawPage : defaultPage;
-    const pageSizeNum = typeof rawPageSize === "number" ? rawPageSize : defaultPageSize;
+    const pageNum = typeof rawPage === "number" ? rawPage : Number(rawPage) || defaultPage;
+    const pageSizeNum =
+      typeof rawPageSize === "number" ? rawPageSize : Number(rawPageSize) || defaultPageSize;
     return { pageIndex: Math.max(0, pageNum - 1), pageSize: pageSizeNum };
   }, [search, pageKey, pageSizeKey, defaultPage, defaultPageSize]);
 
@@ -171,7 +172,8 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
     opts: { resetTo?: "first" | "last" } = { resetTo: "first" },
   ) => {
     const currentPage = (search as SearchRecord)[pageKey];
-    const pageNum = typeof currentPage === "number" ? currentPage : defaultPage;
+    const pageNum =
+      typeof currentPage === "number" ? currentPage : Number(currentPage) || defaultPage;
     if (pageCount > 0 && pageNum > pageCount) {
       navigate({
         replace: true,

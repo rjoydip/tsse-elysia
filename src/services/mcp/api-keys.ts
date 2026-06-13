@@ -5,7 +5,7 @@
  */
 
 import { randomBytes, createHash } from "crypto";
-import type { McpApiKey } from "~/lib/db/schema/mcp";
+import type { McpApiKey } from "~/lib/db";
 import {
   mcpApiKeyRepository,
   type IMcpApiKeyRepository,

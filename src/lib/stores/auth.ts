@@ -67,7 +67,7 @@ function safeBtoa(input: string): string {
  * Get user role directly from cookie storage.
  * Used by usePermission hook to ensure role is available on initial load.
  */
-export function getUserRoleFromCookie(): "user" | "admin" | "superadmin" | "manager" | "cashier" {
+export function getUserRoleFromCookie(): "user" | "admin" | "manager" | "cashier" {
   const cookieState = getCookie(ACCESS_TOKEN);
   if (!cookieState) return "user";
 
@@ -75,8 +75,8 @@ export function getUserRoleFromCookie(): "user" | "admin" | "superadmin" | "mana
     const parsed = JSON.parse(safeAtob(cookieState));
     if (parsed?.user?.role?.length > 0) {
       const role = parsed.user.role[0];
-      if (["superadmin", "admin", "manager", "cashier", "user"].includes(role)) {
-        return role as "user" | "admin" | "superadmin" | "manager" | "cashier";
+      if (["admin", "manager", "cashier", "user"].includes(role)) {
+        return role as "user" | "admin" | "manager" | "cashier";
       }
     }
   } catch {

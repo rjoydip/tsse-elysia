@@ -28,6 +28,9 @@
 import { describe, it, expect, afterAll, beforeEach } from "bun:test";
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
+import { registerSetup } from "~/test/helpers/db-setup";
+
+registerSetup();
 import { closeStorage } from "~/lib/cache";
 
 /** Standard Request headers for authenticated dashboard requests. */

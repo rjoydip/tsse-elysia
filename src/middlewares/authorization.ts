@@ -31,7 +31,7 @@ export interface AuthValidationResult {
 }
 
 /**
- * Validates admin access (superadmin or admin role) for use in controllers.
+ * Validates admin access for use in controllers.
  * Standalone version that doesn't require Elysia context.
  */
 export async function validateAdminAccess(
@@ -199,7 +199,7 @@ export const authorizationMiddleware = new Elysia({ name: "middleware.authorizat
       },
 
       /**
-       * Validates admin access (superadmin or admin role).
+       * Validates admin access.
        * Convenience wrapper with ADMIN_ROLES check.
        */
       async validateAdminAccess(

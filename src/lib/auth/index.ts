@@ -10,7 +10,7 @@ import { betterAuth } from "better-auth";
 import { openAPI } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createError } from "evlog";
-import { db, schema, getDatabaseType } from "~/config/db";
+import { db, schema } from "~/config/db";
 import { env } from "~/config/env";
 import type { SubscriptionTier } from "~/types/subscription";
 import { isTest, sessionConfig } from "~/config";
@@ -52,7 +52,7 @@ export function createAuth() {
   return betterAuth({
     // Database adapter using Drizzle ORM with dynamic provider based on env
     database: drizzleAdapter(db, {
-      provider: getDatabaseType() === "postgres" ? "pg" : "sqlite",
+      provider: "pg",
       schema: {
         user: schema.users,
         session: schema.sessions,

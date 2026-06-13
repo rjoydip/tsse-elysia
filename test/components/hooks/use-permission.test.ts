@@ -46,7 +46,7 @@ function getUserRole(session: unknown): UserRole {
 }
 
 function isValidRole(role: string): role is UserRole {
-  return ["superadmin", "admin", "manager", "cashier", "user"].includes(role);
+  return ["admin", "manager", "cashier", "user"].includes(role);
 }
 
 /**
@@ -89,12 +89,6 @@ describe("usePermission Hook Logic", () => {
       const session = createMockSession("admin");
       const result = mockUsePermission(session);
       expect(result.role).toBe("admin");
-    });
-
-    it("should extract superadmin role from session", () => {
-      const session = createMockSession("superadmin");
-      const result = mockUsePermission(session);
-      expect(result.role).toBe("superadmin");
     });
 
     it("should extract manager role from session", () => {
@@ -201,12 +195,6 @@ describe("usePermission Hook Logic", () => {
       expect(hasRole("user")).toBe(false);
       expect(hasRole("manager")).toBe(false);
     });
-
-    it("should handle superadmin correctly", () => {
-      const session = createMockSession("superadmin");
-      const { hasRole } = mockUsePermission(session);
-      expect(hasRole("superadmin")).toBe(true);
-    });
   });
 
   describe("hasMinRole() hierarchy checking", () => {
@@ -267,12 +255,6 @@ describe("usePermission Hook Logic", () => {
       expect(isAdmin).toBe(true);
     });
 
-    it("should be true for superadmin", () => {
-      const session = createMockSession("superadmin");
-      const { isAdmin } = mockUsePermission(session);
-      expect(isAdmin).toBe(true);
-    });
-
     it("should be false for manager", () => {
       const session = createMockSession("manager");
       const { isAdmin } = mockUsePermission(session);
@@ -299,12 +281,6 @@ describe("usePermission Hook Logic", () => {
       expect(isManager).toBe(true);
     });
 
-    it("should be true for superadmin", () => {
-      const session = createMockSession("superadmin");
-      const { isManager } = mockUsePermission(session);
-      expect(isManager).toBe(true);
-    });
-
     it("should be false for cashier", () => {
       const session = createMockSession("cashier");
       const { isManager } = mockUsePermission(session);
@@ -321,12 +297,6 @@ describe("usePermission Hook Logic", () => {
   describe("dashboardView based on role", () => {
     it("should return full for admin", () => {
       const session = createMockSession("admin");
-      const { dashboardView } = mockUsePermission(session);
-      expect(dashboardView).toBe("full");
-    });
-
-    it("should return full for superadmin", () => {
-      const session = createMockSession("superadmin");
       const { dashboardView } = mockUsePermission(session);
       expect(dashboardView).toBe("full");
     });

@@ -87,10 +87,10 @@ test.describe("Roles API - Regular User Access (should be 403)", () => {
   });
 });
 
-test.describe("Roles API - Admin Access (seeded superadmin)", () => {
-  test("should get permissions list as superadmin", async ({ request }) => {
-    // Sign in with seeded superadmin credentials
-    const signInResponse = await signIn(request, "super.admin@tsse.local", "superadmin123");
+test.describe("Roles API - Admin Access (seeded admin)", () => {
+  test("should get permissions list as admin", async ({ request }) => {
+    // Sign in with seeded admin credentials
+    const signInResponse = await signIn(request, "admin@tsse.local", "admin123");
     expect(signInResponse.status()).toBe(200);
 
     const response = await request.get("/api/roles/permissions");
@@ -100,8 +100,8 @@ test.describe("Roles API - Admin Access (seeded superadmin)", () => {
     expect(Array.isArray(body.permissions)).toBe(true);
   });
 
-  test("should get roles list as superadmin", async ({ request }) => {
-    const signInResponse = await signIn(request, "super.admin@tsse.local", "superadmin123");
+  test("should get roles list as admin", async ({ request }) => {
+    const signInResponse = await signIn(request, "admin@tsse.local", "admin123");
     expect(signInResponse.status()).toBe(200);
 
     const response = await request.get("/api/roles");
@@ -114,7 +114,7 @@ test.describe("Roles API - Admin Access (seeded superadmin)", () => {
 
 test.describe("Dashboard Metrics - Roles and Permissions Count", () => {
   test("should return metrics with role and permission counts", async ({ request }) => {
-    const signInResponse = await signIn(request, "super.admin@tsse.local", "superadmin123");
+    const signInResponse = await signIn(request, "admin@tsse.local", "admin123");
     expect(signInResponse.status()).toBe(200);
 
     const response = await request.get("/api/dashboard/metrics");

@@ -250,7 +250,7 @@ Core focus:
 
 - **DB-powered sidebar filtering**: New `GET /api/roles/permissions/mine` endpoint returns current user's effective permissions resolved from DB via `PermissionResolver`. New `useMyPermissions()` client hook fetches from endpoint, caches in `sessionStorage` (5 min TTL), falls back to hardcoded permissions on failure.
 - **NavGroup uses DB permissions**: Replaced static `usePermission().can()` with `useMyPermissions().can()` in `src/components/layout/nav-group.tsx`. Static `roles` array still used as fallback for items without `permission` field.
-- **Tasks visibility restricted**: Changed `permission: "tasks:read"` to `roles: ["user", "manager", "cashier"]` so Tasks only shows for those roles (excludes admin/superadmin).
+- **Tasks visibility restricted**: Changed `permission: "tasks:read"` to `roles: ["user", "manager", "cashier"]` so Tasks only shows for those roles (excludes admin).
 - **Roles dashboard animated**: Added staggered fadeIn+slideUp (`motion.div`) and bounce animated numbers (`AnimatedNumber`) to overview cards and tab content — matching dashboard overview animation pattern.
 - Full suite: **1473 pass, 0 fail**, lint clean, typecheck clean, React Doctor 100/100.
 
@@ -332,12 +332,12 @@ Core focus:
 
 **Completed:**
 
-- **Production-mode seeding**: Added `--prod` CLI flag and `NODE_ENV=production` detection to seed script. Production mode seeds only 2 essential accounts (superadmin + admin). No fake users.
-- **Dev-mode seeding**: Seeds 5 static users (superadmin, admin, manager, cashier, user) plus 100 fake users with graph-friendly timestamps.
+- **Production-mode seeding**: Added `--prod` CLI flag and `NODE_ENV=production` detection to seed script. Production mode seeds only the essential admin account. No fake users.
+- **Dev-mode seeding**: Seeds 4 static users (admin, manager, cashier, user) plus 100 fake users with graph-friendly timestamps.
 - **Graph seed data**: 80% of fake users (80 users) spread across all 12 months of the current year for the monthly bar chart. 20% (20 users) spread across the last 7 days for the weekly registrations chart.
 - **Deterministic output**: Uses `faker.seed()` for reproducible fake user generation.
 - **CLI flags**: `--fresh` (reset DB before seeding), `--count=N` (override fake user count), `--seed=N` (override faker seed), `--prod` (production mode).
-- Renamed `ADMIN_CREDENTIALS` → `ESSENTIAL_USERS` (superadmin + admin) and `DEV_USERS` (manager, cashier, user).
+- Renamed `ADMIN_CREDENTIALS` → `ESSENTIAL_USERS` (admin) and `DEV_USERS` (manager, cashier, user).
 - All 1341 unit tests pass, lint clean, formatter clean.
 
 **Benefits:**

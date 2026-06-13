@@ -8,7 +8,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types";
 import { z } from "zod";
 import { db } from "~/config/db";
-import { users } from "~/lib/db/schema/auth";
+import { users } from "~/lib/db";
 import { eq } from "drizzle-orm";
 import { getCurrentApiKey } from "../auth";
 import { createErrorResponse, createSuccessResponse } from "./shared-utils";

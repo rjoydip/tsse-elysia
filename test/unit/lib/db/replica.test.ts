@@ -3,9 +3,9 @@
  * Tests PostgreSQL replica routing and pool configuration
  */
 
-import { describe, expect, it, afterEach } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
-  getDatabaseType,
+  getDatabaseDriver,
   getDatabasePoolConfigs,
   getDatabasePools,
   getReadDb,
@@ -13,23 +13,15 @@ import {
 } from "~/config/db";
 import { env as configEnv } from "~/config/env";
 
-describe("getDatabaseType", () => {
-  const originalCI = process.env.CI;
-
-  afterEach(() => {
-    if (originalCI) process.env.CI = originalCI;
-    else delete process.env.CI;
+describe("getDatabaseDriver", () => {
+  it("should return a valid driver type", () => {
+    const result = getDatabaseDriver();
+    expect(["pglite", "node-postgres", "neon", "pg-proxy"]).toContain(result);
   });
 
-  it("should return sqlite in CI environment", () => {
-    process.env.CI = "true";
-    const result = getDatabaseType();
-    expect(result).toBe("sqlite");
-  });
-
-  it("should return valid database type", () => {
-    const result = getDatabaseType();
-    expect(result === "sqlite" || result === "postgres").toBe(true);
+  it("should return pglite when no PG env vars are set", () => {
+    const result = getDatabaseDriver();
+    expect(result).toBe("pglite");
   });
 });
 
@@ -83,17 +75,17 @@ describe("getDatabasePoolConfigs", () => {
 });
 
 describe("getDatabasePools", () => {
-  it("should return object with primary, replicas, and sqlite properties", () => {
+  it("should return object with primary, replicas, and client properties", () => {
     const pools = getDatabasePools();
 
     expect(pools).toHaveProperty("primary");
     expect(pools).toHaveProperty("replicas");
-    expect(pools).toHaveProperty("sqlite");
+    expect(pools).toHaveProperty("client");
   });
 
-  it("should have sqlite defined in test environment", () => {
+  it("should have client defined in PGlite test environment", () => {
     const pools = getDatabasePools();
-    expect(pools.sqlite).toBeDefined();
+    expect(pools.client).toBeDefined();
   });
 
   it("should have replicas as an array", () => {
@@ -101,22 +93,21 @@ describe("getDatabasePools", () => {
     expect(Array.isArray(pools.replicas)).toBe(true);
   });
 
-  it("should return empty replicas array in test/CI environment", () => {
+  it("should return empty replicas array in test environment", () => {
     const pools = getDatabasePools();
     expect(pools.replicas).toEqual([]);
   });
 
-  it("should return undefined primary in SQLite test environment", () => {
+  it("should return undefined primary in PGlite test environment", () => {
     const pools = getDatabasePools();
-    // In SQLite test environment, primary is undefined
+    // In PGlite test environment, primary (pg Pool) is undefined
     expect(pools.primary).toBeUndefined();
   });
 });
 
 describe("getReadDb round-robin selection", () => {
   it("should return consistent db instance on multiple calls in test environment", async () => {
-    // In test environment with SQLite, getReadDb always returns the same instance
-    // This verifies the function is stable and doesn't throw errors
+    // In test environment with PGlite (no replicas), getReadDb always returns the same instance
     const result1 = await getReadDb();
     const result2 = await getReadDb();
     const result3 = await getReadDb();
@@ -156,7 +147,7 @@ describe("getReadDb", () => {
     const readDb = await getReadDb();
     const writeDb = getWriteDb();
 
-    // In test/CI environment with SQLite, both should return the same db
+    // In test environment (PGlite, no replicas), both should return the same db
     expect(readDb).toBe(writeDb);
   });
 });
@@ -199,7 +190,7 @@ describe("Empty POSTGRES_REPLICAS behavior", () => {
     const readDb = await getReadDb();
     const writeDb = getWriteDb();
 
-    // In test environment (SQLite), there are no replica pools
+    // In test environment (PGlite), there are no replica pools
     // So getReadDb should return the primary (write) db
     if (pools.replicas.length === 0) {
       expect(readDb).toBe(writeDb);
@@ -211,7 +202,7 @@ describe("Empty POSTGRES_REPLICAS behavior", () => {
     const configs = getDatabasePoolConfigs();
     const pools = getDatabasePools();
 
-    // In SQLite test environment, pools.replicas is empty
+    // In test environment, pools.replicas is empty
     // The config should still have valid structure
     for (const config of configs) {
       expect(config.name).toBeDefined();
@@ -221,7 +212,6 @@ describe("Empty POSTGRES_REPLICAS behavior", () => {
 
     // If replicas array is empty, primary should handle reads
     if (pools.replicas.length === 0) {
-      // In SQLite, configs may be empty, but in PostgreSQL would have primary-read
       expect(configs.length).toBeGreaterThanOrEqual(0);
     }
   });

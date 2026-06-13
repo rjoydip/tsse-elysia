@@ -3,8 +3,7 @@
  * Provides a lightweight read-only liveness check for status monitoring endpoints.
  */
 
-import { getDatabasePools, getDatabasePoolConfigs, type DatabaseType } from "./index";
-import type { Client } from "@libsql/client";
+import { getDatabasePools, getDatabasePoolConfigs } from "./index";
 
 /**
  * Individual pool status for heartbeat response.
@@ -25,12 +24,12 @@ export interface DatabaseHeartbeat {
   latencyMs: number | null;
   timestamp: string;
   detail: string;
-  databaseType?: DatabaseType;
+  driver?: string;
   pools: PoolHealthStatus[];
 }
 
 /**
- * Executes a database heartbeat query based on database type.
+ * Executes a database heartbeat query based on connection type.
  * Uses `SELECT 1` to verify read access without mutating application state.
  */
 export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
@@ -38,67 +37,19 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
   const pools = getDatabasePools();
 
   try {
-    // Check SQLite heartbeat using libSQL client
-    const sqliteClient = pools.sqlite as Client | undefined;
-    if (sqliteClient) {
-      const result = await sqliteClient.execute({ sql: "SELECT 1 AS ok", args: [] });
-      const row = result.rows?.[0] as { ok?: number } | undefined;
-      if (!row || row.ok !== 1) {
-        return {
-          status: "unhealthy",
-          latencyMs: null,
-          timestamp: new Date().toISOString(),
-          detail: "Database heartbeat query returned unexpected result",
-          databaseType: "sqlite",
-          pools: [
-            {
-              name: "sqlite",
-              role: "primary",
-              healthy: false,
-              latencyMs: null,
-              error: "Query returned unexpected result",
-            },
-          ],
-        };
-      }
-
-      return {
-        status: "healthy",
-        latencyMs: Date.now() - startedAt,
-        timestamp: new Date().toISOString(),
-        detail: "SQLite heartbeat query succeeded",
-        databaseType: "sqlite",
-        pools: [
-          {
-            name: "sqlite",
-            role: "primary",
-            healthy: true,
-            latencyMs: Date.now() - startedAt,
-          },
-        ],
-      };
+    // When no pg Pool is available (PGlite or pg-proxy mode), use db0
+    if (!pools.primary) {
+      return checkViaDb0(startedAt);
     }
 
-    // Check PostgreSQL heartbeat
-    const pgPrimary = pools.primary;
-    if (!pgPrimary) {
-      return {
-        status: "unhealthy",
-        latencyMs: null,
-        timestamp: new Date().toISOString(),
-        detail: "PostgreSQL primary pool is not initialized",
-        databaseType: "postgres",
-        pools: [],
-      };
-    }
-
+    // Check PostgreSQL heartbeat via primary pool
     const poolConfigs = getDatabasePoolConfigs();
     const poolHealthResults: PoolHealthStatus[] = [];
 
     // Check primary pool
     try {
       const primaryStart = Date.now();
-      const primaryResult = await pgPrimary.query("SELECT 1 AS ok");
+      const primaryResult = await pools.primary.query("SELECT 1 AS ok");
       const pRows = primaryResult.rows as Array<{ ok?: number }>;
       poolHealthResults.push({
         name: "primary",
@@ -161,7 +112,7 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
       latencyMs: Date.now() - startedAt,
       timestamp: new Date().toISOString(),
       detail,
-      databaseType: "postgres",
+      driver: "postgres",
       pools: poolHealthResults,
     };
   } catch (error) {
@@ -172,6 +123,51 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
       timestamp: new Date().toISOString(),
       detail: message,
       pools: [],
+    };
+  }
+}
+
+/**
+ * Fallback heartbeat check for non-Pool drivers (PGlite, pg-proxy).
+ * Uses db0 for a lightweight SELECT 1 query.
+ */
+async function checkViaDb0(startedAt: number): Promise<DatabaseHeartbeat> {
+  try {
+    const { getDb0 } = await import("./db0");
+    const db0 = await getDb0();
+    const queryStart = Date.now();
+    await db0.exec("SELECT 1");
+    const latencyMs = Date.now() - queryStart;
+
+    return {
+      status: "healthy",
+      latencyMs: Date.now() - startedAt,
+      timestamp: new Date().toISOString(),
+      detail: "Database heartbeat query succeeded",
+      pools: [
+        {
+          name: "primary",
+          role: "primary",
+          healthy: true,
+          latencyMs,
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      status: "unhealthy",
+      latencyMs: null,
+      timestamp: new Date().toISOString(),
+      detail: error instanceof Error ? error.message : "Database heartbeat failed",
+      pools: [
+        {
+          name: "primary",
+          role: "primary",
+          healthy: false,
+          latencyMs: null,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      ],
     };
   }
 }

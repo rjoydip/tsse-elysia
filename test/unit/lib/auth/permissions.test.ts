@@ -23,7 +23,6 @@ describe("Permission Schemas", () => {
   describe("userRoleSchema", () => {
     it("should accept valid user role", () => {
       expect(userRoleSchema.safeParse("admin").success).toBe(true);
-      expect(userRoleSchema.safeParse("superadmin").success).toBe(true);
       expect(userRoleSchema.safeParse("manager").success).toBe(true);
       expect(userRoleSchema.safeParse("cashier").success).toBe(true);
       expect(userRoleSchema.safeParse("user").success).toBe(true);
@@ -56,11 +55,9 @@ describe("Role Hierarchy", () => {
     expect(roleHierarchy.cashier).toBe(1);
     expect(roleHierarchy.manager).toBe(2);
     expect(roleHierarchy.admin).toBe(3);
-    expect(roleHierarchy.superadmin).toBe(4);
   });
 
   it("should have higher roles with higher values", () => {
-    expect(roleHierarchy.superadmin).toBeGreaterThan(roleHierarchy.admin);
     expect(roleHierarchy.admin).toBeGreaterThan(roleHierarchy.manager);
     expect(roleHierarchy.manager).toBeGreaterThan(roleHierarchy.cashier);
     expect(roleHierarchy.cashier).toBeGreaterThan(roleHierarchy.user);
@@ -68,16 +65,17 @@ describe("Role Hierarchy", () => {
 });
 
 describe("getPermissions", () => {
-  it("should return all permissions for superadmin", () => {
-    const perms = getPermissions("superadmin");
+  it("should return all permissions for admin", () => {
+    const perms = getPermissions("admin");
     expect(perms).toContain("dashboard:read");
     expect(perms).toContain("dashboard:write");
     expect(perms).toContain("dashboard:analytics");
     expect(perms).toContain("users:read");
     expect(perms).toContain("users:write");
-    expect(perms).toContain("users:delete");
     expect(perms).toContain("settings:write");
+    expect(perms).toContain("reports:read");
     expect(perms).toContain("reports:write");
+    expect(perms).not.toContain("users:delete");
   });
 
   it("should return limited permissions for user role", () => {
@@ -111,10 +109,13 @@ describe("getPermissions", () => {
   it("should return correct permissions for admin", () => {
     const perms = getPermissions("admin");
     expect(perms).toContain("dashboard:read");
+    expect(perms).toContain("dashboard:write");
     expect(perms).toContain("dashboard:analytics");
     expect(perms).toContain("users:read");
     expect(perms).toContain("users:write");
-    expect(perms).not.toContain("users:delete");
+    expect(perms).toContain("settings:write");
+    expect(perms).toContain("reports:read");
+    expect(perms).toContain("reports:write");
   });
 
   it("should inherit permissions from lower roles", () => {
@@ -122,10 +123,8 @@ describe("getPermissions", () => {
     const cashierPerms = getPermissions("cashier");
     const managerPerms = getPermissions("manager");
     const adminPerms = getPermissions("admin");
-    const superadminPerms = getPermissions("superadmin");
 
-    // Superadmin should have all permissions from all roles
-    expect(superadminPerms.length).toBeGreaterThan(adminPerms.length);
+    // Admin should have all permissions from all roles
     expect(adminPerms.length).toBeGreaterThan(managerPerms.length);
     expect(managerPerms.length).toBeGreaterThan(cashierPerms.length);
     expect(cashierPerms.length).toBeGreaterThan(userPerms.length);
@@ -145,11 +144,11 @@ describe("hasPermission", () => {
     expect(hasPermission("manager", "users:delete")).toBe(false);
   });
 
-  it("should handle admin and superadmin with all permissions", () => {
+  it("should handle admin with all permissions", () => {
     expect(hasPermission("admin", "settings:write")).toBe(true);
     expect(hasPermission("admin", "reports:read")).toBe(true);
-    expect(hasPermission("superadmin", "users:delete")).toBe(true);
-    expect(hasPermission("superadmin", "reports:write")).toBe(true);
+    expect(hasPermission("admin", "reports:write")).toBe(true);
+    expect(hasPermission("admin", "users:delete")).toBe(false);
   });
 });
 
@@ -173,15 +172,10 @@ describe("meetsRoleRequirement", () => {
   it("should return true when role equals required role", () => {
     expect(meetsRoleRequirement("admin", "admin")).toBe(true);
     expect(meetsRoleRequirement("user", "user")).toBe(true);
-    expect(meetsRoleRequirement("superadmin", "superadmin")).toBe(true);
   });
 });
 
 describe("getDashboardView", () => {
-  it("should return full for superadmin", () => {
-    expect(getDashboardView("superadmin")).toBe("full");
-  });
-
   it("should return full for admin", () => {
     expect(getDashboardView("admin")).toBe("full");
   });
@@ -201,11 +195,6 @@ describe("getDashboardView", () => {
 
 describe("canAccessDashboardView", () => {
   it("should allow higher roles to access lower views", () => {
-    expect(canAccessDashboardView("superadmin", "basic")).toBe(true);
-    expect(canAccessDashboardView("superadmin", "sales")).toBe(true);
-    expect(canAccessDashboardView("superadmin", "team")).toBe(true);
-    expect(canAccessDashboardView("superadmin", "full")).toBe(true);
-
     expect(canAccessDashboardView("admin", "basic")).toBe(true);
     expect(canAccessDashboardView("admin", "sales")).toBe(true);
     expect(canAccessDashboardView("admin", "team")).toBe(true);
@@ -232,14 +221,12 @@ describe("canAccessDashboardView", () => {
     expect(canAccessDashboardView("cashier", "sales")).toBe(true);
     expect(canAccessDashboardView("manager", "team")).toBe(true);
     expect(canAccessDashboardView("admin", "full")).toBe(true);
-    expect(canAccessDashboardView("superadmin", "full")).toBe(true);
   });
 });
 
 describe("isAdminRole", () => {
   it("should return true for admin roles", () => {
     expect(isAdminRole("admin")).toBe(true);
-    expect(isAdminRole("superadmin")).toBe(true);
   });
 
   it("should return false for non-admin roles", () => {
@@ -253,7 +240,6 @@ describe("isManagerRole", () => {
   it("should return true for manager and above", () => {
     expect(isManagerRole("manager")).toBe(true);
     expect(isManagerRole("admin")).toBe(true);
-    expect(isManagerRole("superadmin")).toBe(true);
   });
 
   it("should return false for non-manager roles", () => {
@@ -268,33 +254,22 @@ describe("Role Arrays", () => {
     expect(ALL_ROLES).toContain("cashier");
     expect(ALL_ROLES).toContain("manager");
     expect(ALL_ROLES).toContain("admin");
-    expect(ALL_ROLES).toContain("superadmin");
-    expect(ALL_ROLES.length).toBe(5);
+    expect(ALL_ROLES.length).toBe(4);
   });
 
   it("should have correct admin roles", () => {
     expect(ADMIN_ROLES).toContain("admin");
-    expect(ADMIN_ROLES).toContain("superadmin");
-    expect(ADMIN_ROLES.length).toBe(2);
+    expect(ADMIN_ROLES.length).toBe(1);
   });
 
   it("should have correct manager roles", () => {
     expect(MANAGER_ROLES).toContain("manager");
     expect(MANAGER_ROLES).toContain("admin");
-    expect(MANAGER_ROLES).toContain("superadmin");
-    expect(MANAGER_ROLES.length).toBe(3);
+    expect(MANAGER_ROLES.length).toBe(2);
   });
 });
 
 describe("Permission inheritance verification", () => {
-  it("superadmin should have all permissions from admin", () => {
-    const adminPerms = getPermissions("admin");
-    const superadminPerms = getPermissions("superadmin");
-    for (const perm of adminPerms) {
-      expect(superadminPerms).toContain(perm);
-    }
-  });
-
   it("admin should have all permissions from manager", () => {
     const managerPerms = getPermissions("manager");
     const adminPerms = getPermissions("admin");

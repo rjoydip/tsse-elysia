@@ -52,3 +52,4 @@ test-results
 
 .artifacts/*.com.json
 .fallow/
+pglite-data/

@@ -10,7 +10,7 @@ import {
   cleanupRateLimitStore,
   memoryRateLimitStore,
 } from "~/lib/mcp/rate-limit";
-import type { McpApiKey } from "~/lib/db/schema/mcp";
+import type { McpApiKey } from "~/lib/db";
 
 /**
  * Mock API key factory.

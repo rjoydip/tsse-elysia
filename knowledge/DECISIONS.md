@@ -892,7 +892,7 @@ git push origin v1.2.3
    - Async user count with skeleton in dashboard card
    - Refresh button with loading spinner
 
-4. **Database Schema** (`src/lib/db/schema/auth.ts`):
+4. **Database Schema** (`src/lib/db/users.ts`):
    - Added columns: `firstName`, `lastName`, `username`, `phoneNumber`, `role`, `status`
    - Migration created: `drizzle/0001_wooden_roughhouse.sql`
 
@@ -1173,7 +1173,7 @@ Created multi-stage Dockerfile with 4 stages:
 
 4. **API** (`src/routes/api/users/-core.ts`):
    - Fixed `auth.api.signUpEmail()` call with correct `body` wrapper
-   - Updated role validation to accept all 5 roles (user, cashier, manager, admin, superadmin)
+   - Updated role validation to accept all 4 roles (user, cashier, manager, admin)
 
 5. **Tests**:
    - Unit tests: `test/features/users/schema.test.ts` (20 tests)
@@ -1375,7 +1375,7 @@ Created multi-stage Dockerfile with 4 stages:
 
 **Why:**
 
-- The seed script generated identical data regardless of environment — 5 static users + fake users every time
+- The seed script generated identical data regardless of environment — 4 static users + fake users every time
 - In production, fake users with generated UUIDs pollute the database and have no real business value
 - The dashboard charts showed flat lines because all fake users had the same `createdAt` timestamp (the current time when `generateFakeUsers()` was called for each batch)
 - Need meaningful chart data in dev without leaking fake data to production
@@ -1384,7 +1384,7 @@ Created multi-stage Dockerfile with 4 stages:
 
 - Added `--prod` CLI flag and `NODE_ENV=production` detection to seed script
 - Split seed configuration:
-  - `ESSENTIAL_USERS` (superadmin + admin) — created in all environments
+  - `ESSENTIAL_USERS` (admin) — created in all environments
   - `DEV_USERS` (manager, cashier, user) — created only in dev mode
 - **Graph-friendly timestamps in dev mode**:
   - 80% of fake users distributed across all 12 months of the current year (each call iteration selects a unique month + day, creating a realistic monthly registration curve)

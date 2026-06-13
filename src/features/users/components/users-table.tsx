@@ -82,6 +82,7 @@ export function UsersTable({
       columnVisibility,
     },
     enableRowSelection: true,
+    autoResetPageIndex: false,
     onPaginationChange,
     onColumnFiltersChange,
     onRowSelectionChange: setRowSelection,

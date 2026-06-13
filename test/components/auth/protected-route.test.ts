@@ -51,7 +51,7 @@ function getUserRole(session: unknown): UserRole {
 }
 
 function isValidRole(role: string): role is UserRole {
-  return ["superadmin", "admin", "manager", "cashier", "user"].includes(role);
+  return ["admin", "manager", "cashier", "user"].includes(role);
 }
 
 describe("ProtectedRoute Authorization Logic", () => {
@@ -66,17 +66,16 @@ describe("ProtectedRoute Authorization Logic", () => {
       it("should deny access when user role does not match required role", () => {
         expect(checkAuthorization("user", "admin")).toBe(false);
         expect(checkAuthorization("cashier", "manager")).toBe(false);
-        expect(checkAuthorization("manager", "superadmin")).toBe(false);
+        expect(checkAuthorization("cashier", "admin")).toBe(false);
       });
 
       it("should allow access when user role is in allowed roles array", () => {
-        expect(checkAuthorization("admin", ["admin", "superadmin"])).toBe(true);
-        expect(checkAuthorization("superadmin", ["admin", "superadmin"])).toBe(true);
+        expect(checkAuthorization("admin", ["admin"])).toBe(true);
         expect(checkAuthorization("manager", ["admin", "manager"])).toBe(true);
       });
 
       it("should deny access when user role is not in allowed roles array", () => {
-        expect(checkAuthorization("user", ["admin", "superadmin"])).toBe(false);
+        expect(checkAuthorization("user", ["admin"])).toBe(false);
         expect(checkAuthorization("cashier", ["admin", "manager"])).toBe(false);
       });
     });
@@ -140,7 +139,6 @@ describe("ProtectedRoute Authorization Logic", () => {
       it("should allow access when no restrictions specified", () => {
         expect(checkAuthorization("user")).toBe(true);
         expect(checkAuthorization("admin")).toBe(true);
-        expect(checkAuthorization("superadmin")).toBe(true);
       });
     });
   });
@@ -149,7 +147,6 @@ describe("ProtectedRoute Authorization Logic", () => {
     it("should extract role from session with user object", () => {
       expect(getUserRole({ user: { role: "admin" } })).toBe("admin");
       expect(getUserRole({ user: { role: "manager" } })).toBe("manager");
-      expect(getUserRole({ user: { role: "superadmin" } })).toBe("superadmin");
       expect(getUserRole({ user: { role: "user" } })).toBe("user");
       expect(getUserRole({ user: { role: "cashier" } })).toBe("cashier");
     });
@@ -208,12 +205,11 @@ describe("Can Component Logic", () => {
 });
 
 describe("Role Hierarchy Edge Cases", () => {
-  it("superadmin should meet all role requirements", () => {
-    expect(meetsRoleRequirement("superadmin", "user")).toBe(true);
-    expect(meetsRoleRequirement("superadmin", "cashier")).toBe(true);
-    expect(meetsRoleRequirement("superadmin", "manager")).toBe(true);
-    expect(meetsRoleRequirement("superadmin", "admin")).toBe(true);
-    expect(meetsRoleRequirement("superadmin", "superadmin")).toBe(true);
+  it("admin should meet all role requirements", () => {
+    expect(meetsRoleRequirement("admin", "user")).toBe(true);
+    expect(meetsRoleRequirement("admin", "cashier")).toBe(true);
+    expect(meetsRoleRequirement("admin", "manager")).toBe(true);
+    expect(meetsRoleRequirement("admin", "admin")).toBe(true);
   });
 
   it("user should only meet user requirement", () => {
@@ -221,7 +217,6 @@ describe("Role Hierarchy Edge Cases", () => {
     expect(meetsRoleRequirement("user", "cashier")).toBe(false);
     expect(meetsRoleRequirement("user", "manager")).toBe(false);
     expect(meetsRoleRequirement("user", "admin")).toBe(false);
-    expect(meetsRoleRequirement("user", "superadmin")).toBe(false);
   });
 
   it("manager should meet manager and below requirements", () => {
@@ -229,7 +224,6 @@ describe("Role Hierarchy Edge Cases", () => {
     expect(meetsRoleRequirement("manager", "cashier")).toBe(true);
     expect(meetsRoleRequirement("manager", "manager")).toBe(true);
     expect(meetsRoleRequirement("manager", "admin")).toBe(false);
-    expect(meetsRoleRequirement("manager", "superadmin")).toBe(false);
   });
 });
 
@@ -241,8 +235,8 @@ describe("Permission Combination Scenarios", () => {
     // Manager doesn't have settings:write permission
     expect(checkAuthorization("manager", "manager", "settings:write", "manager")).toBe(false);
 
-    // Manager doesn't meet minRole of superadmin
-    expect(checkAuthorization("manager", "manager", "dashboard:read", "superadmin")).toBe(false);
+    // Manager doesn't meet minRole of admin
+    expect(checkAuthorization("manager", "manager", "dashboard:read", "admin")).toBe(false);
 
     // Cashier role doesn't match
     expect(checkAuthorization("cashier", "admin", "dashboard:read")).toBe(false);

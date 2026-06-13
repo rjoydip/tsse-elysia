@@ -8,27 +8,28 @@
  *
  * Seeding modes:
  * - Production (NODE_ENV=production or --prod flag): only seeds essential
- *   admin accounts (superadmin + admin). No fake users or graph data.
+ *   admin accounts. No fake users or graph data.
  * - Dev/Default: seeds all admin accounts + fake users with graph-friendly
  *   createdAt timestamps spanning current year months and last 7 days.
  */
 
 import { faker } from "@faker-js/faker";
 import { eq, and, sql } from "drizzle-orm";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
 import { reset } from "drizzle-seed";
 import { nanoid } from "nanoid";
 import { scriptLogger as logger } from "~/lib/logger";
-import { subscriptionPlans } from "~/lib/db/schema/subscriptions";
-import { users } from "~/lib/db/schema/auth";
-import * as schema from "~/lib/db/schema";
+import { subscriptionPlans } from "~/lib/db";
+import { users } from "~/lib/db";
+import * as schema from "~/lib/db";
 import { env } from "~/config/env";
+import { initializeDatabase, getDatabasePools } from "~/config/db";
 
 /**
  * User roles for user management.
  */
-type UserRole = "superadmin" | "admin" | "manager" | "cashier" | "user";
+type UserRole = "admin" | "manager" | "cashier" | "user";
 
 /**
  * User status for user management.
@@ -36,20 +37,10 @@ type UserRole = "superadmin" | "admin" | "manager" | "cashier" | "user";
 type UserStatus = "active" | "inactive" | "invited" | "suspended";
 
 /**
- * Essential seed accounts always created (superadmin + admin).
+ * Essential seed accounts always created (admin).
  * These are the minimum needed for any deployment.
  */
 const ESSENTIAL_USERS = [
-  {
-    email: "super.admin@tsse.local",
-    password: "superadmin123",
-    name: "Super Admin",
-    firstName: "Super",
-    lastName: "Admin",
-    username: "superadmin",
-    role: "superadmin" as UserRole,
-    status: "active" as UserStatus,
-  },
   {
     email: "admin@tsse.local",
     password: "admin123",
@@ -164,30 +155,30 @@ function isProductionMode(options: SeedOptions): boolean {
 }
 
 /**
- * Resolves the database URL for seeding.
+ * Resolves the database configuration for seeding.
  */
-function resolveDatabaseUrl(): string {
-  if (env.SQLITE_URL) {
-    return String(env.SQLITE_URL);
+function resolveDatabaseConfig(): { url?: string; dataDir?: string } {
+  if (env.POSTGRES_URL) {
+    return { url: env.POSTGRES_URL };
   }
-  return "file:.artifacts/tsse-elysia.db";
+  return { dataDir: env.PGLITE_DATA_DIR };
 }
 
 /**
  * Verifies that the required database tables already exist before seeding.
  */
-async function ensureRequiredTablesExist(client: ReturnType<typeof createClient>): Promise<void> {
-  if (!env.SQLITE_URL) {
-    logger.info("No SQLITE_URL configured, skipping table check...");
+async function ensureRequiredTablesExist(client: PGlite): Promise<void> {
+  if (env.POSTGRES_URL) {
+    logger.info("Using PostgreSQL URL, skipping table check...");
     return;
   }
 
   const requiredTables = ["user", "subscription_plan", "subscription", "tasks"];
   for (const tableName of requiredTables) {
-    const result = await client.execute({
-      sql: "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
-      args: [tableName],
-    });
+    const result = await client.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName],
+    );
     if (!result.rows || result.rows.length === 0) {
       throw new Error(
         `Database schema is missing table "${tableName}". Run "bun run db:migrate" first.`,
@@ -322,25 +313,6 @@ async function seedPermissions(db: ReturnType<typeof drizzle>): Promise<void> {
  * Default role-to-permission mappings matching src/lib/auth/permissions.ts.
  */
 const ROLE_PERMISSION_MAP: Record<string, string[]> = {
-  superadmin: [
-    "dashboard:read",
-    "dashboard:write",
-    "dashboard:analytics",
-    "users:read",
-    "users:write",
-    "users:delete",
-    "settings:read",
-    "settings:write",
-    "tasks:read",
-    "tasks:write",
-    "tasks:delete",
-    "apps:read",
-    "apps:write",
-    "chats:read",
-    "chats:write",
-    "reports:read",
-    "reports:write",
-  ],
   admin: [
     "dashboard:read",
     "dashboard:write",
@@ -383,7 +355,7 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
 
 /**
  * Seeds default roles and their permission assignments.
- * Creates the 5 standard roles (superadmin, admin, manager, cashier, user)
+ * Creates the 4 standard roles (admin, manager, cashier, user)
  * and links each to its appropriate set of permissions.
  * Runs in both fresh and production environments.
  */
@@ -464,59 +436,95 @@ async function seedRoles(db: ReturnType<typeof drizzle>): Promise<void> {
 }
 
 /**
- * Seeds static users via HTTP API to the running server.
- * This ensures proper password hashing and account creation.
+ * Seeds static users by inserting them directly into the database
+ * with properly hashed passwords. No running server required.
+ *
+ * Uses Argon2id matching the hash config in src/lib/auth/index.ts
+ * so Better Auth can verify passwords during sign-in.
  */
-async function seedUsers(userList: typeof ESSENTIAL_USERS): Promise<void> {
-  const BASE_URL = process.env.SEED_SERVER_URL || "http://localhost:3000";
+async function seedUsers(
+  db: ReturnType<typeof drizzle>,
+  userList: typeof ESSENTIAL_USERS,
+): Promise<void> {
+  const { nanoid } = await import("nanoid");
+  const { hash } = await import("@node-rs/argon2");
 
-  for (const admin of userList) {
-    logger.info(`Creating user: ${admin.email}`);
+  const hashOpts = {
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+    outputLen: 32,
+    algorithm: 2,
+  };
 
-    const { encodePassword } = await import("../src/lib/utils/encryption");
-    const encodedPassword = await encodePassword(admin.password);
+  for (const user of userList) {
+    logger.info(`Creating user: ${user.email}`);
 
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/sign-up/email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: admin.email,
-          password: encodedPassword,
-          name: admin.name,
-        }),
+      const hashedPassword = await hash(user.password, hashOpts);
+      const now = new Date();
+      const userId = nanoid();
+
+      // Insert into user table
+      await db.insert(schema.users).values({
+        id: userId,
+        name: user.name,
+        email: user.email,
+        emailVerified: true,
+        image: null,
+        createdAt: now,
+        updatedAt: now,
+        subscriptionTier: "free",
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        phoneNumber: null,
+        role: user.role,
+        status: user.status,
       });
 
-      if (!response.ok) {
-        const err = await response.json();
-        if (err.error?.code === "USER_ALREADY_EXISTS" || err.message?.includes("already exists")) {
-          logger.info(`User ${admin.email} already exists, updating role`);
-        } else {
-          logger.warn(`Could not create user ${admin.email}: ${JSON.stringify(err)}`);
-          continue;
-        }
-      } else {
-        const data = await response.json();
-        logger.info(`Created user: ${admin.email} with ID: ${data.user?.id}`);
-      }
+      // Insert into account table (Better Auth stores password hash here)
+      await db.insert(schema.accounts).values({
+        id: nanoid(),
+        accountId: userId,
+        providerId: "credential",
+        userId,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        accessTokenExpiresAt: null,
+        refreshTokenExpiresAt: null,
+        scope: null,
+        password: hashedPassword,
+        createdAt: now,
+        updatedAt: now,
+      });
 
-      const { db } = await import("../src/config/db");
-      const { users } = await import("../src/lib/db/schema/auth");
-      const { eq } = await import("drizzle-orm");
-
-      await db
-        .update(users)
-        .set({
-          role: admin.role,
-          firstName: admin.firstName,
-          lastName: admin.lastName,
-          username: admin.username,
-        })
-        .where(eq(users.email, admin.email));
-
-      logger.info(`Updated role to ${admin.role} for ${admin.email}`);
+      logger.info(`Created user: ${user.email} with ID: ${userId}`);
     } catch (error) {
-      logger.info(`Could not create user ${admin.email} (server may not be running): ${error}`);
+      if (error instanceof Error && error.message?.includes("unique")) {
+        logger.info(`User ${user.email} already exists, updating role`);
+      } else {
+        logger.warn(`Could not create user ${user.email}: ${error}`);
+        continue;
+      }
+    }
+
+    // Update role, first/last name, username
+    try {
+      await db
+        .update(schema.users)
+        .set({
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+        })
+        .where(eq(schema.users.email, user.email));
+
+      logger.info(`Updated role to ${user.role} for ${user.email}`);
+    } catch (error) {
+      logger.warn(`Failed to update role for ${user.email}: ${error}`);
     }
   }
 }
@@ -903,19 +911,33 @@ async function main(): Promise<void> {
   const options = parseSeedOptions(process.argv.slice(2));
   const isProd = isProductionMode(options);
 
-  const dbUrl = resolveDatabaseUrl();
+  // Use shared database initialization (auto-migrates PGlite).
+  // For real PostgreSQL, the server must have run db:migrate already.
+  const dbConfig = resolveDatabaseConfig();
+  const usePgUrl = !!dbConfig.url;
 
-  const authToken = env.SQLITE_AUTH_TOKEN ? String(env.SQLITE_AUTH_TOKEN) : undefined;
-  const client = createClient({ url: dbUrl, authToken });
-  const db = drizzle(client, { schema });
+  let db: ReturnType<typeof drizzle>;
+  let client: PGlite | null;
+
+  if (usePgUrl) {
+    // Real PG — rely on server having run db:migrate
+    db = (await import("../src/config/db")).db;
+    client = null;
+  } else {
+    // PGlite — initializeDatabase auto-migrates on startup
+    await initializeDatabase();
+    const pools = getDatabasePools();
+    client = pools.client;
+    db = (await import("../src/config/db")).db;
+  }
 
   try {
     logger.section("Database Seeding");
-    logger.step(1, `Seeding database at ${dbUrl}`);
+    logger.step(1, `Seeding database at ${usePgUrl ? dbConfig.url : "PGlite (auto-migrated)"}`);
     logger.info(`Mode: ${isProd ? "PRODUCTION" : "DEVELOPMENT"}`);
     logger.info(`Options: count=${options.count}, seed=${options.seed}, fresh=${options.fresh}`);
 
-    await ensureRequiredTablesExist(client);
+    await ensureRequiredTablesExist(client!);
 
     if (options.fresh) {
       logger.info("Resetting existing seed data...");
@@ -934,7 +956,7 @@ async function main(): Promise<void> {
     // In production, only seed essential admin accounts
     const usersToSeed = isProd ? ESSENTIAL_USERS : [...ESSENTIAL_USERS, ...DEV_USERS];
     logger.step(5, `Seeding ${usersToSeed.length} static user(s)...`);
-    await seedUsers(usersToSeed);
+    await seedUsers(db, usersToSeed);
 
     if (!isProd) {
       // Dev mode: seed fake users with graph-friendly timestamps
@@ -967,7 +989,7 @@ async function main(): Promise<void> {
     const allRoles = await db
       .select({ id: schema.roles.id, name: schema.roles.name })
       .from(schema.roles);
-    const roleByName = new Map(allRoles.map((r) => [r.name, r.id]));
+    const roleByName = new Map(allRoles.map((r: { name: string; id: string }) => [r.name, r.id]));
 
     // Fetch all users and link each to the role matching their `role` column
     const allUsers = await db
@@ -982,7 +1004,12 @@ async function main(): Promise<void> {
       const exists = await db
         .select({ count: sql<number>`count(*)` })
         .from(schema.userRoles)
-        .where(and(eq(schema.userRoles.userId, user.id), eq(schema.userRoles.roleId, roleId)));
+        .where(
+          and(
+            eq(schema.userRoles.userId, user.id as string),
+            eq(schema.userRoles.roleId, roleId as string),
+          ),
+        );
       if ((exists[0]?.count ?? 0) === 0) {
         try {
           await db.insert(schema.userRoles).values({ userId: user.id, roleId });
@@ -998,6 +1025,8 @@ async function main(): Promise<void> {
       logger.step(isProd ? 7 : 8, "Seeding demo tasks for dashboard...");
       await seedTasks(db);
     }
+
+    process.exit(0);
   } catch (error) {
     logger.error(error instanceof Error ? error.message : `Unknown seed failure: ${error}`);
     process.exitCode = 1;
@@ -1005,5 +1034,8 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  main();
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }

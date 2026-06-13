@@ -14,8 +14,8 @@ http:
     type: json
     data: |-
       {
-        "email": "super.admin@tsse.local",
-        "password": "superadmin123"
+        "email": "admin@tsse.local",
+        "password": "admin123"
       }
 
 runtime:

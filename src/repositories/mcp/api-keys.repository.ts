@@ -6,7 +6,7 @@
 
 import { randomUUID } from "uncrypto";
 import { db } from "~/config/db";
-import { mcpApiKeys, type McpApiKey } from "~/lib/db/schema/mcp";
+import { mcpApiKeys, type McpApiKey } from "~/lib/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { Result, DatabaseError, NotFoundError, DuplicateKeyError } from "~/lib/result";
 
