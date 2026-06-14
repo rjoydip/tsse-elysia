@@ -55,7 +55,13 @@ export async function getDb0(): Promise<Database> {
 
   if (_db0Init) return _db0Init;
 
-  _db0Init = _initDb0();
+  _db0Init = _initDb0().catch((error) => {
+    // Reset the init promise so the next caller can retry.
+    // Without this, a transient failure (e.g. data dir locked, filesystem
+    // contention with seed process) would permanently poison the singleton.
+    _db0Init = null;
+    throw error;
+  });
   return _db0Init;
 }
 
