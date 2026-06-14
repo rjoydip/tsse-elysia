@@ -72,11 +72,27 @@ function wrapAddConstraint(sql: string): string {
  * @param sql - Raw SQL statement
  * @returns SQL with ADD PRIMARY KEY wrapped in idempotent DO block
  */
+/**
+ * Wraps ADD PRIMARY KEY with a pg_constraint existence check.
+ *
+ * PostgreSQL folds unquoted identifiers to lowercase, so the
+ * pg_constraint name is always lowercase (e.g. "service_health_pkey").
+ *
+ * NOTE: This handles bare `ALTER TABLE ... ADD PRIMARY KEY (...)` syntax.
+ * Drizzle may also emit `ALTER TABLE ... ADD CONSTRAINT "name" PRIMARY KEY(...)`
+ * for multi-column PKs — those are handled by {@link wrapAddConstraint} instead.
+ * Both wrappers must be kept in sync for complete coverage.
+ *
+ * @param sql - Raw SQL statement
+ * @returns SQL with ADD PRIMARY KEY wrapped in idempotent DO block
+ */
 function wrapAddPrimaryKey(sql: string): string {
   return sql.replace(
     /^ALTER\s+TABLE\s+"?(\w+)"?\s+ADD\s+PRIMARY\s+KEY\s+\(([^)]+)\).*;$/gim,
     (_match, table: string, _cols: string) => {
-      const pkName = `${table}_pkey`;
+      // PostgreSQL folds unquoted identifiers to lowercase, so the
+      // auto-generated constraint name is always lowercase_table_pkey.
+      const pkName = `${table.toLowerCase()}_pkey`;
       return `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${pkName}') THEN ALTER TABLE "${table}" ADD PRIMARY KEY (${_cols}); END IF; END $$;`;
     },
   );

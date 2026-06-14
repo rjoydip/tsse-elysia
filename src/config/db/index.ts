@@ -431,8 +431,10 @@ export async function resetDatabase(): Promise<void> {
 
   // Remove the persistent data directory so the next PGlite instance
   // starts with a clean slate (avoids cross-process corruption).
+  // Reads from process.env directly so per-worker temp dirs set by
+  // test/setup.ts are honoured even if the env module was cached earlier.
   try {
-    const dataDir = env?.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+    const dataDir = process.env.PGLITE_DATA_DIR || env?.PGLITE_DATA_DIR || ".artifacts/pglite-data";
     rmSync(resolve(dataDir), { recursive: true, force: true });
   } catch {
     // Directory may not exist

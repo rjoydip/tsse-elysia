@@ -171,7 +171,17 @@ async function ensureRequiredTablesExist(client: PGlite): Promise<void> {
     return;
   }
 
-  const requiredTables = ["user", "subscription_plan", "subscription", "tasks"];
+  const requiredTables = [
+    "user",
+    "subscription_plan",
+    "subscription",
+    "tasks",
+    "permission",
+    "role",
+    "role_permission",
+    "user_role",
+    "account",
+  ];
   for (const tableName of requiredTables) {
     const result = await client.query(
       `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1`,
@@ -989,35 +999,20 @@ async function main(): Promise<void> {
       .from(schema.roles);
     const roleByName = new Map(allRoles.map((r: { name: string; id: string }) => [r.name, r.id]));
 
-    // Fetch all users and link each to the role matching their `role` column
+    // Fetch all users and batch-link each to the role matching their `role` column
     const allUsers = await db
       .select({ id: schema.users.id, role: schema.users.role })
       .from(schema.users);
-    let linkedCount = 0;
+    const roleLinks: Array<{ userId: string; roleId: string }> = [];
     for (const user of allUsers) {
       const roleId = roleByName.get(user.role ?? "user");
       if (!roleId) continue;
-
-      // Insert only if not already linked (idempotent)
-      const exists = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(schema.userRoles)
-        .where(
-          and(
-            eq(schema.userRoles.userId, user.id as string),
-            eq(schema.userRoles.roleId, roleId as string),
-          ),
-        );
-      if ((exists[0]?.count ?? 0) === 0) {
-        try {
-          await db.insert(schema.userRoles).values({ userId: user.id, roleId });
-          linkedCount++;
-        } catch {
-          // Skip conflicts
-        }
-      }
+      roleLinks.push({ userId: user.id as string, roleId: roleId as string });
     }
-    logger.info(`Linked ${linkedCount} users to their RBAC roles`);
+    if (roleLinks.length > 0) {
+      await db.insert(schema.userRoles).values(roleLinks).onConflictDoNothing();
+    }
+    logger.info(`Linked ${roleLinks.length} users to their RBAC roles`);
 
     if (!isProd) {
       logger.step(isProd ? 7 : 8, "Seeding demo tasks for dashboard...");

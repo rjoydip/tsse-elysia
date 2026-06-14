@@ -4,6 +4,7 @@
  */
 
 import type { Pool } from "pg";
+import { dbLogger } from "~/lib/logger";
 import { getDatabasePools, getDatabasePoolConfigs } from "./index";
 
 /**
@@ -36,6 +37,7 @@ async function checkPoolHealth(
       latencyMs: Date.now() - start,
     };
   } catch (error) {
+    dbLogger.warn("Pool health check failed", { name, role, error });
     return {
       name,
       role,
@@ -111,6 +113,7 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown database heartbeat error";
+    dbLogger.error("Database heartbeat failed", error instanceof Error ? error : undefined);
     return {
       status: "unhealthy",
       latencyMs: null,
@@ -148,6 +151,7 @@ async function checkViaDb0(startedAt: number): Promise<DatabaseHeartbeat> {
       ],
     };
   } catch (error) {
+    dbLogger.error("db0 heartbeat query failed", error instanceof Error ? error : undefined);
     return {
       status: "unhealthy",
       latencyMs: null,

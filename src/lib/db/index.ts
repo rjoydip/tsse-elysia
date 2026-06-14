@@ -68,6 +68,7 @@ export {
 
 // Friendly aliases for commonly-used db row types
 // (consumers may also import *Select/*Insert directly from the barrel)
+// Direct import needed for `typeof` — re-exports are not referencable in type positions.
 import { mcpApiKeys } from "./mcp-api-keys";
 import { tasks } from "./tasks";
 import { permissions } from "./permissions";

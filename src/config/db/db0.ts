@@ -161,11 +161,19 @@ async function _initDb0(): Promise<Database> {
 }
 
 /**
- * Shuts down the db0 connection gracefully.
+ * Shuts down the db0 connection and clears the singleton.
+ *
+ * Calls the connector's dispose (closes PGlite WASM, releases PG pool
+ * connections, etc.) so resources are not leaked. After disposal, the
+ * next call to {@link getDb0} creates a fresh connection.
  */
 export async function disposeDb0(): Promise<void> {
   if (_db0) {
-    // db0 doesn't have a unified dispose; we handle per-connector cleanup
+    try {
+      await _db0.dispose();
+    } catch {
+      // Connector dispose is best-effort; proceed with nulling refs
+    }
     _db0 = null;
   }
   _db0Init = null;
