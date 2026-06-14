@@ -67,6 +67,22 @@ function wrapAddConstraint(sql: string): string {
 }
 
 /**
+ * Wraps ADD PRIMARY KEY with a pg_constraint existence check.
+ *
+ * @param sql - Raw SQL statement
+ * @returns SQL with ADD PRIMARY KEY wrapped in idempotent DO block
+ */
+function wrapAddPrimaryKey(sql: string): string {
+  return sql.replace(
+    /^ALTER\s+TABLE\s+"?(\w+)"?\s+ADD\s+PRIMARY\s+KEY\s+\(([^)]+)\).*;$/gim,
+    (_match, table: string, _cols: string) => {
+      const pkName = `${table}_pkey`;
+      return `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${pkName}') THEN ALTER TABLE "${table}" ADD PRIMARY KEY (${_cols}); END IF; END $$;`;
+    },
+  );
+}
+
+/**
  * Applies idempotency wrappers to migration SQL so it is safe to re-run.
  *
  * Currently handles:
@@ -81,6 +97,7 @@ export function wrapStatements(sql: string): string {
   let result = wrapCreateType(sql);
   result = result.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ");
   result = wrapAddConstraint(result);
+  result = wrapAddPrimaryKey(result);
   return result;
 }
 
