@@ -3,6 +3,7 @@
  * Provides a lightweight read-only liveness check for status monitoring endpoints.
  */
 
+import type { Pool } from "pg";
 import { getDatabasePools, getDatabasePoolConfigs } from "./index";
 
 /**
@@ -14,6 +15,35 @@ export interface PoolHealthStatus {
   healthy: boolean;
   latencyMs?: number | null;
   error?: string;
+}
+
+/**
+ * Checks a single PostgreSQL pool by executing SELECT 1 AS ok.
+ */
+async function checkPoolHealth(
+  pool: Pool,
+  name: string,
+  role: "primary" | "replica",
+): Promise<PoolHealthStatus> {
+  const start = Date.now();
+  try {
+    const result = await pool.query("SELECT 1 AS ok");
+    const rows = result.rows as Array<{ ok?: number }>;
+    return {
+      name,
+      role,
+      healthy: rows[0]?.ok === 1,
+      latencyMs: Date.now() - start,
+    };
+  } catch (error) {
+    return {
+      name,
+      role,
+      healthy: false,
+      latencyMs: null,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 }
 
 /**
@@ -46,51 +76,15 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
     const poolConfigs = getDatabasePoolConfigs();
     const poolHealthResults: PoolHealthStatus[] = [];
 
-    // Check primary pool
-    try {
-      const primaryStart = Date.now();
-      const primaryResult = await pools.primary.query("SELECT 1 AS ok");
-      const pRows = primaryResult.rows as Array<{ ok?: number }>;
-      poolHealthResults.push({
-        name: "primary",
-        role: "primary",
-        healthy: pRows[0]?.ok === 1,
-        latencyMs: Date.now() - primaryStart,
-      });
-    } catch (error) {
-      poolHealthResults.push({
-        name: "primary",
-        role: "primary",
-        healthy: false,
-        latencyMs: null,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
+    poolHealthResults.push(await checkPoolHealth(pools.primary, "primary", "primary"));
 
     // Check all replica pools dynamically
     for (let i = 0; i < pools.replicas.length; i++) {
       const replica = pools.replicas[i];
       const config = poolConfigs.find((c) => c.role === "replica" && c.name === `replica-${i + 1}`);
-
-      try {
-        const replicaStart = Date.now();
-        const replicaResult = await replica.query("SELECT 1 AS ok");
-        const rRows = replicaResult.rows as Array<{ ok?: number }>;
-        poolHealthResults.push({
-          name: config?.name || `replica-${i + 1}`,
-          role: "replica",
-          healthy: rRows[0]?.ok === 1,
-          latencyMs: Date.now() - replicaStart,
-        });
-      } catch (error) {
-        poolHealthResults.push({
-          name: config?.name || `replica-${i + 1}`,
-          role: "replica",
-          healthy: false,
-          latencyMs: null,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+      poolHealthResults.push(
+        await checkPoolHealth(replica, config?.name || `replica-${i + 1}`, "replica"),
+      );
     }
 
     // Determine overall status

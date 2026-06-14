@@ -14,6 +14,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { dbLogger } from "~/lib/logger";
 
 /**
  * Returns all Drizzle PG migration SQL file paths sorted by version.
@@ -109,7 +110,9 @@ export async function applyMigrationFile(
     try {
       await client.exec(stmt);
     } catch {
-      // Silently skip — wrappers ensure idempotency for re-runs
+      dbLogger.debug("Migration statement failed (expected on re-runs)", {
+        sql: stmt.slice(0, 120),
+      });
     }
   }
 }

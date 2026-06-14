@@ -935,7 +935,7 @@ async function main(): Promise<void> {
     logger.info(`Mode: ${isProd ? "PRODUCTION" : "DEVELOPMENT"}`);
     logger.info(`Options: count=${options.count}, seed=${options.seed}, fresh=${options.fresh}`);
 
-    await ensureRequiredTablesExist(client!);
+    if (client) await ensureRequiredTablesExist(client);
 
     if (options.fresh) {
       logger.info("Resetting existing seed data...");
