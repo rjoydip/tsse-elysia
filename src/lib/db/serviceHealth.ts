@@ -6,7 +6,7 @@
 import { pgTable, text, integer, serial, timestamp } from "drizzle-orm/pg-core";
 
 export const serviceHealth = pgTable("service_health", {
-  id: serial("id"),
+  id: serial("id").primaryKey(),
   serviceName: text("service_name").notNull(),
   status: text("status").notNull(),
   latencyMs: integer("latency_ms"),

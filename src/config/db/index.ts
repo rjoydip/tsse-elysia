@@ -19,11 +19,7 @@ import type { Pool } from "pg";
 import * as schema from "~/lib/db";
 import { env } from "~/config/env";
 import { dbLogger } from "~/lib/logger";
-
-/**
- * Runtime PostgreSQL driver identifier.
- */
-export type DriverType = "pglite" | "node-postgres" | "neon" | "pg-proxy";
+import { getDatabaseDriver } from "./driver";
 
 /**
  * Database pool configuration for health checks.
@@ -70,13 +66,6 @@ let replicaRoundRobinIndex = 0;
  *
  * @returns Detected driver type
  */
-export function getDatabaseDriver(): DriverType {
-  if (env.CF_HYPERDRIVE_BINDING) return "pg-proxy";
-  if (env.NEON_DATABASE_URL) return "neon";
-  if (env.POSTGRES_URL) return "node-postgres";
-  return "pglite";
-}
-
 /**
  * Builds a PostgreSQL connection string from individual env vars.
  *
@@ -245,8 +234,7 @@ export async function getReadDb() {
     return db;
   }
 
-  const index = replicaRoundRobinIndex % pgPoolsReplicas.length;
-  replicaRoundRobinIndex++;
+  const index = replicaRoundRobinIndex++ % pgPoolsReplicas.length;
   const selectedPool = pgPoolsReplicas[index];
 
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
@@ -457,3 +445,4 @@ export async function resetDatabase(): Promise<void> {
 
 export { dbClient, pgPoolPrimary, pgPoolsReplicas, db, schema };
 export type DbType = NonNullable<typeof db>;
+export { getDatabaseDriver, type DriverType } from "./driver";

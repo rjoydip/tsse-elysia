@@ -1,7 +1,7 @@
 CREATE TYPE "public"."tasks_label" AS ENUM('bug', 'feature', 'documentation');--> statement-breakpoint
 CREATE TYPE "public"."tasks_priority" AS ENUM('low', 'medium', 'high', 'critical');--> statement-breakpoint
 CREATE TYPE "public"."tasks_status" AS ENUM('backlog', 'todo', 'in-progress', 'review', 'done', 'canceled');--> statement-breakpoint
-CREATE TYPE "public"."userSettingsNotifications_type" AS ENUM('all', 'mentions', 'none');--> statement-breakpoint
+CREATE TYPE "public"."user_settings_notifications_type" AS ENUM('all', 'mentions', 'none');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"accountId" text NOT NULL,
@@ -169,7 +169,7 @@ CREATE TABLE "user_settings_display" (
 CREATE TABLE "user_settings_notifications" (
 	"id" text PRIMARY KEY NOT NULL,
 	"userId" text NOT NULL,
-	"type" "userSettingsNotifications_type" DEFAULT 'all' NOT NULL,
+	"type" "user_settings_notifications_type" DEFAULT 'all' NOT NULL,
 	"mobile" boolean DEFAULT false NOT NULL,
 	"communicationEmails" boolean DEFAULT false NOT NULL,
 	"socialEmails" boolean DEFAULT true NOT NULL,

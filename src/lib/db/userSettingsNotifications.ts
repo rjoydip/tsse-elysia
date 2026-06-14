@@ -7,7 +7,7 @@ import { pgTable, text, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-export const userSettingsNotifications_type = pgEnum("userSettingsNotifications_type", [
+export const userSettingsNotifications_type = pgEnum("user_settings_notifications_type", [
   "all",
   "mentions",
   "none",

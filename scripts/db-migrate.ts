@@ -42,10 +42,13 @@ async function run(): Promise<void> {
     process.exit(1);
   }
 
-  // PGlite — initializeDatabase() auto-migrates on startup
-  const { initializeDatabase } = await import("~/config/db");
-  dbLogger.info("Using PGlite — initializeDatabase will auto-migrate...");
-  await initializeDatabase();
+  // PGlite — apply migration SQL directly without creating the full database stack
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { runAllMigrations } = await import("~/lib/db/migrate");
+  const dataDir = process.env.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+  const client = new PGlite({ dataDir });
+  dbLogger.info("Using PGlite — running migrations directly...");
+  await runAllMigrations(client);
 
   dbLogger.info("Migration complete");
   process.exit(0);

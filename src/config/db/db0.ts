@@ -15,7 +15,7 @@
 
 import { createDatabase, type Connector, type Database, type Primitive } from "db0";
 import { env } from "~/config/env";
-import { getDatabaseDriver, type DriverType } from "~/config/db";
+import { getDatabaseDriver, type DriverType } from "~/config/db/driver";
 import { dbLogger } from "~/lib/logger";
 
 let _db0: Database | null = null;

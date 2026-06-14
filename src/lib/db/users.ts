@@ -21,6 +21,13 @@ export const users = pgTable("user", {
   lastName: text("lastName"),
   username: text("username"),
   phoneNumber: text("phoneNumber"),
+  /**
+   * Denormalized cache of the user's primary role.
+   *
+   * The source of truth for role-based access control is the `userRoles`
+   * junction table. This column is a convenience cache for quick lookups
+   * and may not reflect all roles assigned via `userRoles`.
+   */
   role: text("role").notNull().default("user"),
   status: text("status").notNull().default("active"),
 });

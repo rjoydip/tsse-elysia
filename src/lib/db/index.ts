@@ -55,6 +55,7 @@ export {
   mcpApiKeysRelations,
   tasksRelations,
   subscriptionsRelations,
+  subscriptionPlansRelations,
   permissionsRelations,
   rolesRelations,
   rolePermissionsRelations,

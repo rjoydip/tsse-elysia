@@ -20,6 +20,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
   subscriptions: many(subscriptions),
+  mcpApiKeys: many(mcpApiKeys),
+  tasks: many(tasks),
+  userRoles: many(userRoles),
+  userSettingsProfile: many(userSettingsProfile),
+  userSettingsAccount: many(userSettingsAccount),
+  userSettingsDisplay: many(userSettingsDisplay),
+  userSettingsNotifications: many(userSettingsNotifications),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -59,6 +66,10 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
     fields: [subscriptions.planId],
     references: [subscriptionPlans.id],
   }),
+}));
+
+export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
+  subscriptions: many(subscriptions),
 }));
 
 export const permissionsRelations = relations(permissions, ({ many }) => ({

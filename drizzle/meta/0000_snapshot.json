@@ -1074,7 +1074,7 @@
         },
         "type": {
           "name": "type",
-          "type": "userSettingsNotifications_type",
+          "type": "user_settings_notifications_type",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -1286,8 +1286,8 @@
       "schema": "public",
       "values": ["backlog", "todo", "in-progress", "review", "done", "canceled"]
     },
-    "public.userSettingsNotifications_type": {
-      "name": "userSettingsNotifications_type",
+    "public.user_settings_notifications_type": {
+      "name": "user_settings_notifications_type",
       "schema": "public",
       "values": ["all", "mentions", "none"]
     }
