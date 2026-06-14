@@ -6,7 +6,7 @@
 
 // Auto-generated table exports
 export { accounts, type AccountSelect, type AccountInsert } from "./accounts";
-export { mcpApiKeys, type McpApiKeySelect, type McpApiKeyInsert } from "./mcpApiKeys";
+export { mcpApiKeys, type McpApiKeySelect, type McpApiKeyInsert } from "./mcp-api-keys";
 export { permissions, type PermissionSelect, type PermissionInsert } from "./permissions";
 export { roles, type RoleSelect, type RoleInsert } from "./roles";
 export {
@@ -65,28 +65,17 @@ export {
   userSettingsNotificationsRelations,
 } from "./relations";
 
-// User-facing type aliases
-export type {
-  User,
-  Session,
-  Account,
-  Verification,
-  McpApiKey,
-  ServiceHealth,
-  SubscriptionPlan,
-  Subscription,
-  Task,
-  NewTask,
-  UserSettingsProfile,
-  UserSettingsAccount,
-  UserSettingsDisplay,
-  UserSettingsNotifications,
-  Permission,
-  Role,
-  RolePermission,
-  UserRole,
-  NewPermission,
-  NewRole,
-  NewRolePermission,
-  NewUserRole,
-} from "./types";
+// Friendly aliases for commonly-used db row types
+// (consumers may also import *Select/*Insert directly from the barrel)
+import { mcpApiKeys } from "./mcp-api-keys";
+import { tasks } from "./tasks";
+import { permissions } from "./permissions";
+import { roles } from "./roles";
+import { userRoles } from "./userRoles";
+
+export type McpApiKey = typeof mcpApiKeys.$inferSelect;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
+export type Permission = typeof permissions.$inferSelect;
+export type Role = typeof roles.$inferSelect;
+export type UserRole = typeof userRoles.$inferSelect;

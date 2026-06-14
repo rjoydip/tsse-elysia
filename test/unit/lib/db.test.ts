@@ -3,25 +3,17 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { eq } from "drizzle-orm";
 import { faker } from "@faker-js/faker";
-import { users } from "~/lib/db";
-import { subscriptions, subscriptionPlans } from "~/lib/db";
+import { runAllMigrations } from "~/lib/db/migrate";
+import { users, subscriptions, subscriptionPlans } from "~/lib/db";
 
+/**
+ * Creates a fresh in-memory PGlite database with all migrations applied.
+ * Each test gets an isolated database instance to avoid cross-test pollution.
+ */
 async function createTestDatabase() {
   const client = new PGlite();
-  const tables = [
-    `CREATE TABLE IF NOT EXISTS "user" ("id" TEXT PRIMARY KEY, "name" TEXT, "email" TEXT NOT NULL UNIQUE, "emailVerified" BOOLEAN NOT NULL DEFAULT false, "image" TEXT, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "subscriptionTier" TEXT NOT NULL DEFAULT 'free', "subscriptionId" TEXT, "subscriptionStatus" TEXT, "subscriptionExpiresAt" TIMESTAMP, "firstName" TEXT, "lastName" TEXT, "username" TEXT, "phoneNumber" TEXT, "role" TEXT NOT NULL DEFAULT 'user', "status" TEXT NOT NULL DEFAULT 'active')`,
-    `CREATE TABLE IF NOT EXISTS "session" ("id" TEXT PRIMARY KEY, "expiresAt" TIMESTAMP NOT NULL, "token" TEXT NOT NULL UNIQUE, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "ipAddress" TEXT, "userAgent" TEXT, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE)`,
-    `CREATE TABLE IF NOT EXISTS "account" ("id" TEXT PRIMARY KEY, "accountId" TEXT NOT NULL, "providerId" TEXT NOT NULL, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "accessToken" TEXT, "refreshToken" TEXT, "idToken" TEXT, "accessTokenExpiresAt" TIMESTAMP, "refreshTokenExpiresAt" TIMESTAMP, "scope" TEXT, "password" TEXT, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS "verification" ("id" TEXT PRIMARY KEY, "identifier" TEXT NOT NULL, "value" TEXT NOT NULL, "expiresAt" TIMESTAMP NOT NULL, "createdAt" TIMESTAMP, "updatedAt" TIMESTAMP)`,
-    `CREATE TABLE IF NOT EXISTS "subscription_plan" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "description" TEXT, "price" INTEGER NOT NULL, "currency" TEXT NOT NULL DEFAULT 'USD', "interval" TEXT NOT NULL, "intervalCount" INTEGER NOT NULL DEFAULT 1, "features" TEXT, "rateLimit" INTEGER NOT NULL, "rateLimitDuration" INTEGER NOT NULL DEFAULT 60000, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS "subscription" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "planId" TEXT NOT NULL REFERENCES "subscription_plan"("id") ON DELETE CASCADE, "status" TEXT NOT NULL DEFAULT 'active', "currentPeriodStart" TIMESTAMP NOT NULL, "currentPeriodEnd" TIMESTAMP NOT NULL, "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
-  ];
-
-  for (const sql of tables) {
-    await client.exec(sql);
-  }
-
-  return drizzle(client, { schema: { users, subscriptionPlans } });
+  await runAllMigrations(client);
+  return drizzle(client, { schema: { users, subscriptions, subscriptionPlans } });
 }
 
 describe("Database Operations", () => {
@@ -102,8 +94,7 @@ describe("Database Operations", () => {
     it("should insert and select subscription plans", async () => {
       const now = new Date();
 
-      const dbAny = db as any;
-      await dbAny.insert(subscriptionPlans).values([
+      await db.insert(subscriptionPlans).values([
         {
           id: "free",
           name: "Free",
@@ -140,8 +131,7 @@ describe("Database Operations", () => {
     it("should query subscription plan by ID", async () => {
       const now = new Date();
 
-      const dbAny = db as any;
-      await dbAny.insert(subscriptionPlans).values({
+      await db.insert(subscriptionPlans).values({
         id: "enterprise",
         name: "Enterprise",
         description: "Enterprise tier",
@@ -171,8 +161,7 @@ describe("Database Operations", () => {
       const userId = faker.string.uuid();
       const subscriptionId = faker.string.uuid();
 
-      const dbAny = db as any;
-      await dbAny.insert(users).values({
+      await db.insert(users).values({
         id: userId,
         name: "Test User",
         email: "test@test.com",
@@ -182,7 +171,7 @@ describe("Database Operations", () => {
         subscriptionTier: "contributor",
       });
 
-      await dbAny.insert(subscriptionPlans).values({
+      await db.insert(subscriptionPlans).values({
         id: "contributor",
         name: "Contributor",
         description: "Contributor tier",
@@ -196,7 +185,7 @@ describe("Database Operations", () => {
         updatedAt: now,
       });
 
-      await dbAny.insert(subscriptions).values({
+      await db.insert(subscriptions).values({
         id: subscriptionId,
         userId,
         planId: "contributor",

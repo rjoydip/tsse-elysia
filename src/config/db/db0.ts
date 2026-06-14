@@ -13,7 +13,7 @@
  * @see src/config/db/index.ts for the Drizzle ORM connection factory
  */
 
-import { createDatabase, type Database } from "db0";
+import { createDatabase, type Connector, type Database, type Primitive } from "db0";
 import { env } from "~/config/env";
 import { getDatabaseDriver, type DriverType } from "~/config/db";
 import { dbLogger } from "~/lib/logger";
@@ -79,25 +79,73 @@ async function _initDb0(): Promise<Database> {
       break;
     }
     case "pg-proxy": {
-      _db0 = createDatabase({
+      /**
+       * Executes a raw SQL query through the Hyperdrive binding.
+       * Each call creates a fresh connection (no connection pool in Workers).
+       */
+      async function execViaHyperdrive(sql: string): Promise<unknown> {
+        const hyperdrive = (globalThis as Record<string, unknown>)[env.CF_HYPERDRIVE_BINDING!] as
+          | { connect: () => { query: (sql: string) => Promise<unknown>; release: () => void } }
+          | undefined;
+        if (!hyperdrive) {
+          throw new Error(`Hyperdrive binding "${env.CF_HYPERDRIVE_BINDING}" not found`);
+        }
+        const client = hyperdrive.connect();
+        try {
+          return await client.query(sql);
+        } finally {
+          client.release();
+        }
+      }
+
+      /**
+       * Creates a PreparedStatement that delegates to execViaHyperdrive.
+       * Hyperdrive does not support actual prepared statements, so each
+       * all/run/get call executes the query directly.
+       */
+      function createBoundStatement(sql: string): import("db0").PreparedStatement {
+        return {
+          bind: () => createBoundStatement(sql),
+          all: async () => {
+            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            return result.rows ?? [];
+          },
+          run: async () => {
+            await execViaHyperdrive(sql);
+            return { success: true };
+          },
+          get: async () => {
+            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            return result.rows?.[0] ?? null;
+          },
+        };
+      }
+
+      const hyperdriveConnector: Connector = {
         name: "pg-proxy",
         dialect: "postgresql",
-        exec: async (sql: string) => {
-          const hyperdrive = (globalThis as any)[env.CF_HYPERDRIVE_BINDING!];
-          if (!hyperdrive) {
-            throw new Error(`Hyperdrive binding "${env.CF_HYPERDRIVE_BINDING}" not found`);
-          }
-          const client = hyperdrive.connect();
-          try {
-            return await client.query(sql);
-          } finally {
-            client.release();
-          }
-        },
+        getInstance: () => ({}),
+        exec: execViaHyperdrive,
+        prepare: (sql: string) => ({
+          bind: (..._params: Primitive[]) => createBoundStatement(sql),
+          all: async (..._params: Primitive[]) => {
+            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            return result.rows ?? [];
+          },
+          run: async (..._params: Primitive[]) => {
+            await execViaHyperdrive(sql);
+            return { success: true };
+          },
+          get: async (..._params: Primitive[]) => {
+            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            return result.rows?.[0] ?? null;
+          },
+        }),
         dispose: async () => {
           // Hyperdrive connections are ephemeral; nothing to clean up
         },
-      } as any);
+      };
+      _db0 = createDatabase(hyperdriveConnector);
       break;
     }
   }

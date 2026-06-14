@@ -13,6 +13,8 @@
  * to prevent client-side bundle from including database code.
  */
 
+import { rmSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Pool } from "pg";
 import * as schema from "~/lib/db";
 import { env } from "~/config/env";
@@ -118,56 +120,23 @@ async function createPgliteConnection(): Promise<{
 
 /**
  * Reads and applies pending SQL migrations from the drizzle/ directory.
- * Uses IF NOT EXISTS / DO blocks for idempotency so it's safe to run
- * on every startup.
+ * Uses IF NOT EXISTS / DO blocks for idempotency so it is safe to run
+ * on every startup. Delegates to the shared {@link runAllMigrations} from
+ * src/lib/db/migrate.ts.
  */
 async function migratePglite(): Promise<void> {
-  const { existsSync, readdirSync, readFileSync } = await import("node:fs");
-  const { resolve } = await import("node:path");
+  const { getMigrationFiles, runAllMigrations } = await import("~/lib/db/migrate");
 
-  const migrationsDir = resolve(import.meta.dirname, "../../../drizzle");
-
-  if (!existsSync(migrationsDir)) {
-    dbLogger.warn(`[DB] No migrations directory at ${migrationsDir}, skipping auto-migrate`);
-    return;
-  }
-
-  const files = readdirSync(migrationsDir)
-    .filter((f) => f.endsWith(".sql"))
-    .sort();
+  const files = getMigrationFiles();
 
   if (files.length === 0) {
     dbLogger.log("[DB] No pending migration files");
     return;
   }
 
-  for (const file of files) {
-    const filePath = resolve(migrationsDir, file);
-    const sql = readFileSync(filePath, "utf-8");
-    const statements = sql
-      .split("--> statement-breakpoint")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    for (let stmt of statements) {
-      try {
-        stmt = stmt.replace(
-          /^(CREATE\s+TYPE\s+.+?;)$/gm,
-          (match) => `DO $$ BEGIN\n  ${match}\nEXCEPTION WHEN duplicate_object THEN null;\nEND $$;`,
-        );
-        stmt = stmt.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ");
-        stmt = stmt.replace(
-          /^ALTER\s+TABLE\s+\S+\s+ADD\s+CONSTRAINT\s+"([^"]+)".*;$/gm,
-          (match, conName) =>
-            `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${conName}') THEN ${match} END IF; END $$;`,
-        );
-        await (dbClient as { exec(sql: string): Promise<unknown> }).exec(stmt);
-      } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : String(error);
-        dbLogger.warn(`[DB] Migration statement skipped: ${msg.slice(0, 80)}`);
-      }
-    }
-  }
+  dbLogger.log(`[DB] Running ${files.length} migration(s)...`);
+  await runAllMigrations(dbClient as { exec(sql: string): Promise<unknown> });
+  dbLogger.log("[DB] Migration complete");
 }
 
 /**
@@ -418,6 +387,63 @@ if (typeof window === "undefined") {
     globalStore[DB_PG_PRIMARY_KEY] = pgPoolPrimary;
     globalStore[DB_PG_REPLICAS_KEY] = pgPoolsReplicas;
   }
+}
+
+/**
+ * Resets database state for testing.
+ * Closes the connection, clears all internal state, and removes the
+ * data directory so the next initialization starts fresh.
+ *
+ * Re-initializes the database after reset so that subsequent test files
+ * running in the same process still have a working database instance.
+ */
+export async function resetDatabase(): Promise<void> {
+  // Close the existing PGlite client
+  if (dbClient && typeof dbClient.close === "function") {
+    try {
+      await dbClient.close();
+    } catch {}
+  }
+
+  // Close any PG pool connections
+  if (pgPoolPrimary) {
+    try {
+      await pgPoolPrimary.end();
+    } catch {}
+  }
+  for (const pool of pgPoolsReplicas) {
+    try {
+      await pool.end();
+    } catch {}
+  }
+
+  // Reset module-level variables
+  db = undefined as any;
+  dbClient = undefined;
+  pgPoolPrimary = undefined;
+  pgPoolsReplicas = [];
+
+  // Clear globalThis cache keys so the next initializeDatabase() call
+  // runs fresh (the cached singleton would reference a closed client)
+  const globalStore = globalThis as Record<string, unknown>;
+  delete globalStore[DB_INIT_KEY];
+  delete globalStore[DB_INSTANCE_KEY];
+  delete globalStore[DB_CLIENT_KEY];
+  delete globalStore[DB_PG_PRIMARY_KEY];
+  delete globalStore[DB_PG_REPLICAS_KEY];
+
+  // Remove the persistent data directory so the next PGlite instance
+  // starts with a clean slate (avoids cross-process corruption).
+  try {
+    const dataDir = env?.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+    rmSync(resolve(dataDir), { recursive: true, force: true });
+  } catch {
+    // Directory may not exist
+  }
+
+  // Re-initialize a fresh database so subsequent tests in the same process
+  // still have a working db instance and do not hit 500 errors.
+  await initializeDatabase();
 }
 
 export { dbClient, pgPoolPrimary, pgPoolsReplicas, db, schema };

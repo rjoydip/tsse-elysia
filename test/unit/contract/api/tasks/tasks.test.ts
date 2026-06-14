@@ -8,7 +8,7 @@ import { describe, it, expect, afterAll, beforeEach, beforeAll } from "bun:test"
 import { apiRoutes } from "~/routes/api/-app";
 import { BASE_URL } from "~/test/helpers/request";
 import { closeStorage } from "~/lib/cache";
-import { registerSetup } from "~/test/helpers/db-setup";
+import { registerSetup, cleanupPgliteDatabase } from "~/test/helpers/db-setup";
 
 registerSetup();
 
@@ -45,9 +45,10 @@ async function ensureTestUser(): Promise<void> {
     .onConflictDoNothing();
 }
 
-afterAll(() => {
+afterAll(async () => {
   delete process.env.TEST_AUTH_BYPASS;
   closeStorage();
+  await cleanupPgliteDatabase();
 });
 
 describe("Tasks API", () => {

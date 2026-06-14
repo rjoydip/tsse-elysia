@@ -20,8 +20,6 @@ import { drizzle } from "drizzle-orm/pglite";
 import { reset } from "drizzle-seed";
 import { nanoid } from "nanoid";
 import { scriptLogger as logger } from "~/lib/logger";
-import { subscriptionPlans } from "~/lib/db";
-import { users } from "~/lib/db";
 import * as schema from "~/lib/db";
 import { env } from "~/config/env";
 import { initializeDatabase, getDatabasePools } from "~/config/db";
@@ -240,10 +238,10 @@ async function seedPlans(db: ReturnType<typeof drizzle>): Promise<void> {
   logger.info(`Seeding ${planRecords.length} subscription plans...`);
   for (const plan of planRecords) {
     await db
-      .insert(subscriptionPlans)
+      .insert(schema.subscriptionPlans)
       .values(plan)
       .onConflictDoUpdate({
-        target: subscriptionPlans.id,
+        target: schema.subscriptionPlans.id,
         set: {
           name: plan.name,
           description: plan.description,
@@ -968,7 +966,7 @@ async function main(): Promise<void> {
       let inserted = 0;
       for (const user of fakeUsers) {
         try {
-          await db.insert(users).values(user);
+          await db.insert(schema.users).values(user);
           inserted++;
         } catch {
           // Skip duplicates

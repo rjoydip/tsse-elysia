@@ -1,55 +1,41 @@
 import { beforeAll } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * Returns all Drizzle PG migration SQL file paths sorted by version.
+ * Returns all user-defined table names from migration SQL files.
  */
-function getMigrationFiles(): string[] {
-  const migrationsDir = resolve(import.meta.dir, "../../drizzle");
-  const files = readdirSync(migrationsDir)
+function getMigrationTableNames(): string[] {
+  const dir = resolve(realpathSync(import.meta.dir), "../../drizzle");
+  if (!existsSync(dir)) return [];
+  const files = readdirSync(dir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
-  return files.map((f) => resolve(migrationsDir, f));
+  const tables: string[] = [];
+  const re = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(?:public\.)?"?([^\s"(]+)/gi;
+  for (const f of files) {
+    const sql = readFileSync(resolve(dir, f), "utf-8");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(sql)) !== null) tables.push(m[1]);
+  }
+  return [...new Set(tables)];
 }
 
 /**
- * Wraps CREATE TYPE statements with DO blocks for idempotency.
+ * Truncates all user tables so each test file starts with clean data.
  */
-function wrapCreateType(sql: string): string {
-  return sql.replace(
-    /^(CREATE\s+TYPE\s+.+?;)$/gm,
-    (match) => `DO $$ BEGIN\n  ${match}\nEXCEPTION WHEN duplicate_object THEN null;\nEND $$;`,
-  );
-}
-
-/**
- * Executes all Drizzle PG migration SQL statements against the database.
- */
-async function runMigrations(client: { exec(sql: string): Promise<unknown> }): Promise<void> {
-  const files = getMigrationFiles();
-  for (const filePath of files) {
-    const sql = readFileSync(filePath, "utf-8");
-    const statements = sql
-      .split("--> statement-breakpoint")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    for (let stmt of statements) {
-      try {
-        stmt = wrapCreateType(stmt);
-        stmt = stmt.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ");
-        await client.exec(stmt);
-      } catch {
-        // Skip statements that fail idempotently
-      }
+async function truncateTables(client: { exec(sql: string): Promise<unknown> }): Promise<void> {
+  for (const table of getMigrationTableNames()) {
+    try {
+      await client.exec(`TRUNCATE TABLE "${table}" CASCADE`);
+    } catch {
+      // Ignore
     }
   }
 }
 
 /**
- * Initializes PGlite in-memory database and runs all PG migrations.
- * Must be called inside a beforeAll/beforeEach hook (or at module top level).
+ * Sets up PGlite and truncates all tables for a clean test state.
  */
 async function setup(): Promise<void> {
   const { initializeDatabase, getDatabasePools } = await import("~/config/db");
@@ -57,27 +43,38 @@ async function setup(): Promise<void> {
   await initializeDatabase();
 
   const pools = getDatabasePools();
-
   if (!pools.client && !pools.primary) {
     throw new Error("Database failed to initialize for tests");
   }
 
   const pgClient = pools.client as { exec(sql: string): Promise<unknown> } | undefined;
-  if (!pgClient) {
-    throw new Error("Database client not initialized for test setup");
-  }
+  if (!pgClient) throw new Error("Database client not initialized for test setup");
 
-  try {
-    await runMigrations(pgClient);
-  } catch (error) {
-    console.warn("Failed to run migrations for tests:", error);
-  }
+  await truncateTables(pgClient);
 }
 
 /**
- * Registers a beforeAll hook that sets up the PGlite database and runs migrations.
- * Call this at the module top level in any test file that needs a real database.
+ * Registers a beforeAll hook that truncates all tables.
+ * Call this at module top level in any test file that needs a database.
  */
 export function registerSetup(): void {
   beforeAll(setup);
+}
+
+/**
+ * Cleans up the PGlite database after tests complete.
+ *
+ * Closes the database connection, resets internal state, removes the
+ * persistent data directory, then re-initializes a fresh database.
+ *
+ * Safe to call in afterAll hooks — subsequent test files in the same process
+ * will find a working database instance.
+ */
+export async function cleanupPgliteDatabase(): Promise<void> {
+  try {
+    const { resetDatabase } = await import("~/config/db");
+    await resetDatabase();
+  } catch {
+    // Database may not be initialized
+  }
 }

@@ -32,6 +32,7 @@ import { registerSetup } from "~/test/helpers/db-setup";
 
 registerSetup();
 import { closeStorage } from "~/lib/cache";
+import { cleanupPgliteDatabase } from "~/test/helpers/db-setup";
 
 /** Standard Request headers for authenticated dashboard requests. */
 const authHeaders = {
@@ -46,9 +47,10 @@ describe("Authenticated (TEST_AUTH_BYPASS) - Dashboard API", () => {
     process.env.TEST_AUTH_BYPASS = "true";
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     closeStorage();
     delete process.env.TEST_AUTH_BYPASS;
+    await cleanupPgliteDatabase();
   });
 
   it("GET /api/dashboard/metrics passes auth", async () => {
