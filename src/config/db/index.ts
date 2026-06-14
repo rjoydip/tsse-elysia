@@ -432,6 +432,15 @@ export async function resetDatabase(): Promise<void> {
   delete globalStore[DB_PG_PRIMARY_KEY];
   delete globalStore[DB_PG_REPLICAS_KEY];
 
+  // Reset db0 cache so the next heartbeat call creates a fresh connection
+  // using the new data directory (avoids 503 from stale instance).
+  try {
+    const { disposeDb0 } = await import("~/config/db/db0");
+    await disposeDb0();
+  } catch {
+    // db0 module may not be importable in all environments
+  }
+
   // Remove the persistent data directory so the next PGlite instance
   // starts with a clean slate (avoids cross-process corruption).
   try {
