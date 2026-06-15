@@ -1,11 +1,10 @@
 /**
  * Test cleanup utilities for database cleanup after tests.
- * Uses Node.js SQLite driver to avoid bun: protocol issues in Playwright teardown.
+ * Connects to the same PostgreSQL database the application uses.
  */
 import { eq, like } from "drizzle-orm";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
-import * as schema from "../src/lib/db/schema";
+import { initializeDatabase, getWriteDb } from "../src/config/db";
+import * as schema from "../src/lib/db";
 import { logger } from "../src/lib/logger";
 
 /**
@@ -19,18 +18,11 @@ const TEST_PREFIX = "e2e-";
 const TEST_DOMAIN = "test.com";
 
 /**
- * Database URL from environment or default file path.
+ * Creates a connection to the database using the project's auto-detected driver.
  */
-const sqliteUrl = process.env.SQLITE_URL || "file:.artifacts/tsse-elysia.db";
-
-/**
- * Creates a connection to the SQLite database.
- */
-function createDbConnection() {
-  const client = createClient({
-    url: sqliteUrl,
-  });
-  return drizzle(client, { schema });
+async function createDbConnection() {
+  await initializeDatabase();
+  return getWriteDb();
 }
 
 /**
@@ -40,7 +32,7 @@ function createDbConnection() {
  * @param email - Email of the user to clean up
  */
 export async function cleanupTestUser(email: string): Promise<void> {
-  const db = createDbConnection();
+  const db = await createDbConnection();
   try {
     const users = await db
       .select()
@@ -73,7 +65,7 @@ export async function cleanupTestUser(email: string): Promise<void> {
  * Used for E2E teardown.
  */
 export async function cleanupAllTestData(): Promise<void> {
-  const db = createDbConnection();
+  const db = await createDbConnection();
   try {
     const testUsers = await db
       .select()

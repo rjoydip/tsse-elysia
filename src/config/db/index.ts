@@ -1,32 +1,25 @@
 /**
- * Database connection and initialization using Drizzle ORM with LibSQL.
- * Supports SQLite (local/in-memory/Turso) and PostgreSQL based on environment.
+ * Database connection and initialization with Drizzle ORM and PostgreSQL.
  *
- * SQLite Configuration:
- * - If SQLITE_URL is set, use it (supports Turso, file paths, etc.)
- * - If POSTGRES_URL is set, use it (Superbase, file paths, etc.)
- * - Otherwise use sqlite database (`fallback`)
+ * Supports 4 runtime drivers selected by environment:
+ *  1. PGlite (WASM)  — local dev (persistent via PGLITE_DATA_DIR, default .artifacts/pglite-data)
+ *  2. node-postgres   — Docker / VPS (via POSTGRES_URL)
+ *  3. neon-serverless — Neon / Supabase (via NEON_DATABASE_URL)
+ *  4. pg-proxy        — Cloudflare Workers (via CF_HYPERDRIVE_BINDING)
  *
- * PostgreSQL Configuration:
- * - Used in production when POSTGRES_URL is available
- * - Supports read replicas via POSTGRES_REPLICAS env var
+ * Read-replica support for node-postgres (POSTGRES_REPLICAS) and Neon.
  *
  * Only initializes on server-side (typeof window === "undefined")
  * to prevent client-side bundle from including database code.
  */
 
-import { createClient, type Client } from "@libsql/client";
+import { rmSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Pool } from "pg";
-import { drizzle as drizzleLibsql } from "drizzle-orm/libsql";
-import * as schema from "~/lib/db/schema";
+import * as schema from "~/lib/db";
 import { env } from "~/config/env";
-import { isCI, isDev, isStage, isQA, isProduction } from "~/config";
 import { dbLogger } from "~/lib/logger";
-
-/**
- * Database type based on environment configuration.
- */
-export type DatabaseType = "sqlite" | "postgres";
+import { getDatabaseDriver, execViaHyperdrive } from "./driver";
 
 /**
  * Database pool configuration for health checks.
@@ -38,24 +31,19 @@ export interface DatabasePoolConfig {
 }
 
 /**
- * LibSQL database client for SQLite
+ * Generic DB client — PGlite instance, pg Pool, or neon Pool.
  */
-let sqliteClient: Client | undefined;
+let dbClient: any;
 
 /**
- * PostgreSQL primary (write) pool instance
+ * PostgreSQL primary (write) Pool (node-postgres / neon)
  */
 let pgPoolPrimary: Pool | undefined;
 
 /**
- * PostgreSQL read replica pools - dynamic array based on env config
+ * PostgreSQL read replica Pools
  */
 let pgPoolsReplicas: Pool[] = [];
-
-/**
- * Round-robin index for replica selection
- */
-let replicaRoundRobinIndex = 0;
 
 /**
  * Drizzle ORM instance with typed schema (primary/write)
@@ -63,95 +51,107 @@ let replicaRoundRobinIndex = 0;
 let db: any;
 
 /**
- * Gets the database type based on environment configuration.
- *
- * Priority order:
- * 1. If SQLITE_URL is set -> SQLite (supports Turso or file)
- * 2. If POSTGRES_URL is set (non-dev) -> PostgreSQL
- * 3. Otherwise -> SQLite (in-memory)
- *
- * @returns The configured database type
+ * Cached Drizzle ORM instances per replica pool.
+ * Avoids creating a new ORM wrapper (schema proxy, query builder) on every
+ * read request through a replica. Keyed by pool reference identity.
  */
-export function getDatabaseType(): DatabaseType {
-  // If SQLITE_URL is explicitly set, use SQLite (Turso, file, etc.)
-  if (env.SQLITE_URL) {
-    return "sqlite";
-  }
+let replicaDbs = new WeakMap<object, any>();
 
-  // CI always uses SQLite regardless of DATABASE_TYPE setting
-  if (isCI) {
-    return "sqlite";
-  }
+/**
+ * Round-robin index for replica selection
+ */
+let replicaRoundRobinIndex = 0;
 
-  // Check DATABASE_TYPE env var, default to sqlite
-  const dbType = env.DATABASE_TYPE || "sqlite";
-
-  // Local development: respect DATABASE_TYPE flag
-  if (isDev) {
-    if (dbType === "postgres" && env.POSTGRES_URL) {
-      return "postgres";
-    }
-    return "sqlite";
-  }
-
-  // Stage/QA/Prod: use PostgreSQL if URL is available
-  if ((isStage || isQA || isProduction) && env.POSTGRES_URL) {
-    return "postgres";
-  }
-
-  // Default fallback to SQLite
-  return "sqlite";
+/**
+ * Detects the active driver type based on env vars.
+ *
+ * Priority:
+ *  1. CF_HYPERDRIVE_BINDING  → pg-proxy (Cloudflare Workers)
+ *  2. NEON_DATABASE_URL       → neon (Neon / Supabase)
+ *  3. POSTGRES_URL            → node-postgres (Docker / production)
+ *  4. Default                 → pglite (local dev, in-memory or persistent)
+ *
+ * @returns Detected driver type
+ */
+/**
+ * Builds a PostgreSQL connection string from individual env vars.
+ *
+ * @returns PostgreSQL connection string
+ */
+function buildPostgresConnectionString(): string {
+  const host = env.POSTGRES_HOST || "localhost";
+  const port = env.POSTGRES_PORT || 5432;
+  const user = env.POSTGRES_USER || "tsse";
+  const password = env.POSTGRES_PASSWORD || "";
+  const database = env.POSTGRES_DB || "tsse_dev";
+  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
 }
 
 /**
- * Creates a SQLite database connection using LibSQL client.
- * Supports file-based, in-memory, and Turso/remote databases.
- * Falls back to in-memory database if SQLITE_URL is not set.
+ * Creates a PGlite (WASM PostgreSQL) connection.
+ * Persistent by default via `.artifacts/pglite-data`; override with PGLITE_DATA_DIR.
+ * Applies pending migrations automatically on startup.
  *
- * @returns SQLite database client and Drizzle ORM
+ * @returns PGlite client and Drizzle ORM
  */
-function createSQLiteConnection(): {
-  sqliteClient: Client;
+async function createPgliteConnection(): Promise<{
+  dbClient: any;
   db: typeof db;
-} {
-  const url = env.SQLITE_URL || ":memory:";
-  const authToken = env.SQLITE_AUTH_TOKEN;
+}> {
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { drizzle } = await import("drizzle-orm/pglite");
 
-  // Use LibSQL client for SQLite
-  sqliteClient = createClient({
-    url,
-    authToken,
-  });
+  // Read from process.env first so per-worker temp dirs set by
+  // test/setup.ts are honoured even if the env module was cached earlier.
+  const dataDir = process.env.PGLITE_DATA_DIR || env.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+  const options = { dataDir };
+  dbClient = new PGlite(options);
+  db = drizzle(dbClient, { schema });
 
-  db = drizzleLibsql(sqliteClient, {
-    schema,
-  });
+  dbLogger.log(`[DB] Using PGlite: ${dataDir}`);
 
-  dbLogger.log(`[DB] Using SQLite: ${url === ":memory:" ? "in-memory" : url}`);
+  // Auto-migrate: apply pending migration SQL so in-memory PGlite
+  // always starts with the latest schema, no separate db:migrate needed.
+  await migratePglite();
 
-  return { sqliteClient, db };
+  return { dbClient, db };
 }
 
 /**
- * Creates a PostgreSQL connection pool with primary and read replicas.
- *
- * @returns PostgreSQL pools and Drizzle ORM instances
+ * Reads and applies pending SQL migrations from the drizzle/ directory.
+ * Uses IF NOT EXISTS / DO blocks for idempotency so it is safe to run
+ * on every startup. Delegates to the shared {@link runAllMigrations} from
+ * src/lib/db/migrate.ts.
  */
-async function createPostgresConnection(): Promise<{
+async function migratePglite(): Promise<void> {
+  const { getMigrationFiles, runAllMigrations } = await import("~/lib/db/migrate");
+
+  const files = getMigrationFiles();
+
+  if (files.length === 0) {
+    dbLogger.log("[DB] No pending migration files");
+    return;
+  }
+
+  dbLogger.log(`[DB] Running ${files.length} migration(s)...`);
+  await runAllMigrations(dbClient as { exec(sql: string): Promise<unknown> });
+  dbLogger.log("[DB] Migration complete");
+}
+
+/**
+ * Creates a node-postgres connection pool with read-replica support.
+ *
+ * @returns PostgreSQL pools and Drizzle ORM
+ */
+async function createNodePostgresConnection(): Promise<{
   pgPoolPrimary: Pool;
   pgPoolsReplicas: Pool[];
   db: typeof db;
 }> {
   const connectionString = env.POSTGRES_URL || buildPostgresConnectionString();
 
-  /**
-   * Dynamically import `pg` Pool only on the server side.
-   * Static import at the top-level would cause Vite to bundle `pg`
-   * into the client bundle, which fails because `pg` is a Node.js module.
-   */
   const { Pool: PgPool } = await import("pg");
 
-  // Primary (write) pool
   pgPoolPrimary = new PgPool({
     connectionString,
     max: 20,
@@ -159,7 +159,6 @@ async function createPostgresConnection(): Promise<{
     connectionTimeoutMillis: 2000,
   });
 
-  // Dynamic read replicas from POSTGRES_REPLICAS env var (JSON array)
   const replicaUrls: string[] = env.POSTGRES_REPLICAS || [];
   pgPoolsReplicas = replicaUrls.map((url: string) => {
     return new PgPool({
@@ -170,30 +169,54 @@ async function createPostgresConnection(): Promise<{
     });
   });
 
-  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
-  // Primary (write) Drizzle instance
-  db = drizzlePg(pgPoolPrimary, {
-    schema,
-  });
+  db = drizzlePg(pgPoolPrimary, { schema });
 
+  dbLogger.log("[DB] Using node-postgres");
   return { pgPoolPrimary, pgPoolsReplicas, db };
 }
 
 /**
- * Builds PostgreSQL connection string from individual env vars.
+ * Creates a Neon serverless connection.
  *
- * @returns PostgreSQL connection string
+ * @returns Neon pool (stored in dbClient) and Drizzle ORM
  */
-function buildPostgresConnectionString(): string {
-  const host = env.POSTGRES_HOST || "localhost";
-  const port = env.POSTGRES_PORT || 5432;
-  const user = env.POSTGRES_USER || "tsse";
-  const password = env.POSTGRES_PASSWORD || "";
-  const database = env.POSTGRES_DB || "tsse_dev";
+async function createNeonConnection(): Promise<{
+  db: typeof db;
+}> {
+  const { Pool: NeonPool } = await import("@neondatabase/serverless");
+  const { drizzle: drizzleNeon } = await import("drizzle-orm/neon-serverless");
 
-  return `postgresql://${user}:${password}@${host}:${port}/${database}`;
+  const neonPool = new NeonPool({ connectionString: env.NEON_DATABASE_URL });
+
+  dbClient = neonPool;
+  db = drizzleNeon(neonPool, { schema });
+
+  dbLogger.log("[DB] Using neon-serverless");
+  return { db };
+}
+
+/**
+ * Creates a Cloudflare pg-proxy connection wrapping Hyperdrive.
+ *
+ * @returns Drizzle ORM
+ */
+async function createPgProxyConnection(): Promise<{
+  db: typeof db;
+}> {
+  const { drizzle: drizzleProxy } = await import("drizzle-orm/pg-proxy");
+
+  db = drizzleProxy(
+    async (sql: string, params: any[], _method: "all" | "execute" | "values") => {
+      const result = await execViaHyperdrive(sql, params);
+      return { rows: (result?.rows as any[]) ?? [] };
+    },
+    { schema },
+  );
+
+  dbLogger.log("[DB] Using pg-proxy (Cloudflare Hyperdrive)");
+  return { db };
 }
 
 /**
@@ -214,34 +237,34 @@ export function getWriteDb() {
  * @returns A read Drizzle ORM instance (from replica or primary)
  */
 export async function getReadDb() {
-  // No replicas configured, use primary
   if (pgPoolsReplicas.length === 0) {
     return db;
   }
 
-  // Round-robin selection between available replicas
-  const index = replicaRoundRobinIndex % pgPoolsReplicas.length;
-  replicaRoundRobinIndex++;
+  const index = replicaRoundRobinIndex++ % pgPoolsReplicas.length;
   const selectedPool = pgPoolsReplicas[index];
 
-  // Dynamically import drizzlePg to prevent Vite from bundling `pg` into the client
+  // Return cached instance if one exists for this pool
+  const cached = replicaDbs.get(selectedPool);
+  if (cached) return cached;
+
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
-  return drizzlePg(selectedPool, {
-    schema,
-  });
+  const readDb = drizzlePg(selectedPool, { schema });
+  replicaDbs.set(selectedPool, readDb);
+  return readDb;
 }
 
 /**
  * Returns all database pools for health checks.
  *
- * @returns Object containing all database pools/instances
+ * @returns Object containing database pools/instances
  */
 export function getDatabasePools() {
   return {
     primary: pgPoolPrimary,
     replicas: pgPoolsReplicas,
-    sqlite: sqliteClient,
+    client: dbClient,
   };
 }
 
@@ -253,25 +276,37 @@ export function getDatabasePools() {
  */
 export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
   const configs: DatabasePoolConfig[] = [];
+  const driver = getDatabaseDriver();
 
-  // Primary pool (always for writes)
-  if (pgPoolPrimary) {
+  let primaryUrl: string;
+
+  switch (driver) {
+    case "neon":
+      primaryUrl = env.NEON_DATABASE_URL!;
+      break;
+    case "node-postgres":
+      primaryUrl = env.POSTGRES_URL || buildPostgresConnectionString();
+      break;
+    case "pglite":
+    default:
+      primaryUrl = env.PGLITE_DATA_DIR;
+  }
+
+  if (pgPoolPrimary || driver === "pglite" || driver === "pg-proxy") {
     configs.push({
       name: "primary",
       role: "primary",
-      url: env.POSTGRES_URL || buildPostgresConnectionString(),
+      url: primaryUrl,
     });
   }
 
-  // Replica pools
   const replicaUrls: string[] = env.POSTGRES_REPLICAS || [];
 
-  // If no replicas configured, primary also serves reads
   if (replicaUrls.length === 0 && pgPoolPrimary) {
     configs.push({
       name: "primary-read",
       role: "replica",
-      url: env.POSTGRES_URL || buildPostgresConnectionString(),
+      url: primaryUrl,
     });
   } else {
     replicaUrls.forEach((url: string, index: number) => {
@@ -288,29 +323,36 @@ export function getDatabasePoolConfigs(): DatabasePoolConfig[] {
 
 /**
  * Initializes the database based on environment configuration.
- * This function handles the decision between SQLite and PostgreSQL.
+ * Selects from 4 PG drivers: PGlite, node-postgres, neon, pg-proxy.
  *
  * @returns The initialized Drizzle ORM instance
  */
 export async function initializeDatabase() {
-  if (db) return db; // Return existing instance if already initialized
+  if (db) return db;
 
-  const dbType = getDatabaseType();
+  const driver = getDatabaseDriver();
 
-  // Initialize only in server-side context
   if (typeof window !== "undefined") {
     dbLogger.warn("Database initialization skipped: client-side context");
     return db;
   }
 
-  switch (dbType) {
-    case "postgres":
-      dbLogger.log("[DB] Using PostgreSQL");
-      await createPostgresConnection();
+  switch (driver) {
+    case "pglite":
+      dbLogger.log("[DB] Driver: PGlite");
+      await createPgliteConnection();
       break;
-    case "sqlite":
-    default:
-      createSQLiteConnection();
+    case "node-postgres":
+      dbLogger.log("[DB] Driver: node-postgres");
+      await createNodePostgresConnection();
+      break;
+    case "neon":
+      dbLogger.log("[DB] Driver: neon-serverless");
+      await createNeonConnection();
+      break;
+    case "pg-proxy":
+      dbLogger.log("[DB] Driver: pg-proxy");
+      await createPgProxyConnection();
       break;
   }
 
@@ -323,34 +365,102 @@ export async function initializeDatabase() {
 // where module-level state is reset on every file save.
 const DB_INIT_KEY = "___tsse_elysia_db_init";
 const DB_INSTANCE_KEY = "___tsse_elysia_db_instance";
-const DB_SQLITE_KEY = "___tsse_elysia_sqlite_client";
+const DB_CLIENT_KEY = "___tsse_elysia_db_client";
 const DB_PG_PRIMARY_KEY = "___tsse_elysia_pg_primary";
 const DB_PG_REPLICAS_KEY = "___tsse_elysia_pg_replicas";
 
 if (typeof window === "undefined") {
   const globalStore = globalThis as Record<string, unknown>;
 
-  // Restore persisted instances after HMR module re-evaluation
   if (globalStore[DB_INSTANCE_KEY]) {
     db = globalStore[DB_INSTANCE_KEY] as typeof db;
-    sqliteClient = globalStore[DB_SQLITE_KEY] as typeof sqliteClient;
+    dbClient = globalStore[DB_CLIENT_KEY];
     pgPoolPrimary = globalStore[DB_PG_PRIMARY_KEY] as typeof pgPoolPrimary;
     pgPoolsReplicas = globalStore[DB_PG_REPLICAS_KEY] as typeof pgPoolsReplicas;
   }
 
-  // Initialize only once per process
   if (!globalStore[DB_INIT_KEY]) {
     globalStore[DB_INIT_KEY] = true;
     await initializeDatabase();
 
-    // Persist instances to survive HMR
     globalStore[DB_INSTANCE_KEY] = db;
-    globalStore[DB_SQLITE_KEY] = sqliteClient;
+    globalStore[DB_CLIENT_KEY] = dbClient;
     globalStore[DB_PG_PRIMARY_KEY] = pgPoolPrimary;
     globalStore[DB_PG_REPLICAS_KEY] = pgPoolsReplicas;
   }
 }
 
-// Export for use in other modules (auth, migrations, etc.)
-export { sqliteClient, pgPoolPrimary, pgPoolsReplicas, db, schema };
+/**
+ * Resets database state for testing.
+ * Closes the connection, clears all internal state, and removes the
+ * data directory so the next initialization starts fresh.
+ *
+ * Re-initializes the database after reset so that subsequent test files
+ * running in the same process still have a working database instance.
+ */
+export async function resetDatabase(): Promise<void> {
+  // Close the existing PGlite client
+  if (dbClient && typeof dbClient.close === "function") {
+    try {
+      await dbClient.close();
+    } catch {}
+  }
+
+  // Close any PG pool connections
+  if (pgPoolPrimary) {
+    try {
+      await pgPoolPrimary.end();
+    } catch {}
+  }
+  for (const pool of pgPoolsReplicas) {
+    try {
+      await pool.end();
+    } catch {}
+  }
+
+  // Reset module-level variables
+  db = undefined as any;
+  dbClient = undefined;
+  pgPoolPrimary = undefined;
+  pgPoolsReplicas = [];
+  // WeakMap entries are automatically cleaned up when the pool objects
+  // (the keys) are garbage collected. Reassign so old refs are released.
+  replicaDbs = new WeakMap();
+
+  // Clear globalThis cache keys so the next initializeDatabase() call
+  // runs fresh (the cached singleton would reference a closed client)
+  const globalStore = globalThis as Record<string, unknown>;
+  delete globalStore[DB_INIT_KEY];
+  delete globalStore[DB_INSTANCE_KEY];
+  delete globalStore[DB_CLIENT_KEY];
+  delete globalStore[DB_PG_PRIMARY_KEY];
+  delete globalStore[DB_PG_REPLICAS_KEY];
+
+  // Reset db0 cache so the next heartbeat call creates a fresh connection
+  // using the new data directory (avoids 503 from stale instance).
+  try {
+    const { disposeDb0 } = await import("~/config/db/db0");
+    await disposeDb0();
+  } catch {
+    // db0 module may not be importable in all environments
+  }
+
+  // Remove the persistent data directory so the next PGlite instance
+  // starts with a clean slate (avoids cross-process corruption).
+  // Reads from process.env directly so per-worker temp dirs set by
+  // test/setup.ts are honoured even if the env module was cached earlier.
+  try {
+    const dataDir = process.env.PGLITE_DATA_DIR || env?.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+    rmSync(resolve(dataDir), { recursive: true, force: true });
+  } catch {
+    // Directory may not exist
+  }
+
+  // Re-initialize a fresh database so subsequent tests in the same process
+  // still have a working db instance and do not hit 500 errors.
+  await initializeDatabase();
+}
+
+export { dbClient, pgPoolPrimary, pgPoolsReplicas, db, schema };
 export type DbType = NonNullable<typeof db>;
+export { getDatabaseDriver, type DriverType } from "./driver";

@@ -44,21 +44,25 @@ describe("_env", () => {
       expect(typeof env.PORT).toBe("number");
     });
 
-    it("should have DATABASE_TYPE from env", async () => {
+    it("should have PGLITE_DATA_DIR from env", async () => {
       const { env } = await import(envPath);
-      expect(env.DATABASE_TYPE).toMatch(/^(sqlite|postgres)$/);
-    });
-
-    it("should have SQLITE_URL from env", async () => {
-      const { env } = await import(envPath);
-      expect(env.SQLITE_URL === undefined || typeof env.SQLITE_URL === "string").toBe(true);
-    });
-
-    it("should have SQLITE_AUTH_TOKEN from env", async () => {
-      const { env } = await import(envPath);
-      expect(env.SQLITE_AUTH_TOKEN === undefined || typeof env.SQLITE_AUTH_TOKEN === "string").toBe(
+      expect(env.PGLITE_DATA_DIR === undefined || typeof env.PGLITE_DATA_DIR === "string").toBe(
         true,
       );
+    });
+
+    it("should have NEON_DATABASE_URL from env", async () => {
+      const { env } = await import(envPath);
+      expect(env.NEON_DATABASE_URL === undefined || typeof env.NEON_DATABASE_URL === "string").toBe(
+        true,
+      );
+    });
+
+    it("should have CF_HYPERDRIVE_BINDING from env", async () => {
+      const { env } = await import(envPath);
+      expect(
+        env.CF_HYPERDRIVE_BINDING === undefined || typeof env.CF_HYPERDRIVE_BINDING === "string",
+      ).toBe(true);
     });
 
     it("should have POSTGRES_USER from env", async () => {

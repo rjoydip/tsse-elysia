@@ -56,8 +56,7 @@ export const rolesRoutes = new Elysia({
   .get("/permissions", async ({ set, request }) => handleGetPermissions(request, set), {
     detail: {
       summary: "Get all permissions",
-      description:
-        "Returns a list of all permissions in the system. Requires admin or superadmin role.",
+      description: "Returns a list of all permissions in the system. Requires admin role.",
       tags: ["roles"],
       responses: {
         200: {
@@ -100,7 +99,7 @@ export const rolesRoutes = new Elysia({
       }),
       detail: {
         summary: "Create a new permission",
-        description: "Creates a new permission in the system. Requires admin or superadmin role.",
+        description: "Creates a new permission in the system. Requires admin role.",
         tags: ["roles"],
         responses: {
           201: { description: "Permission created successfully" },
@@ -128,7 +127,7 @@ export const rolesRoutes = new Elysia({
       }),
       detail: {
         summary: "Update a permission",
-        description: "Updates an existing permission. Requires admin or superadmin role.",
+        description: "Updates an existing permission. Requires admin role.",
         tags: ["roles"],
         responses: {
           200: { description: "Permission updated successfully" },
@@ -151,7 +150,7 @@ export const rolesRoutes = new Elysia({
       params: t.Object({ id: t.String() }),
       detail: {
         summary: "Delete a permission",
-        description: "Deletes a permission from the system. Requires admin or superadmin role.",
+        description: "Deletes a permission from the system. Requires admin role.",
         tags: ["roles"],
         responses: {
           200: { description: "Permission deleted successfully" },
@@ -168,7 +167,7 @@ export const rolesRoutes = new Elysia({
     detail: {
       summary: "Get all roles",
       description:
-        "Returns a list of all roles in the system with their permissions. Requires admin or superadmin role.",
+        "Returns a list of all roles in the system with their permissions. Requires admin role.",
       tags: ["roles"],
       responses: {
         200: {
@@ -203,7 +202,7 @@ export const rolesRoutes = new Elysia({
       }),
       detail: {
         summary: "Create a new role",
-        description: "Creates a new role in the system. Requires admin or superadmin role.",
+        description: "Creates a new role in the system. Requires admin role.",
         tags: ["roles"],
         responses: {
           201: { description: "Role created successfully" },
@@ -226,7 +225,7 @@ export const rolesRoutes = new Elysia({
       params: t.Object({ id: t.String() }),
       detail: {
         summary: "Get a specific role",
-        description: "Returns a single role by ID. Requires admin or superadmin role.",
+        description: "Returns a single role by ID. Requires admin role.",
         tags: ["roles"],
         responses: {
           200: { description: "Role retrieved successfully" },
@@ -261,7 +260,7 @@ export const rolesRoutes = new Elysia({
       }),
       detail: {
         summary: "Update a role",
-        description: "Updates an existing role. Requires admin or superadmin role.",
+        description: "Updates an existing role. Requires admin role.",
         tags: ["roles"],
         responses: {
           200: { description: "Role updated successfully" },
@@ -284,7 +283,7 @@ export const rolesRoutes = new Elysia({
       params: t.Object({ id: t.String() }),
       detail: {
         summary: "Delete a role",
-        description: "Deletes a role from the system. Requires admin or superadmin role.",
+        description: "Deletes a role from the system. Requires admin role.",
         tags: ["roles"],
         responses: {
           200: { description: "Role deleted successfully" },

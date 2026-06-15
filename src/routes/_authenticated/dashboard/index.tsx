@@ -17,7 +17,7 @@ async function dashboardLoader(): Promise<DashboardLoaderData> {
   // Total Users is fetched client-side via /api/dashboard/metrics
   // which requires only a valid session — no admin role needed.
   // The SSR loader no longer fetches /api/users?limit=1 because that
-  // endpoint applies role hierarchy filtering, excluding admins/superadmins
+  // endpoint applies role hierarchy filtering, excluding admins
   // from the count.
   return { userCount: 0 };
 }

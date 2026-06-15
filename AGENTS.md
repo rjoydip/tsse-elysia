@@ -231,9 +231,6 @@ test/
 # Run all unit tests
 bun test
 
-# Run all unit tests with preload
-bun test:unit:preload
-
 # Run specific test file
 bun test test/unit/config/docs.test.ts
 

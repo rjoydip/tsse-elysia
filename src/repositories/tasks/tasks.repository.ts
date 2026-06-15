@@ -35,7 +35,7 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const TASK_LABELS = ["bug", "feature", "documentation"] as const;
 export type TaskLabel = (typeof TASK_LABELS)[number];
 
-import type { tasks as TasksTable, Task as TaskRow } from "~/lib/db/schema/tasks";
+import type { tasks as TasksTable, Task as TaskRow } from "~/lib/db";
 
 export type { TaskRow };
 
@@ -150,7 +150,7 @@ export class TasksRepository implements ITasksRepository {
           this._db = dbModule.db as DbType;
         }
         if (!this._tasksTable) {
-          const schemaModule = await import("~/lib/db/schema/tasks");
+          const schemaModule = await import("~/lib/db");
           this._tasksTable = schemaModule.tasks as typeof TasksTable;
         }
         return { db: this._db, tasksTable: this._tasksTable };

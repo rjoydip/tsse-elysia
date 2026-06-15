@@ -7,6 +7,10 @@ description: All notable changes to this project
 
 ### 🚀 Enhancements
 
+- Remove superadmin role from entire codebase — `UserRole` is now `admin | manager | cashier | user`
+- Use `z.coerce.number()` in users/tasks route search schemas so URL string params coerce to numbers
+- Add `autoResetPageIndex: false` to users/tasks tables to prevent page reset on data load
+- Add `Number()` fallback in `useTableUrlState` hook for robust string-to-number conversion
 - Add Bruno API testing workspace with 8 API domain collections (auth, users, roles, settings, tasks, mcp, dashboard, system), local/CI environments, and CI workflow
 - Add Bruno collection generation script from OpenAPI spec using `@usebruno/converters`
 - Add production-aware seed script with `--prod` flag and graph seed data (monthly/weekly registration timestamps)

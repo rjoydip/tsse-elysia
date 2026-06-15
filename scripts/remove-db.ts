@@ -1,69 +1,58 @@
-import { existsSync, unlinkSync } from "fs";
+import { existsSync, rmSync } from "fs";
 import { resolve } from "path";
 import { Client } from "pg";
 import { scriptLogger as logger } from "~/lib/logger";
 
-async function removePostgresDatabase() {
-  const host = process.env.POSTGRES_HOST || "localhost";
-  const port = parseInt(process.env.POSTGRES_PORT || "5432", 10);
-  const user = process.env.POSTGRES_USER || "tsse";
-  const password = process.env.POSTGRES_PASSWORD || "";
-  const database = process.env.POSTGRES_DB || "tsse_dev";
+async function removeDatabase() {
+  // Try PostgreSQL first (Docker / production)
+  if (process.env.POSTGRES_URL || process.env.POSTGRES_HOST) {
+    const host = process.env.POSTGRES_HOST || "localhost";
+    const port = parseInt(process.env.POSTGRES_PORT || "5432", 10);
+    const user = process.env.POSTGRES_USER || "tsse";
+    const password = process.env.POSTGRES_PASSWORD || "";
+    const database = process.env.POSTGRES_DB || "tsse_dev";
 
-  const adminClient = new Client({
-    host,
-    port,
-    user,
-    password,
-    database: "postgres", // Connect to default postgres db to drop our db
-  });
+    const adminClient = new Client({
+      host,
+      port,
+      user,
+      password,
+      database: "postgres",
+    });
 
-  try {
-    await adminClient.connect();
-
-    // Terminate existing connections to the database
-    await adminClient.query(
-      `
-      SELECT pg_terminate_backend(pg_stat_activity.pid)
-      FROM pg_stat_activity
-      WHERE datname = $1 AND pid <> pg_backend_pid()
-    `,
-      [database],
-    );
-
-    // Drop the database
-    await adminClient.query(`DROP DATABASE IF EXISTS ${database}`);
-    logger.success(`Dropped PostgreSQL database: ${database}`);
-  } catch (error) {
-    logger.error(`Failed to drop PostgreSQL database: ${error}`);
-    throw error;
-  } finally {
-    await adminClient.end();
+    try {
+      await adminClient.connect();
+      await adminClient.query(
+        `SELECT pg_terminate_backend(pg_stat_activity.pid)
+         FROM pg_stat_activity
+         WHERE datname = $1 AND pid <> pg_backend_pid()`,
+        [database],
+      );
+      await adminClient.query(`DROP DATABASE IF EXISTS "${database}"`);
+      logger.success(`Dropped PostgreSQL database: ${database}`);
+    } catch (error) {
+      logger.error(`Failed to drop PostgreSQL database: ${error}`);
+      throw error;
+    } finally {
+      await adminClient.end();
+    }
+    return;
   }
-}
 
-async function removeSQLiteDatabase(dbPath: string) {
-  const fullPath = resolve(dbPath);
+  // Fallback: remove PGlite data directory
+  const dataDir = process.env.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+  const fullPath = resolve(dataDir);
 
   if (existsSync(fullPath)) {
-    unlinkSync(fullPath);
-    logger.success(`Removed SQLite database: ${fullPath}`);
+    rmSync(fullPath, { recursive: true, force: true });
+    logger.success(`Removed PGlite data directory: ${fullPath}`);
   } else {
-    logger.warn(`No database file found at ${fullPath}, skipping`);
+    logger.warn(`No data directory found at ${fullPath}, skipping`);
   }
 }
 
 async function main() {
-  const dbType = process.env.DATABASE_TYPE || "sqlite";
-  const sqliteDbUrl = process.env.SQLITE_URL || "file:.artifacts/tsse-elysia.db";
-
-  const dbPath = sqliteDbUrl.replace(/^file:/, "");
-
-  if (dbType === "postgres") {
-    await removePostgresDatabase();
-  } else {
-    removeSQLiteDatabase(dbPath);
-  }
+  await removeDatabase();
 }
 
 main().catch((error) => {

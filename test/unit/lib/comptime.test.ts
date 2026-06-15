@@ -26,52 +26,47 @@ describe("ROLE_HIERARCHY_VALUES", () => {
     expect(ROLE_HIERARCHY_VALUES.cashier).toBe(1);
     expect(ROLE_HIERARCHY_VALUES.manager).toBe(2);
     expect(ROLE_HIERARCHY_VALUES.admin).toBe(3);
-    expect(ROLE_HIERARCHY_VALUES.superadmin).toBe(4);
   });
 
   it("should have higher values for higher privilege roles", () => {
-    expect(ROLE_HIERARCHY_VALUES.superadmin).toBeGreaterThan(ROLE_HIERARCHY_VALUES.admin);
     expect(ROLE_HIERARCHY_VALUES.admin).toBeGreaterThan(ROLE_HIERARCHY_VALUES.manager);
     expect(ROLE_HIERARCHY_VALUES.manager).toBeGreaterThan(ROLE_HIERARCHY_VALUES.cashier);
     expect(ROLE_HIERARCHY_VALUES.cashier).toBeGreaterThan(ROLE_HIERARCHY_VALUES.user);
   });
 
-  it("should have exactly 5 roles defined", () => {
-    expect(Object.keys(ROLE_HIERARCHY_VALUES).length).toBe(5);
+  it("should have exactly 4 roles defined", () => {
+    expect(Object.keys(ROLE_HIERARCHY_VALUES).length).toBe(4);
   });
 });
 
 describe("Role Arrays", () => {
   describe("ALL_ROLES_VALUES", () => {
-    it("should contain all 5 roles", () => {
+    it("should contain all 4 roles", () => {
       expect(ALL_ROLES_VALUES).toContain("user");
       expect(ALL_ROLES_VALUES).toContain("cashier");
       expect(ALL_ROLES_VALUES).toContain("manager");
       expect(ALL_ROLES_VALUES).toContain("admin");
-      expect(ALL_ROLES_VALUES).toContain("superadmin");
-      expect(ALL_ROLES_VALUES.length).toBe(5);
+      expect(ALL_ROLES_VALUES.length).toBe(4);
     });
 
     it("should have roles ordered from lowest to highest privilege", () => {
       expect(ALL_ROLES_VALUES[0]).toBe("user");
-      expect(ALL_ROLES_VALUES[ALL_ROLES_VALUES.length - 1]).toBe("superadmin");
+      expect(ALL_ROLES_VALUES[ALL_ROLES_VALUES.length - 1]).toBe("admin");
     });
   });
 
   describe("ADMIN_ROLES_VALUES", () => {
-    it("should contain exactly admin and superadmin", () => {
+    it("should contain exactly admin", () => {
       expect(ADMIN_ROLES_VALUES).toContain("admin");
-      expect(ADMIN_ROLES_VALUES).toContain("superadmin");
-      expect(ADMIN_ROLES_VALUES.length).toBe(2);
+      expect(ADMIN_ROLES_VALUES.length).toBe(1);
     });
   });
 
   describe("MANAGER_ROLES_VALUES", () => {
-    it("should contain manager, admin, and superadmin", () => {
+    it("should contain manager and admin", () => {
       expect(MANAGER_ROLES_VALUES).toContain("manager");
       expect(MANAGER_ROLES_VALUES).toContain("admin");
-      expect(MANAGER_ROLES_VALUES).toContain("superadmin");
-      expect(MANAGER_ROLES_VALUES.length).toBe(3);
+      expect(MANAGER_ROLES_VALUES.length).toBe(2);
     });
   });
 });

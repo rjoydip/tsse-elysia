@@ -105,7 +105,7 @@ export function withErrorHandling<T extends Record<string, unknown>>(
  */
 export async function fetchUserAndBuildResponse(userId: string): Promise<CallToolResult> {
   const { db } = await import("~/config/db");
-  const { users } = await import("~/lib/db/schema/auth");
+  const { users } = await import("~/lib/db");
   const { eq } = await import("drizzle-orm");
 
   const user = await db.query.users.findFirst({

@@ -3,38 +3,29 @@
  * Sets up the database before tests run.
  */
 
-import { existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
 import { execSync } from "child_process";
 import { logger } from "../src/lib/logger";
-
-const sqliteUrl = process.env.SQLITE_URL || "file:.artifacts/tsse-elysia.db";
 
 export default async function globalSetup() {
   logger.log("[E2E Setup] Setting up database...");
 
-  const dbPath = sqliteUrl.startsWith("file:") ? sqliteUrl.replace("file:", "") : sqliteUrl;
-
-  const fullPath = resolve(dbPath);
-  const dirPath = resolve(dbPath, "..");
-
-  if (!existsSync(dirPath)) {
-    mkdirSync(dirPath, { recursive: true });
-    logger.log(`[E2E Setup] Created directory: ${dirPath}`);
+  if (process.env.POSTGRES_URL || process.env.PGLITE_DATA_DIR) {
+    logger.log(`[E2E Setup] Using existing database configuration`);
+  } else {
+    logger.log("[E2E Setup] No PG config found, will use PGlite in-memory");
   }
 
-  logger.log("[E2E Setup] Running db:push to create tables...");
+  logger.log("[E2E Setup] Running db:migrate to create tables...");
 
   try {
-    execSync("bun run db:push", {
+    execSync("bun run db:migrate", {
       stdio: "inherit",
-      env: { ...process.env, DATABASE_TYPE: "sqlite", SQLITE_URL: dbPath },
+      env: { ...process.env },
     });
-    logger.log("[E2E Setup] Database schema pushed successfully");
+    logger.log("[E2E Setup] Database schema migrated successfully");
   } catch (error) {
-    logger.error("[E2E Setup] Failed to push database schema", error);
+    logger.error("[E2E Setup] Failed to migrate database schema", error);
   }
 
-  logger.log(`[E2E Setup] Database ready at: ${fullPath}`);
   logger.log("[E2E Setup] Setup complete");
 }

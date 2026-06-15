@@ -7,8 +7,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "~/config/db";
 import { nanoid } from "nanoid";
-import { userSettingsProfile } from "~/lib/db/schema/user-settings";
-import { users } from "~/lib/db/schema/auth";
+import { userSettingsProfile } from "~/lib/db";
+import { users } from "~/lib/db";
 import { Result, DatabaseError, NotFoundError } from "~/lib/result";
 
 /**

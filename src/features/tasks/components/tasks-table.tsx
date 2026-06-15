@@ -40,11 +40,6 @@ export function TasksTable({ data }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [globalFilter, onGlobalFilterChange] = useState('')
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-
   // Synced with URL states (updated to match route search schema defaults)
   const {
     globalFilter,
@@ -77,6 +72,7 @@ export function TasksTable({ data }: DataTableProps) {
       pagination,
     },
     enableRowSelection: true,
+    autoResetPageIndex: false,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,

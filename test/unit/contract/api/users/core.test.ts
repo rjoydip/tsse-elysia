@@ -1,7 +1,7 @@
 /**
  * Contract tests for Users API endpoints.
  * Tests user listing, profile management, and administrative operations.
- * All endpoints require authentication; administrative endpoints require admin/superadmin role.
+ * All endpoints require authentication; administrative endpoints require admin role.
  */
 
 import { describe, it, expect, afterAll } from "bun:test";

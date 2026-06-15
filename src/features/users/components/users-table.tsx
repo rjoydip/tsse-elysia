@@ -47,10 +47,6 @@ export function UsersTable({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
-
   // Synced with URL states (keys/defaults mirror users route search schema)
   const {
     columnFilters,
@@ -82,6 +78,7 @@ export function UsersTable({
       columnVisibility,
     },
     enableRowSelection: true,
+    autoResetPageIndex: false,
     onPaginationChange,
     onColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
@@ -95,9 +92,10 @@ export function UsersTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  const pageCount = table.getPageCount();
   useEffect(() => {
-    ensurePageInRange(table.getPageCount());
-  }, [table, ensurePageInRange]);
+    ensurePageInRange(pageCount);
+  }, [pageCount, ensurePageInRange]);
 
   return (
     <div
@@ -124,7 +122,7 @@ export function UsersTable({
           {
             columnId: "role",
             title: "Role",
-            options: roles.map((role) => ({ ...role })),
+            options: [...roles],
           },
         ]}
       />

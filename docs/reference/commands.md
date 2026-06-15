@@ -11,53 +11,53 @@ This document lists all available npm scripts in `package.json`.
 - [Build & Release](#build--release)
 - [Utilities](#utilities)
 - [Script Utilities](#script-utilities)
+- [API Testing](#api-testing)
 
 ---
 
 ## Development
 
-| Script              | Command                               | Description                                   |
-| ------------------- | ------------------------------------- | --------------------------------------------- |
-| `dev`               | `bun --bun vite dev`                  | Start Vite development server with hot reload |
-| `build`             | `bun --bun vite build`                | Build the application for production          |
-| `preview`           | `bun --bun vite preview`              | Preview production build locally              |
-| `preview:local`     | `bun --bun portless run vite preview` | Preview with local port management            |
-| `frameless:preview` | `bunx broz http://localhost:3000`     | Preview without terminal UI                   |
-| `routes:generate`   | `tsr generate`                        | Generate TypeScript routes                    |
+| Script              | Command                           | Description                                   |
+| ------------------- | --------------------------------- | --------------------------------------------- |
+| `dev`               | `bun --bun vite dev`              | Start Vite development server with hot reload |
+| `build`             | `bun --bun vite build`            | Build the application for production          |
+| `preview`           | `bun --bun vite preview`          | Preview production build locally              |
+| `frameless:preview` | `bunx broz http://localhost:3000` | Preview without terminal UI                   |
+| `routes:generate`   | `tsr generate`                    | Generate TypeScript routes                    |
 
 ---
 
 ## Testing
 
-| Script              | Command                              | Description                      |
-| ------------------- | ------------------------------------ | -------------------------------- |
-| `test:unit`         | `bun test`                           | Run unit tests                   |
-| `test:unit:preload` | `bun test --preload ./test/setup.ts` | Run unit tests with preload      |
-| `test:watch`        | `bun test --watch`                   | Run tests in watch mode          |
-| `test:coverage`     | `bun test --coverage`                | Run tests with coverage report   |
-| `test:e2e`          | `playwright test`                    | Run end-to-end tests             |
-| `test:e2e:ui`       | `bun playwright test --ui`           | Run E2E tests with Playwright UI |
-| `test:e2e:headed`   | `bun playwright test --headed`       | Run E2E tests in headed mode     |
-| `test:e2e:report`   | `bun playwright show-report`         | Show Playwright test report      |
-| `test:load`         | `bunx k6 run .k6/smoke-test.js`      | Run load smoke test              |
-| `test:load:api`     | `bunx k6 run .k6/api-test.js`        | Run API load test                |
-| `test:load:stress`  | `bunx k6 run .k6/stress-test.js`     | Run stress test                  |
+| Script             | Command                          | Description                      |
+| ------------------ | -------------------------------- | -------------------------------- |
+| `test`             | `bun test`                       | Run all tests                    |
+| `test:watch`       | `bun test --watch`               | Run tests in watch mode          |
+| `test:coverage`    | `bun test --coverage`            | Run tests with coverage report   |
+| `test:e2e`         | `playwright test`                | Run end-to-end tests             |
+| `test:e2e:ui`      | `bun playwright test --ui`       | Run E2E tests with Playwright UI |
+| `test:e2e:headed`  | `bun playwright test --headed`   | Run E2E tests in headed mode     |
+| `test:e2e:report`  | `bun playwright show-report`     | Show Playwright test report      |
+| `test:load`        | `bunx k6 run .k6/smoke-test.js`  | Run load smoke test              |
+| `test:load:api`    | `bunx k6 run .k6/api-test.js`    | Run API load test                |
+| `test:load:stress` | `bunx k6 run .k6/stress-test.js` | Run stress test                  |
 
 ---
 
 ## Database
 
-| Script           | Command                                                   | Description                   |
-| ---------------- | --------------------------------------------------------- | ----------------------------- |
-| `db:generate`    | `drizzle-kit generate`                                    | Generate Drizzle migrations   |
-| `db:migrate`     | `drizzle-kit migrate`                                     | Run database migrations       |
-| `db:push`        | `drizzle-kit push`                                        | Push schema to database       |
-| `db:studio`      | `drizzle-kit studio`                                      | Open Drizzle Studio           |
-| `db:seed`        | `bun run ./scripts/db-seed.ts`                            | Seed the database             |
-| `db:seed --prod` | `bun run ./scripts/db-seed.ts --prod`                     | Seed production (admins only) |
-| `db:setup`       | `bun run db:remove && bun run db:push && bun run db:seed` | Full database setup           |
-| `db:reset`       | `bun run db:remove && bun run db:push`                    | Reset database                |
-| `db:remove`      | `bun run ./scripts/remove-db.ts`                          | Remove database               |
+| Script          | Command                                   | Description                   |
+| --------------- | ----------------------------------------- | ----------------------------- |
+| `db:generate`   | `drizzle-kit generate`                    | Generate Drizzle migrations   |
+| `db:migrate`    | `bun run ./scripts/db-migrate.ts`         | Run database migrations       |
+| `db:push`       | `drizzle-kit push`                        | Push schema to database       |
+| `db:studio`     | `drizzle-kit studio`                      | Open Drizzle Studio           |
+| `db:seed`       | `bun run ./scripts/db-seed.ts`            | Seed the database             |
+| `db:seed:fresh` | `bun run db:seed --fresh`                 | Reset and reseed              |
+| `db:seed:prod`  | `bun run db:seed --prod`                  | Seed production (admins only) |
+| `db:setup`      | `bun run db:migrate && bun run db:seed`   | Full database setup           |
+| `db:reset`      | `bun run db:remove && bun run db:migrate` | Reset database                |
+| `db:remove`     | `bun run ./scripts/remove-db.ts`          | Remove database               |
 
 **Seed Script Options:**
 
@@ -95,9 +95,8 @@ This document lists all available npm scripts in `package.json`.
 
 | Script      | Command                            | Description             |
 | ----------- | ---------------------------------- | ----------------------- |
-| `setup`     | `bun run ./scripts/setup.ts`       | Initial project setup   |
-| `cleanup`   | `bun run ./scripts/cleanup.ts`     | Clean up artifacts      |
-| `release`   | `changelogen --bump`               | Version bump + release  |
+| `setup`     | `bun run script:setup`             | Initial project setup   |
+| `cleanup`   | `bun run script:cleanup`           | Clean up artifacts      |
 | `changelog` | `changelogen`                      | Generate changelog      |
 | `version`   | `changelogen --bump`               | Bump version            |
 | `start`     | `node ./dist/server/server.js`     | Start production server |
@@ -119,18 +118,29 @@ This document lists all available npm scripts in `package.json`.
 
 ## Script Utilities
 
-| Script                          | Command                                       | Description                |
-| ------------------------------- | --------------------------------------------- | -------------------------- |
-| `script:setup`                  | `bun run ./scripts/setup.ts`                  | Run setup script           |
-| `script:cleanup`                | `bun run ./scripts/cleanup.ts`                | Run cleanup script         |
-| `script:patch:server`           | `bun run ./scripts/patch-server.ts`           | Patch server script        |
-| `script:decision:new`           | `bun scripts/new-decision.ts`                 | Create new decision record |
-| `script:check-db`               | `bun run ./scripts/check-db.ts`               | Check database status      |
-| `script:fix-migrations`         | `bun run ./scripts/fix-migrations.ts`         | Fix database migrations    |
-| `script:opencode-session-clear` | `bun run ./scripts/opencode-session-clear.ts` | Clear Opencode sessions    |
-| `script:release`                | `bun run ./scripts/release.ts`                | Run release script         |
-| `script:sync-tasks`             | `bun run ./scripts/sync-tasks.ts`             | Sync tasks                 |
-| `script:task-config`            | `bun run ./scripts/task-config.ts`            | Configure tasks            |
+| Script                          | Command                                           | Description                |
+| ------------------------------- | ------------------------------------------------- | -------------------------- |
+| `script:setup`                  | `bun run ./scripts/setup.ts`                      | Run setup script           |
+| `script:cleanup`                | `bun run ./scripts/cleanup.ts`                    | Run cleanup script         |
+| `script:patch:server`           | `bun run ./scripts/patch-server.ts`               | Patch server script        |
+| `script:decision:new`           | `bun scripts/new-decision.ts`                     | Create new decision record |
+| `script:check-db`               | `bun run ./scripts/check-db.ts`                   | Check database status      |
+| `script:fix-migrations`         | `bun run ./scripts/fix-migrations.ts`             | Fix database migrations    |
+| `script:opencode-session-clear` | `bun run ./scripts/opencode-session-clear.ts`     | Clear Opencode sessions    |
+| `script:release`                | `bun run ./scripts/release.ts`                    | Run release script         |
+| `script:sync-tasks`             | `bun run ./scripts/sync-tasks.ts`                 | Sync tasks                 |
+| `script:task-config`            | `bun run ./scripts/task-config.ts`                | Configure tasks            |
+| `script:generate-bruno`         | `bun run ./scripts/generate-bruno-collections.ts` | Generate Bruno collections |
+
+---
+
+## API Testing
+
+| Script        | Command                                                                                                 | Description                 |
+| ------------- | ------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `bruno:run`   | `cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml -r`              | Run all Bruno API tests     |
+| `bruno:smoke` | `cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml --tags smoke -r` | Run Bruno smoke tests       |
+| `bruno:ci`    | `cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/ci.yml --tags smoke -r`    | Run Bruno smoke tests in CI |
 
 ---
 
@@ -143,7 +153,7 @@ Typical development workflow:
 bun run dev
 
 # Run tests during development
-bun run test:watch
+bun test
 
 # Before committing
 bun run lint:fix
@@ -160,6 +170,7 @@ bun run preview
 
 - Most scripts use `bun` as the runtime
 - E2E tests require the dev server to be running (or use `preview`)
-- Database scripts assume `SQLITE_URL` is configured in `.env`
+- `db:migrate` auto-detects PGlite vs. real PostgreSQL — see `scripts/db-migrate.ts`
+- Database scripts assume `POSTGRES_URL` or PGlite (in-memory) is configured
 - Load tests use `bunx k6` (runs k6 via bunx)
 - Lifecycle scripts like `postinstall` and `prepare` run automatically

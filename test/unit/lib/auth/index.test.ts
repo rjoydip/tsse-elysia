@@ -1,27 +1,25 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
 import { faker } from "@faker-js/faker";
-import { accounts, users, sessions, verifications } from "~/lib/db/schema/auth";
-
-const TEST_DB_PATH = ":memory:";
+import { accounts, users, sessions, verifications } from "~/lib/db";
 
 async function createTestDatabase() {
-  const client = createClient({ url: TEST_DB_PATH });
+  const client = new PGlite();
   const tables = [
-    `CREATE TABLE IF NOT EXISTS "user" ("id" text PRIMARY KEY, "name" text, "email" text NOT NULL UNIQUE, "emailVerified" integer NOT NULL DEFAULT 0, "image" text, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL, "subscriptionTier" text NOT NULL DEFAULT 'free', "subscriptionId" text, "subscriptionStatus" text, "subscriptionExpiresAt" integer, "firstName" text, "lastName" text, "username" text, "phoneNumber" text, "role" text NOT NULL DEFAULT 'user', "status" text NOT NULL DEFAULT 'active')`,
-    `CREATE TABLE IF NOT EXISTS "session" ("id" text PRIMARY KEY, "expiresAt" integer NOT NULL, "token" text NOT NULL UNIQUE, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL, "ipAddress" text, "userAgent" text, "userId" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE)`,
-    `CREATE TABLE IF NOT EXISTS "account" ("id" text PRIMARY KEY, "accountId" text NOT NULL, "providerId" text NOT NULL, "userId" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "accessToken" text, "refreshToken" text, "idToken" text, "accessTokenExpiresAt" integer, "refreshTokenExpiresAt" integer, "scope" text, "password" text, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS "verification" ("id" text PRIMARY KEY, "identifier" text NOT NULL, "value" text NOT NULL, "expiresAt" integer NOT NULL, "createdAt" integer, "updatedAt" integer)`,
-    `CREATE TABLE IF NOT EXISTS "subscription_plan" ("id" text PRIMARY KEY, "name" text NOT NULL, "description" text, "price" integer NOT NULL, "currency" text NOT NULL DEFAULT 'USD', "interval" text NOT NULL, "intervalCount" integer NOT NULL DEFAULT 1, "features" text, "rateLimit" integer NOT NULL, "rateLimitDuration" integer NOT NULL DEFAULT 60000, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS "subscription" ("id" text PRIMARY KEY, "userId" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "planId" text NOT NULL REFERENCES "subscription_plan"("id") ON DELETE CASCADE, "status" text NOT NULL DEFAULT 'active', "currentPeriodStart" integer NOT NULL, "currentPeriodEnd" integer NOT NULL, "cancelAtPeriodEnd" integer NOT NULL DEFAULT 0, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS "mcp_api_key" ("id" text PRIMARY KEY, "name" text NOT NULL, "keyHash" text NOT NULL UNIQUE, "userId" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "organizationId" text, "permissions" text, "rateLimit" integer NOT NULL DEFAULT 100, "rateLimitDuration" integer NOT NULL DEFAULT 60000, "lastUsedAt" integer, "expiresAt" integer, "createdAt" integer NOT NULL, "updatedAt" integer NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS "user" ("id" TEXT PRIMARY KEY, "name" TEXT, "email" TEXT NOT NULL UNIQUE, "emailVerified" BOOLEAN NOT NULL DEFAULT false, "image" TEXT, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "subscriptionTier" TEXT NOT NULL DEFAULT 'free', "subscriptionId" TEXT, "subscriptionStatus" TEXT, "subscriptionExpiresAt" TIMESTAMP, "firstName" TEXT, "lastName" TEXT, "username" TEXT, "phoneNumber" TEXT, "role" TEXT NOT NULL DEFAULT 'user', "status" TEXT NOT NULL DEFAULT 'active')`,
+    `CREATE TABLE IF NOT EXISTS "session" ("id" TEXT PRIMARY KEY, "expiresAt" TIMESTAMP NOT NULL, "token" TEXT NOT NULL UNIQUE, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL, "ipAddress" TEXT, "userAgent" TEXT, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE)`,
+    `CREATE TABLE IF NOT EXISTS "account" ("id" TEXT PRIMARY KEY, "accountId" TEXT NOT NULL, "providerId" TEXT NOT NULL, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "accessToken" TEXT, "refreshToken" TEXT, "idToken" TEXT, "accessTokenExpiresAt" TIMESTAMP, "refreshTokenExpiresAt" TIMESTAMP, "scope" TEXT, "password" TEXT, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS "verification" ("id" TEXT PRIMARY KEY, "identifier" TEXT NOT NULL, "value" TEXT NOT NULL, "expiresAt" TIMESTAMP NOT NULL, "createdAt" TIMESTAMP, "updatedAt" TIMESTAMP)`,
+    `CREATE TABLE IF NOT EXISTS "subscription_plan" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "description" TEXT, "price" INTEGER NOT NULL, "currency" TEXT NOT NULL DEFAULT 'USD', "interval" TEXT NOT NULL, "intervalCount" INTEGER NOT NULL DEFAULT 1, "features" TEXT, "rateLimit" INTEGER NOT NULL, "rateLimitDuration" INTEGER NOT NULL DEFAULT 60000, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS "subscription" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "planId" TEXT NOT NULL REFERENCES "subscription_plan"("id") ON DELETE CASCADE, "status" TEXT NOT NULL DEFAULT 'active', "currentPeriodStart" TIMESTAMP NOT NULL, "currentPeriodEnd" TIMESTAMP NOT NULL, "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS "mcp_api_key" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "keyHash" TEXT NOT NULL UNIQUE, "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE, "organizationId" TEXT, "permissions" TEXT, "rateLimit" INTEGER NOT NULL DEFAULT 100, "rateLimitDuration" INTEGER NOT NULL DEFAULT 60000, "lastUsedAt" TIMESTAMP, "expiresAt" TIMESTAMP, "createdAt" TIMESTAMP NOT NULL, "updatedAt" TIMESTAMP NOT NULL)`,
   ];
 
   for (const sql of tables) {
-    await client.execute({ sql, args: [] });
+    await client.exec(sql);
   }
 
   return drizzle(client, {
@@ -30,14 +28,14 @@ async function createTestDatabase() {
 }
 
 describe("Authentication", () => {
-  let db: ReturnType<typeof drizzle>;
+  let db: Awaited<ReturnType<typeof drizzle>>;
   let auth: any;
 
   beforeEach(async () => {
     db = await createTestDatabase();
     auth = betterAuth({
       database: drizzleAdapter(db, {
-        provider: "sqlite",
+        provider: "pg",
         schema: {
           user: users,
           session: sessions,

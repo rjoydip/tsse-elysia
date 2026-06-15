@@ -19,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: Run OpenCode AI
-      uses: anomalyco/opencode/github@8c8011336163d7e7fb24a6a4a049cdb1f6e6ee74 # v1.17.3
+      uses: anomalyco/opencode/github@23471d674c1a9f5e9a3e90c609e60dd6aaa6af23 # v1.17.6
       timeout-minutes: ${{ inputs.timeout-minutes }}
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

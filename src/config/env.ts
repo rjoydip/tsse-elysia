@@ -5,7 +5,7 @@
  *
  * @example
  * // Server-side: full access to all variables
- * const dbUrl = env.SQLITE_URL;
+ * const dbUrl = env.POSTGRES_URL;
  *
  * // Client-side: only client vars accessible
  * const apiUrl = env.VITE_API_URL;
@@ -62,9 +62,7 @@ async function _createEnv() {
       BASE_URL: _getEnv("BASE_URL", _BASE_URL),
       BETTER_AUTH_URL: _getEnv("BETTER_AUTH_URL", `${_BASE_URL}/api/auth`),
       BETTER_AUTH_SECRET: _getAuthSecret(),
-      DATABASE_TYPE: _getEnv("DATABASE_TYPE", "sqlite") as "sqlite" | "postgres",
-      SQLITE_URL: _getEnv("SQLITE_URL", "file:.artifacts/tsse-elysia.db") || undefined,
-      SQLITE_AUTH_TOKEN: _getEnv("SQLITE_AUTH_TOKEN", "") || undefined,
+
       POSTGRES_USER: _getEnv("POSTGRES_USER", "") || undefined,
       POSTGRES_PASSWORD: _getEnv("POSTGRES_PASSWORD", "") || undefined,
       POSTGRES_DB: _getEnv("POSTGRES_DB", "") || undefined,
@@ -105,6 +103,9 @@ async function _createEnv() {
       FEATURE_MULTI_TEAM: _getEnv("FEATURE_MULTI_TEAM", "false") === "true",
       VITE_AUTH_GITHUB_ENABLED: _getEnv("VITE_AUTH_GITHUB_ENABLED", "true") === "true",
       VITE_AUTH_GOOGLE_ENABLED: _getEnv("VITE_AUTH_GOOGLE_ENABLED", "true") === "true",
+      PGLITE_DATA_DIR: _getEnv("PGLITE_DATA_DIR", ".artifacts/pglite-data"),
+      NEON_DATABASE_URL: _getEnv("NEON_DATABASE_URL", "") || undefined,
+      CF_HYPERDRIVE_BINDING: _getEnv("CF_HYPERDRIVE_BINDING", "") || undefined,
       OTEL_EXPORTER_OTLP_ENDPOINT: _getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "") || undefined,
       EVLOG_DIR: _getEnv("EVLOG_DIR", ".evlog/logs"),
       EVLOG_ADAPTER: (_getEnv("EVLOG_ADAPTER", "fs") || "fs") as "fs" | "otlp",
@@ -148,9 +149,9 @@ async function _createEnv() {
       BASE_URL: t.String(),
       BETTER_AUTH_URL: t.String(),
       BETTER_AUTH_SECRET: t.String(),
-      DATABASE_TYPE: t.Union([t.Literal("sqlite"), t.Literal("postgres")]),
-      SQLITE_URL: t.Optional(t.String()),
-      SQLITE_AUTH_TOKEN: t.Optional(t.String()),
+      PGLITE_DATA_DIR: t.Optional(t.String()),
+      NEON_DATABASE_URL: t.Optional(t.String()),
+      CF_HYPERDRIVE_BINDING: t.Optional(t.String()),
       POSTGRES_USER: t.Optional(t.String()),
       POSTGRES_PASSWORD: t.Optional(t.String()),
       POSTGRES_DB: t.Optional(t.String()),

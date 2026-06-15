@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "bun:test";
 import { TasksRepository } from "~/repositories/tasks/tasks.repository";
-import { tasks } from "~/lib/db/schema/tasks";
+import { tasks } from "~/lib/db";
 import type { TaskStats, MonthlyTaskCount, TaskRow } from "~/repositories/tasks/tasks.repository";
 
 /**

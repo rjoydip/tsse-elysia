@@ -9,16 +9,15 @@ import { userRepository } from "~/repositories/users";
 import { env } from "~/config/env";
 import type { User, UserRole, UserStatus } from "~/features/users/data/schema";
 
-const VALID_ROLES = ["user", "cashier", "manager", "admin", "superadmin"] as const;
-const ADMIN_ROLES = ["superadmin", "admin"] as const;
+const VALID_ROLES = ["user", "cashier", "manager", "admin"] as const;
+const ADMIN_ROLES = ["admin"] as const;
 
 /**
  * Role hierarchy for visibility.
  * Higher roles can see users with roles below them.
- * E.g., superadmin sees admin/manager/cashier/user; admin sees manager/cashier/user.
+ * E.g., admin sees manager/cashier/user; manager sees cashier/user.
  */
 const ROLE_HIERARCHY: Record<string, string[]> = {
-  superadmin: ["admin", "manager", "cashier", "user"],
   admin: ["manager", "cashier", "user"],
   manager: ["cashier", "user"],
   cashier: ["user"],
@@ -181,7 +180,7 @@ export const usersRoutes = new Elysia({
     {
       detail: {
         summary: "List users",
-        description: "Returns a list of users. Requires admin or superadmin role.",
+        description: "Returns a list of users. Requires admin role.",
         tags: ["users"],
         responses: {
           200: {
@@ -241,7 +240,7 @@ export const usersRoutes = new Elysia({
       }),
       detail: {
         summary: "Get user by ID",
-        description: "Returns a single user by ID. Requires admin or superadmin role.",
+        description: "Returns a single user by ID. Requires admin role.",
         tags: ["users"],
         responses: {
           200: { description: "User retrieved successfully" },
@@ -397,7 +396,7 @@ export const usersRoutes = new Elysia({
     {
       detail: {
         summary: "Create new user",
-        description: "Creates a new user. Requires admin or superadmin role.",
+        description: "Creates a new user. Requires admin role.",
         tags: ["users"],
         responses: {
           201: { description: "User created successfully" },
@@ -484,7 +483,7 @@ export const usersRoutes = new Elysia({
       }),
       detail: {
         summary: "Update user",
-        description: "Updates user details. Requires admin or superadmin role.",
+        description: "Updates user details. Requires admin role.",
         tags: ["users"],
         responses: {
           200: { description: "User updated successfully" },
@@ -526,8 +525,7 @@ export const usersRoutes = new Elysia({
       }),
       detail: {
         summary: "Update user status",
-        description:
-          "Soft delete or restore user by updating status. Requires admin or superadmin role.",
+        description: "Soft delete or restore user by updating status. Requires admin role.",
         tags: ["users"],
         responses: {
           200: { description: "User status updated successfully" },
@@ -564,7 +562,7 @@ export const usersRoutes = new Elysia({
       const hashedPassword = await hash(generatedPassword, hashOpts);
 
       const { db } = await import("~/config/db");
-      const { accounts } = await import("~/lib/db/schema/auth");
+      const { accounts } = await import("~/lib/db");
       const { eq } = await import("drizzle-orm");
 
       await db
@@ -580,7 +578,7 @@ export const usersRoutes = new Elysia({
       }),
       detail: {
         summary: "Reset user password",
-        description: "Generates a new password for the user. Requires admin or superadmin role.",
+        description: "Generates a new password for the user. Requires admin role.",
         tags: ["users"],
         responses: {
           400: { description: "Feature not available" },

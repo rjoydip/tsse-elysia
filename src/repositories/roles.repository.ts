@@ -15,7 +15,7 @@ import {
   type Permission,
   type Role,
   type UserRole,
-} from "~/lib/db/schema/roles";
+} from "~/lib/db";
 import { Result, DatabaseError, NotFoundError, ValidationError } from "~/lib/result";
 
 /**

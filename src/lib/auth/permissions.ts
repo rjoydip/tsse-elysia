@@ -10,7 +10,6 @@ import { z } from "zod";
  * Ordered from lowest to highest privilege.
  */
 export const userRoleSchema = z.union([
-  z.literal("superadmin"),
   z.literal("admin"),
   z.literal("manager"),
   z.literal("cashier"),
@@ -51,7 +50,6 @@ export const roleHierarchy: Record<UserRole, number> = {
   cashier: 1,
   manager: 2,
   admin: 3,
-  superadmin: 4,
 };
 
 /**
@@ -59,25 +57,6 @@ export const roleHierarchy: Record<UserRole, number> = {
  * Each role inherits all permissions from lower roles.
  */
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  superadmin: [
-    "dashboard:read",
-    "dashboard:write",
-    "dashboard:analytics",
-    "users:read",
-    "users:write",
-    "users:delete",
-    "settings:read",
-    "settings:write",
-    "tasks:read",
-    "tasks:write",
-    "tasks:delete",
-    "apps:read",
-    "apps:write",
-    "chats:read",
-    "chats:write",
-    "reports:read",
-    "reports:write",
-  ],
   admin: [
     "dashboard:read",
     "dashboard:write",
@@ -168,7 +147,6 @@ export type DashboardView = z.infer<typeof dashboardViewSchema>;
  * Maps user roles to their default dashboard view.
  */
 export const roleDashboardView: Record<UserRole, DashboardView> = {
-  superadmin: "full",
   admin: "full",
   manager: "team",
   cashier: "sales",
@@ -217,17 +195,17 @@ function getViewAccessLevel(view: DashboardView): number {
 /**
  * All available roles for iteration purposes.
  */
-export const ALL_ROLES: UserRole[] = ["user", "cashier", "manager", "admin", "superadmin"];
+export const ALL_ROLES: UserRole[] = ["user", "cashier", "manager", "admin"];
 
 /**
  * Admin-level roles that can manage users.
  */
-export const ADMIN_ROLES: UserRole[] = ["admin", "superadmin"];
+export const ADMIN_ROLES: UserRole[] = ["admin"];
 
 /**
  * Manager-level roles that can view team analytics.
  */
-export const MANAGER_ROLES: UserRole[] = ["manager", "admin", "superadmin"];
+export const MANAGER_ROLES: UserRole[] = ["manager", "admin"];
 
 /**
  * Check if a role is an admin role.
