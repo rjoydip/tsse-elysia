@@ -102,9 +102,9 @@ describe("Maizzle Email Templates", () => {
     it("should define expected component props in each template", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
       const expectedPropMap: Record<string, string[]> = {
-        welcome: ["username", "dashboardUrl", "year"],
-        "verify-email": ["username", "verificationUrl", "expiresIn", "year"],
-        "password-reset": ["username", "resetUrl", "expiresIn", "year"],
+        welcome: ["username", "dashboardUrl"],
+        "verify-email": ["username", "verificationUrl", "expiresIn"],
+        "password-reset": ["username", "resetUrl", "expiresIn"],
       };
 
       for (const name of templates) {

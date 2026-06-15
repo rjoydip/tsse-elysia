@@ -1,5 +1,5 @@
 <template>
-  <DefaultLayout year="{{ year }}">
+  <DefaultLayout>
     <spacer height="32" />
 
     <heading class="text-2xl text-slate-800 font-semibold text-center">
@@ -22,7 +22,7 @@
       <column class="text-center">
         <button
           href="{{ verificationUrl }}"
-          class="bg-brand-600 text-white rounded-lg px-6 py-3 font-semibold"
+          class="bg-indigo-500 text-white rounded-lg px-6 py-3 font-semibold"
         >
           Verify Email Address
         </button>
@@ -37,7 +37,7 @@
         required.
       </p>
       <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-      <p class="text-brand-600 break-all">{{ verificationUrl }}</p>
+      <p class="text-indigo-500 break-all">{{ verificationUrl }}</p>
     </text>
   </DefaultLayout>
 </template>
@@ -50,9 +50,8 @@
  * @param {string} username - The user's display name
  * @param {string} verificationUrl - One-time email verification link
  * @param {string} expiresIn - Human-readable expiration duration (e.g. "24 hours")
- * @param {number} year - Copyright year for the footer
  */
 export default {
-  props: ["username", "verificationUrl", "expiresIn", "year"],
+  props: ["username", "verificationUrl", "expiresIn"],
 };
 </script>

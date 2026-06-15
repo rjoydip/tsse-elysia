@@ -9,7 +9,7 @@
     <spacer height="16" />
 
     <text class="text-xs text-slate-400 text-center leading-tight">
-      <p>&copy; {{ year }} TSSE. All rights reserved.</p>
+      <p>&copy; {{ currentYear }} TSSE. All rights reserved.</p>
       <p>If you didn't request this email, you can safely ignore it.</p>
     </text>
   </Layout>
@@ -19,10 +19,15 @@
 /**
  * Default email layout with footer and container styling.
  * Wraps Maizzle's built-in Layout component and adds a footer.
- *
- * @param {number} year - Copyright year for the footer
  */
 export default {
-  props: ["year"],
+  computed: {
+    /**
+     * @returns {number} Current year for the copyright footer
+     */
+    currentYear() {
+      return new Date().getFullYear();
+    },
+  },
 };
 </script>
