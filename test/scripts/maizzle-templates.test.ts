@@ -76,7 +76,7 @@ describe("Maizzle Email Templates", () => {
       expect(maizzleFileExists("src/templates/welcome.vue")).toBe(true);
       const template = readMaizzleFile("src/templates/welcome.vue");
       expect(template).toContain("<template>");
-      expect(template).toContain("Welcome to Your App");
+      expect(template).toContain("Welcome to TSSE");
       expect(template).toContain("username");
       expect(template).toContain("dashboardUrl");
     });
@@ -183,7 +183,7 @@ describe("Maizzle Email Templates", () => {
     it("should have brand colors configured", () => {
       const config = readMaizzleFile("maizzle.config.ts");
       expect(config).toContain("brand");
-      expect(config).toContain("2563eb");
+      expect(config).toContain("6366f1");
     });
 
     it("should have plaintext generation enabled", () => {

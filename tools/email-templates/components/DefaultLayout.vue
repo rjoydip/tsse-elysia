@@ -9,7 +9,7 @@
     <spacer height="16" />
 
     <text class="text-xs text-slate-400 text-center leading-tight">
-      <p>&copy; {{ year }} Your Company. All rights reserved.</p>
+      <p>&copy; {{ year }} TSSE. All rights reserved.</p>
       <p>If you didn't request this email, you can safely ignore it.</p>
     </text>
   </Layout>

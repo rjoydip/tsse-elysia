@@ -11,7 +11,7 @@
     <spacer height="32" />
 
     <heading class="text-2xl text-slate-800 font-semibold text-center">
-      Welcome to Your App, {{ username }}!
+      Welcome to TSSE, {{ username }}!
     </heading>
 
     <spacer height="16" />
@@ -20,7 +20,7 @@
       <p>Hi {{ username }},</p>
       <p>
         We're excited to have you on board! Your account has been successfully created and you're
-        all set to explore everything Your App has to offer.
+        all set to explore everything TSSE has to offer.
       </p>
     </text>
 
@@ -43,7 +43,7 @@
       <p>
         If you have any questions, feel free to reach out to our support team. We're here to help!
       </p>
-      <p>Cheers,<br />The Your App Team</p>
+      <p>Cheers,<br />The TSSE Team</p>
     </text>
   </DefaultLayout>
 </template>
