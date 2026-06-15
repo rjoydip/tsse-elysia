@@ -15,6 +15,13 @@
       "when": 1781459494418,
       "tag": "0001_clean_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781500098486,
+      "tag": "0002_tranquil_smasher",
+      "breakpoints": true
     }
   ]
 }
