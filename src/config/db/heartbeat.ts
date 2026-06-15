@@ -4,8 +4,9 @@
  */
 
 import type { Pool } from "pg";
+import { sql } from "drizzle-orm";
 import { dbLogger } from "~/lib/logger";
-import { getDatabasePools, getDatabasePoolConfigs } from "./index";
+import { getDatabasePools, getDatabasePoolConfigs, db } from "./index";
 
 /**
  * Individual pool status for heartbeat response.
@@ -126,14 +127,16 @@ export async function getDatabaseHeartbeat(): Promise<DatabaseHeartbeat> {
 
 /**
  * Fallback heartbeat check for non-Pool drivers (PGlite, pg-proxy).
- * Uses db0 for a lightweight SELECT 1 query.
+ *
+ * Uses the existing Drizzle ORM db instance instead of creating a
+ * separate db0 connection. This avoids dual-PGlite contention for
+ * the same data directory — the main db is already initialized at
+ * startup via initializeDatabase().
  */
 async function checkViaDb0(startedAt: number): Promise<DatabaseHeartbeat> {
   try {
-    const { getDb0 } = await import("./db0");
-    const db0 = await getDb0();
     const queryStart = Date.now();
-    await db0.exec("SELECT 1");
+    await db.execute(sql`SELECT 1 AS ok`);
     const latencyMs = Date.now() - queryStart;
 
     return {
@@ -151,7 +154,7 @@ async function checkViaDb0(startedAt: number): Promise<DatabaseHeartbeat> {
       ],
     };
   } catch (error) {
-    dbLogger.error("db0 heartbeat query failed", error instanceof Error ? error : undefined);
+    dbLogger.error("Database heartbeat query failed", error instanceof Error ? error : undefined);
     return {
       status: "unhealthy",
       latencyMs: null,
