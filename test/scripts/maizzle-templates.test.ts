@@ -3,9 +3,10 @@
  * Verifies template files, config, and build output exist and are well-formed.
  */
 
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { $ } from "bun";
 
 const MAIZZLE_DIR = "tools/email-templates";
 
@@ -193,6 +194,19 @@ describe("Maizzle Email Templates", () => {
   });
 
   describe("Build output", () => {
+    /**
+     * Rebuild email templates before testing build output,
+     * since the build/ directory is gitignored.
+     */
+    beforeAll(() => {
+      const result = Bun.spawnSync(["bun", "--cwd", MAIZZLE_DIR, "build"], {
+        env: { ...process.env },
+      });
+      if (!result.success) {
+        throw new Error(`Maizzle build failed: ${result.stderr.toString()}`);
+      }
+    }, 30000);
+
     it("should produce HTML output files", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
       for (const name of templates) {
