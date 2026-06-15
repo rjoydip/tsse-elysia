@@ -32,3 +32,37 @@ export function getDatabaseDriver(): DriverType {
   if (env.POSTGRES_URL) return "node-postgres";
   return "pglite";
 }
+
+/**
+ * Executes a raw SQL query through the Cloudflare Hyperdrive binding.
+ *
+ * Each call creates a fresh connection (no connection pool in Workers).
+ * Shared between the Drizzle ORM proxy connector (index.ts) and the
+ * db0 utility layer (db0.ts) to avoid duplicated client acquisition logic.
+ *
+ * @param sql - SQL query string with $1, $2 ... positional parameters
+ * @param params - Parameter values
+ * @returns Query result from the Hyperdrive client
+ */
+export async function execViaHyperdrive(
+  sql: string,
+  params?: unknown[],
+): Promise<{ rows?: unknown[] }> {
+  const hyperdrive = (globalThis as Record<string, unknown>)[env.CF_HYPERDRIVE_BINDING!] as
+    | {
+        connect: () => {
+          query: (sql: string, params?: unknown[]) => Promise<{ rows?: unknown[] }>;
+          release: () => void;
+        };
+      }
+    | undefined;
+  if (!hyperdrive) {
+    throw new Error(`Hyperdrive binding "${env.CF_HYPERDRIVE_BINDING}" not found`);
+  }
+  const client = hyperdrive.connect();
+  try {
+    return await client.query(sql, params);
+  } finally {
+    client.release();
+  }
+}

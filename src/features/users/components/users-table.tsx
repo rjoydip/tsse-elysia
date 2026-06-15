@@ -92,9 +92,10 @@ export function UsersTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  const pageCount = table.getPageCount();
   useEffect(() => {
-    ensurePageInRange(table.getPageCount());
-  }, [table, ensurePageInRange]);
+    ensurePageInRange(pageCount);
+  }, [pageCount, ensurePageInRange]);
 
   return (
     <div

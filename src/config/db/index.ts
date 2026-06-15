@@ -19,7 +19,7 @@ import type { Pool } from "pg";
 import * as schema from "~/lib/db";
 import { env } from "~/config/env";
 import { dbLogger } from "~/lib/logger";
-import { getDatabaseDriver } from "./driver";
+import { getDatabaseDriver, execViaHyperdrive } from "./driver";
 
 /**
  * Database pool configuration for health checks.
@@ -49,6 +49,13 @@ let pgPoolsReplicas: Pool[] = [];
  * Drizzle ORM instance with typed schema (primary/write)
  */
 let db: any;
+
+/**
+ * Cached Drizzle ORM instances per replica pool.
+ * Avoids creating a new ORM wrapper (schema proxy, query builder) on every
+ * read request through a replica. Keyed by pool reference identity.
+ */
+let replicaDbs = new WeakMap<object, any>();
 
 /**
  * Round-robin index for replica selection
@@ -94,11 +101,14 @@ async function createPgliteConnection(): Promise<{
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
 
-  const options = { dataDir: env.PGLITE_DATA_DIR };
+  // Read from process.env first so per-worker temp dirs set by
+  // test/setup.ts are honoured even if the env module was cached earlier.
+  const dataDir = process.env.PGLITE_DATA_DIR || env.PGLITE_DATA_DIR || ".artifacts/pglite-data";
+  const options = { dataDir };
   dbClient = new PGlite(options);
   db = drizzle(dbClient, { schema });
 
-  dbLogger.log(`[DB] Using PGlite: ${env.PGLITE_DATA_DIR}`);
+  dbLogger.log(`[DB] Using PGlite: ${dataDir}`);
 
   // Auto-migrate: apply pending migration SQL so in-memory PGlite
   // always starts with the latest schema, no separate db:migrate needed.
@@ -199,11 +209,8 @@ async function createPgProxyConnection(): Promise<{
 
   db = drizzleProxy(
     async (sql: string, params: any[], _method: "all" | "execute" | "values") => {
-      const hyperdrive = (globalThis as any)[env.CF_HYPERDRIVE_BINDING!];
-      const client = hyperdrive.connect();
-      const result = await client.query(sql, params);
-      client.release();
-      return result;
+      const result = await execViaHyperdrive(sql, params);
+      return { rows: (result?.rows as any[]) ?? [] };
     },
     { schema },
   );
@@ -237,9 +244,15 @@ export async function getReadDb() {
   const index = replicaRoundRobinIndex++ % pgPoolsReplicas.length;
   const selectedPool = pgPoolsReplicas[index];
 
+  // Return cached instance if one exists for this pool
+  const cached = replicaDbs.get(selectedPool);
+  if (cached) return cached;
+
   const { drizzle: drizzlePg } = await import("drizzle-orm/node-postgres");
 
-  return drizzlePg(selectedPool, { schema });
+  const readDb = drizzlePg(selectedPool, { schema });
+  replicaDbs.set(selectedPool, readDb);
+  return readDb;
 }
 
 /**
@@ -410,6 +423,9 @@ export async function resetDatabase(): Promise<void> {
   dbClient = undefined;
   pgPoolPrimary = undefined;
   pgPoolsReplicas = [];
+  // WeakMap entries are automatically cleaned up when the pool objects
+  // (the keys) are garbage collected. Reassign so old refs are released.
+  replicaDbs = new WeakMap();
 
   // Clear globalThis cache keys so the next initializeDatabase() call
   // runs fresh (the cached singleton would reference a closed client)

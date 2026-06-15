@@ -15,7 +15,11 @@
 
 import { createDatabase, type Connector, type Database, type Primitive } from "db0";
 import { env } from "~/config/env";
-import { getDatabaseDriver, type DriverType } from "~/config/db/driver";
+import {
+  getDatabaseDriver,
+  execViaHyperdrive as execHyperdrive,
+  type DriverType,
+} from "~/config/db/driver";
 import { dbLogger } from "~/lib/logger";
 
 let _db0: Database | null = null;
@@ -86,42 +90,27 @@ async function _initDb0(): Promise<Database> {
     }
     case "pg-proxy": {
       /**
-       * Executes a raw SQL query through the Hyperdrive binding.
-       * Each call creates a fresh connection (no connection pool in Workers).
-       */
-      async function execViaHyperdrive(sql: string): Promise<unknown> {
-        const hyperdrive = (globalThis as Record<string, unknown>)[env.CF_HYPERDRIVE_BINDING!] as
-          | { connect: () => { query: (sql: string) => Promise<unknown>; release: () => void } }
-          | undefined;
-        if (!hyperdrive) {
-          throw new Error(`Hyperdrive binding "${env.CF_HYPERDRIVE_BINDING}" not found`);
-        }
-        const client = hyperdrive.connect();
-        try {
-          return await client.query(sql);
-        } finally {
-          client.release();
-        }
-      }
-
-      /**
-       * Creates a PreparedStatement that delegates to execViaHyperdrive.
+       * Creates a PreparedStatement that delegates to execHyperdrive.
        * Hyperdrive does not support actual prepared statements, so each
        * all/run/get call executes the query directly.
+       *
+       * The raw query executor itself lives in driver.ts and is shared
+       * with the Drizzle ORM proxy connector in index.ts to avoid
+       * duplicated Hyperdrive client acquisition logic.
        */
       function createBoundStatement(sql: string): import("db0").PreparedStatement {
         return {
           bind: () => createBoundStatement(sql),
           all: async () => {
-            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            const result = (await execHyperdrive(sql)) as { rows?: unknown[] };
             return result.rows ?? [];
           },
           run: async () => {
-            await execViaHyperdrive(sql);
+            await execHyperdrive(sql);
             return { success: true };
           },
           get: async () => {
-            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            const result = (await execHyperdrive(sql)) as { rows?: unknown[] };
             return result.rows?.[0] ?? null;
           },
         };
@@ -131,19 +120,19 @@ async function _initDb0(): Promise<Database> {
         name: "pg-proxy",
         dialect: "postgresql",
         getInstance: () => ({}),
-        exec: execViaHyperdrive,
+        exec: execHyperdrive,
         prepare: (sql: string) => ({
           bind: (..._params: Primitive[]) => createBoundStatement(sql),
           all: async (..._params: Primitive[]) => {
-            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            const result = (await execHyperdrive(sql)) as { rows?: unknown[] };
             return result.rows ?? [];
           },
           run: async (..._params: Primitive[]) => {
-            await execViaHyperdrive(sql);
+            await execHyperdrive(sql);
             return { success: true };
           },
           get: async (..._params: Primitive[]) => {
-            const result = (await execViaHyperdrive(sql)) as { rows?: unknown[] };
+            const result = (await execHyperdrive(sql)) as { rows?: unknown[] };
             return result.rows?.[0] ?? null;
           },
         }),
