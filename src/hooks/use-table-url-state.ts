@@ -168,8 +168,8 @@ export function useTableUrlState(params: UseTableUrlStateParams): UseTableUrlSta
         if (cfg.type === "string") {
           const value = typeof found?.value === "string" ? (found.value as string) : "";
           patch[cfg.searchKey] = value.trim() !== "" ? serialize(value) : undefined;
-        } else {
-          const value = Array.isArray(found?.value) ? (found!.value as unknown[]) : [];
+        } else if (cfg.type === "array" || !cfg.type) {
+          const value = Array.isArray(found?.value) ? (found.value as unknown[]) : [];
           patch[cfg.searchKey] = value.length > 0 ? serialize(value) : undefined;
         }
       }

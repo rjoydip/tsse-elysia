@@ -122,7 +122,7 @@ export function UsersTable({
           {
             columnId: "role",
             title: "Role",
-            options: roles.map((role) => ({ ...role })),
+            options: [...roles],
           },
         ]}
       />

@@ -11,12 +11,21 @@ await client.exec(`CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 
 dbLogger.log("Ensured __drizzle_migrations table exists");
 
+/**
+ * NOTE: This script is for the legacy __drizzle_migrations tracking table.
+ * The current migrate.ts runner (src/lib/db/migrate.ts) applies all
+ * migration files idempotently and does NOT use this table.
+ *
+ * Migration names updated to match current drizzle-kit generated files:
+ *   0000_lively_impossible_man.sql
+ *   0001_clean_mentor.sql
+ *   0002_tranquil_smasher.sql
+ */
+
 const migrations = [
-  ["0000", "init"],
-  ["0001", "melted_ego"],
-  ["0002", "premium_micromax"],
-  ["0003", "known_jackal"],
-  ["0004", "true_warstar"],
+  ["0000", "lively_impossible_man"],
+  ["0001", "clean_mentor"],
+  ["0002", "tranquil_smasher"],
 ];
 
 // Use INSERT ... ON CONFLICT DO NOTHING to skip existing

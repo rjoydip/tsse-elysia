@@ -10,6 +10,18 @@
  * All statements are wrapped for idempotency (CREATE IF NOT EXISTS,
  * DO blocks for CREATE TYPE and ALTER TABLE ... ADD CONSTRAINT)
  * so they are safe to re-run on every startup.
+ *
+ * ## Quoted Identifier Convention
+ *
+ * All Drizzle-generated tables use camelCase column names (e.g. "userId",
+ * "createdAt"). PostgreSQL folds unquoted identifiers to lowercase, so
+ * these columns MUST be double-quoted in raw SQL:
+ *
+ *   ✓ SELECT "userId" FROM "tasks"
+ *   ✗ SELECT userId FROM tasks   -- error: column "userid" does not exist
+ *
+ * The ORM handles quoting automatically — this only affects raw SQL tools
+ * (health checks, admin queries, migration wrappers below).
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -42,9 +54,9 @@ export function getMigrationFiles(): string[] {
  * @param sql - Raw SQL statement
  * @returns SQL with CREATE TYPE wrapped in DO $$ ... EXCEPTION WHEN duplicate_object
  */
-function wrapCreateType(sql: string): string {
+export function wrapCreateType(sql: string): string {
   return sql.replace(
-    /^(CREATE\s+TYPE\s+.+?;)$/gm,
+    /^(CREATE\s+TYPE\s+.+?;)$/gms,
     (match) => `DO $$ BEGIN\n  ${match}\nEXCEPTION WHEN duplicate_object THEN null;\nEND $$;`,
   );
 }
@@ -58,7 +70,7 @@ function wrapCreateType(sql: string): string {
  * @param sql - Raw SQL statement
  * @returns SQL with ALTER TABLE ... ADD CONSTRAINT wrapped in idempotent DO block
  */
-function wrapAddConstraint(sql: string): string {
+export function wrapAddConstraint(sql: string): string {
   return sql.replace(
     /^ALTER\s+TABLE\s+\S+\s+ADD\s+CONSTRAINT\s+"([^"]+)".*;$/gm,
     (match, conName) =>
@@ -86,7 +98,7 @@ function wrapAddConstraint(sql: string): string {
  * @param sql - Raw SQL statement
  * @returns SQL with ADD PRIMARY KEY wrapped in idempotent DO block
  */
-function wrapAddPrimaryKey(sql: string): string {
+export function wrapAddPrimaryKey(sql: string): string {
   return sql.replace(
     /^ALTER\s+TABLE\s+"?(\w+)"?\s+ADD\s+PRIMARY\s+KEY\s+\(([^)]+)\).*;$/gim,
     (_match, table: string, _cols: string) => {

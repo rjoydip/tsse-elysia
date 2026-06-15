@@ -75,7 +75,8 @@ async function _initDb0(): Promise<Database> {
   switch (driver) {
     case "pglite": {
       const { default: pgliteConnector } = await import("db0/connectors/pglite");
-      _db0 = createDatabase(pgliteConnector({ dataDir: env.PGLITE_DATA_DIR }));
+      const dataDir = process.env.PGLITE_DATA_DIR || env.PGLITE_DATA_DIR;
+      _db0 = createDatabase(pgliteConnector({ dataDir }));
       break;
     }
     case "node-postgres":

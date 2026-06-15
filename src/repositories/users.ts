@@ -7,6 +7,7 @@ import { eq, ne, like, and, or, desc, sql, count, inArray } from "drizzle-orm";
 import { db as defaultDb } from "~/config/db";
 import { users } from "~/lib/db";
 import { userRoles, roles, rolePermissions, permissions } from "~/lib/db";
+import { roleHierarchy, type UserRole } from "~/lib/auth/permissions";
 import { MONTH_NAMES } from "~/config/date";
 import type { DbType } from "~/config/db";
 
@@ -416,6 +417,51 @@ export class UserRepository {
       .innerJoin(roles, eq(userRoles.roleId, roles.id))
       .where(eq(userRoles.userId, userId));
     return records.map((r: { role: typeof roles.$inferSelect }) => r.role);
+  }
+
+  /**
+   * Resolves the user's effective highest role from the userRoles junction table.
+   *
+   * The userRoles table is the source of truth for role assignments. Users may
+   * have multiple roles (e.g. both "user" and "admin"). This method returns
+   * the highest-ranked role name according to the roleHierarchy.
+   *
+   * Falls back to users.role (the denormalized column) if the user has no
+   * entries in the userRoles junction table.
+   *
+   * @param userId - The user's ID
+   * @returns The user's effective highest role, or "user" if no role found
+   */
+  async getEffectiveRole(userId: string): Promise<UserRole> {
+    const userRolesList = await this.getUserRoles(userId);
+
+    if (userRolesList.length > 0) {
+      // Find the highest-ranked role from the junction table
+      let highestRole: UserRole = "user";
+      let highestLevel = -1;
+
+      for (const role of userRolesList) {
+        const level = roleHierarchy[role.name as UserRole] ?? -1;
+        if (level > highestLevel) {
+          highestLevel = level;
+          highestRole = role.name as UserRole;
+        }
+      }
+
+      if (highestLevel >= 0) {
+        return highestRole;
+      }
+    }
+
+    // Fallback: read the denormalized users.role column
+    const user = await this.getDb()
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+      .then((rows: { role: string | null }[]) => rows[0]);
+
+    return (user?.role as UserRole) ?? "user";
   }
 
   /**
