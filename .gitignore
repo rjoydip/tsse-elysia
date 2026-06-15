@@ -53,3 +53,7 @@ test-results
 .artifacts/*.com.json
 .fallow/
 pglite-data/
+
+# Maizzle email template build output
+tools/email-templates/build/
+tools/email-templates/.maizzle/

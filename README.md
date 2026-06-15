@@ -447,7 +447,7 @@ test/                  # Unit & component tests (Bun)
 ### Formatting
 
 - Use **oxfmt** for code formatting (configured in `.oxfmtrc.json`)
-- Run `bun run fmt` before committing
+- Run `bun run format` before committing
 
 ### Linting
 

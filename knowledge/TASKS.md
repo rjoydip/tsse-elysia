@@ -8,6 +8,23 @@ description: Execution-focused task tracker (source of truth for active work)
 > Only tasks that are actively being worked on.  
 > Each task MUST map to a GitHub Issue.
 
+### Phase 26: Maizzle Email Templates ✅
+
+- [x] Create standalone Maizzle project at `tools/email-templates/`
+- [x] Create 3 transactional email templates (welcome, verify-email, password-reset)
+- [x] Add root package.json scripts for email tooling
+- [x] Write unit tests verifying template structure, config, and build output
+- [x] All 28 tests pass
+
+### Email System (Resend)
+
+- [ ] Email sending service in `src/services/email/` using Resend API
+- [ ] Wire welcome email to sign-up flow
+- [ ] Wire verify-email template to auth verification flow
+- [ ] Wire password-reset template to password reset flow
+- [ ] SMTP/email provider configuration in `.env`
+- [ ] E2E tests for email sending
+
 ### MCP (Phase 9)
 
 - [ ] Rate limiting per API key <!-- issue: #83 -->
@@ -161,7 +178,8 @@ description: Execution-focused task tracker (source of truth for active work)
 
 > Not prioritized. Must be promoted to Current Sprint before work starts.
 
-- [ ] Email system (Resend)
+- [x] Email template tooling (Maizzle) — see Phase 26 ✅
+- [ ] Email sending service (Resend) — templates ready, next step
 - [ ] Telemetry (APM + analytics)
 - [ ] CDN + asset optimization
 - [ ] Circuit breaker pattern

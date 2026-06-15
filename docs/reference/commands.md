@@ -72,22 +72,22 @@ This document lists all available npm scripts in `package.json`.
 
 ## Linting & Formatting
 
-| Script          | Command                                                                          | Description              |
-| --------------- | -------------------------------------------------------------------------------- | ------------------------ |
-| `fmt`           | `oxfmt .`                                                                        | Format code              |
-| `fmt:check`     | `oxfmt --check .`                                                                | Check code formatting    |
-| `lint`          | `oxlint . --format=github`                                                       | Lint code                |
-| `lint:ci`       | `bun run fmt:check && bun run lint`                                              | CI linting pipeline      |
-| `lint:check`    | `bun run fmt:check && bun run lint && bun run fallow:dead && bun run actions-up` | Local linting process    |
-| `lint:fix`      | `oxlint . --fix && oxfmt .`                                                      | Auto-fix linting issues  |
-| `typecheck`     | `tsc --noEmit`                                                                   | Type check TypeScript    |
-| `react:doctor`  | `react-doctor . -y`                                                              | Run React Doctor         |
-| `fallow`        | `fallow`                                                                         | Check for code issues    |
-| `fallow:dead`   | `fallow dead-code`                                                               | Check for dead code      |
-| `fallow:dupes`  | `fallow dupes`                                                                   | Check for duplicate code |
-| `fallow:health` | `fallow health`                                                                  | Check code health        |
-| `fallow:fix`    | `fallow fix --dry-run`                                                           | Auto-fix code issues     |
-| `actions-up`    | `actions-up`                                                                     | Update GitHub Actions    |
+| Script          | Command                                                                             | Description              |
+| --------------- | ----------------------------------------------------------------------------------- | ------------------------ |
+| `format`        | `oxfmt .`                                                                           | Format code              |
+| `format:check`  | `oxfmt --check .`                                                                   | Check code formatting    |
+| `lint`          | `oxlint . --format=github`                                                          | Lint code                |
+| `lint:ci`       | `bun run format:check && bun run lint`                                              | CI linting pipeline      |
+| `lint:check`    | `bun run format:check && bun run lint && bun run fallow:dead && bun run actions-up` | Local linting process    |
+| `lint:fix`      | `oxlint . --fix && oxfmt .`                                                         | Auto-fix linting issues  |
+| `typecheck`     | `tsc --noEmit`                                                                      | Type check TypeScript    |
+| `react:doctor`  | `react-doctor . -y`                                                                 | Run React Doctor         |
+| `fallow`        | `fallow`                                                                            | Check for code issues    |
+| `fallow:dead`   | `fallow dead-code`                                                                  | Check for dead code      |
+| `fallow:dupes`  | `fallow dupes`                                                                      | Check for duplicate code |
+| `fallow:health` | `fallow health`                                                                     | Check code health        |
+| `fallow:fix`    | `fallow fix --dry-run`                                                              | Auto-fix code issues     |
+| `actions-up`    | `actions-up`                                                                        | Update GitHub Actions    |
 
 ---
 

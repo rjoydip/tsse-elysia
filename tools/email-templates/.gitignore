@@ -1,0 +1,8 @@
+# Maizzle build output
+build/
+
+# Maizzle IDE type definitions
+.maizzle/
+
+# Dependencies
+node_modules/
