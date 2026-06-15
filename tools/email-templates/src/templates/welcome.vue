@@ -59,14 +59,12 @@
   </DefaultLayout>
 </template>
 
-<script>
-/**
- * Welcome email sent to new users after registration.
- *
- * @param {string} username - The user's display name
- * @param {string} dashboardUrl - Link to the user's dashboard
- */
-export default {
-  props: ["username", "dashboardUrl"],
-};
+<script setup lang="ts">
+/** Welcome email sent to new users after registration. */
+defineProps<{
+  /** The user's display name */
+  username: string;
+  /** Link to the user's dashboard */
+  dashboardUrl: string;
+}>();
 </script>

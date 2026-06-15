@@ -33,8 +33,8 @@
 
     <text class="text-slate-600 leading-relaxed">
       <p>
-        This link expires in {{ expiresIn }}. If you did not create an account, no further action is
-        required.
+        This link expires in {{ expiresIn || "a limited time" }}. If you did not create an account,
+        no further action is required.
       </p>
       <p>If the button doesn't work, copy and paste this URL into your browser:</p>
       <p class="text-indigo-500 break-all">{{ verificationUrl }}</p>
@@ -42,16 +42,14 @@
   </DefaultLayout>
 </template>
 
-<script>
-/**
- * Email verification template sent during sign-up flow.
- * Contains a time-limited verification link.
- *
- * @param {string} username - The user's display name
- * @param {string} verificationUrl - One-time email verification link
- * @param {string} expiresIn - Human-readable expiration duration (e.g. "24 hours")
- */
-export default {
-  props: ["username", "verificationUrl", "expiresIn"],
-};
+<script setup lang="ts">
+/** Email verification template sent during sign-up flow. */
+defineProps<{
+  /** The user's display name */
+  username: string;
+  /** One-time email verification link */
+  verificationUrl: string;
+  /** Human-readable expiration duration (e.g. "24 hours") */
+  expiresIn: string;
+}>();
 </script>

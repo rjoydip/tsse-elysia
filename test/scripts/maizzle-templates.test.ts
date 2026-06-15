@@ -6,7 +6,6 @@
 import { describe, it, expect, beforeAll } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { $ } from "bun";
 
 const MAIZZLE_DIR = "tools/email-templates";
 
@@ -100,7 +99,7 @@ describe("Maizzle Email Templates", () => {
       expect(template).toContain("expiresIn");
     });
 
-    it("should define expected component props in each template", () => {
+    it("should define expected component props via defineProps in each template", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
       const expectedPropMap: Record<string, string[]> = {
         welcome: ["username", "dashboardUrl"],
@@ -110,12 +109,9 @@ describe("Maizzle Email Templates", () => {
 
       for (const name of templates) {
         const content = readMaizzleFile(`src/templates/${name}.vue`);
-        const propsMatch = content.match(/props:\s*\[([^\]]+)\]/);
-        expect(propsMatch).not.toBeNull();
-
-        const propsStr = propsMatch![1];
+        expect(content).toContain("defineProps");
         for (const prop of expectedPropMap[name]) {
-          expect(propsStr).toContain(prop);
+          expect(content).toContain(prop);
         }
       }
     });
@@ -139,12 +135,12 @@ describe("Maizzle Email Templates", () => {
       }
     });
 
-    it("should have proper JSDoc comments on each template", () => {
+    it("should have documentation comments on each template", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
       for (const name of templates) {
         const content = readMaizzleFile(`src/templates/${name}.vue`);
         expect(content).toContain("/**");
-        expect(content).toContain("@param");
+        expect(content).toContain("defineProps");
       }
     });
   });
@@ -155,7 +151,7 @@ describe("Maizzle Email Templates", () => {
       const layout = readMaizzleFile("components/DefaultLayout.vue");
       expect(layout).toContain("<Layout>");
       expect(layout).toContain("<slot />");
-      expect(layout).toContain("year");
+      expect(layout).toContain("currentYear");
     });
 
     it("should have a CSS file for custom styles", () => {
@@ -181,31 +177,49 @@ describe("Maizzle Email Templates", () => {
       expect(config).toContain("shorthand: true");
     });
 
-    it("should have brand colors configured", () => {
-      const config = readMaizzleFile("maizzle.config.ts");
-      expect(config).toContain("brand");
-      expect(config).toContain("6366f1");
+    it("should use Tailwind built-in indigo for brand colors", () => {
+      const templates = ["welcome", "verify-email", "password-reset"];
+      for (const name of templates) {
+        const content = readMaizzleFile(`src/templates/${name}.vue`);
+        expect(content).toContain("bg-indigo-500");
+        expect(content).toContain("text-white");
+      }
     });
 
     it("should have plaintext generation enabled", () => {
       const config = readMaizzleFile("maizzle.config.ts");
       expect(config).toContain("plaintext: true");
     });
+
+    it("should validate production config parses correctly", () => {
+      const config = readMaizzleFile("maizzle.config.production.ts");
+      expect(config).toContain("defineConfig");
+      expect(config).toContain("minify: true");
+      expect(config).not.toContain("format: true");
+      expect(config).toContain("plaintext: true");
+    });
+
+    it("should have a tsconfig.json for IDE support", () => {
+      expect(maizzleFileExists("tsconfig.json")).toBe(true);
+      const tc = JSON.parse(readMaizzleFile("tsconfig.json"));
+      expect(tc.extends).toBe("../../tsconfig.json");
+    });
   });
 
   describe("Build output", () => {
     /**
-     * Rebuild email templates before testing build output,
-     * since the build/ directory is gitignored.
+     * Build email templates before testing build output.
+     * Since the build/ directory is gitignored, CI must run `bun run email:build`
+     * before `bun test`. For local iteration, set SKIP_BUILD=1.
      */
     beforeAll(() => {
-      const result = Bun.spawnSync(["bun", "--cwd", MAIZZLE_DIR, "build"], {
-        env: { ...process.env },
-      });
-      if (!result.success) {
-        throw new Error(`Maizzle build failed: ${result.stderr.toString()}`);
+      if (process.env.SKIP_BUILD) return;
+      if (!existsSync(join(MAIZZLE_DIR, "build", "welcome.html"))) {
+        throw new Error(
+          "Email templates not built. Run `bun run email:build` first, or set SKIP_BUILD=1.",
+        );
       }
-    }, 30000);
+    });
 
     it("should produce HTML output files", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
@@ -243,6 +257,18 @@ describe("Maizzle Email Templates", () => {
       const html = readMaizzleFile("build/welcome.html");
       expect(html).toContain("<!--[if mso]>");
       expect(html).toContain("<![endif]-->");
+    });
+
+    it("should have no unresolved Vue interpolation markers in pre-built HTML", () => {
+      const html = readMaizzleFile("build/welcome.html");
+      expect(html).not.toContain("{{ username }}");
+      expect(html).not.toContain("{{ expiresIn }}");
+    });
+
+    it("should evaluate Vue template expressions (fallbacks, conditionals)", () => {
+      const html = readMaizzleFile("build/verify-email.html");
+      expect(html).toContain("a limited time");
+      expect(html).not.toContain("expiresIn ||");
     });
   });
 

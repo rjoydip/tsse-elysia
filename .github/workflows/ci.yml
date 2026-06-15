@@ -63,6 +63,9 @@ jobs:
         with:
           operation: setup
 
+      - name: Build email templates
+        run: bun run email:build
+
       - name: Run tests (${{ matrix.runtime }})
         run: bun test --preload ./test/setup.ts --coverage --run
 

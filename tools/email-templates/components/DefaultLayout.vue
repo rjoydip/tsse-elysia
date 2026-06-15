@@ -15,19 +15,7 @@
   </Layout>
 </template>
 
-<script>
-/**
- * Default email layout with footer and container styling.
- * Wraps Maizzle's built-in Layout component and adds a footer.
- */
-export default {
-  computed: {
-    /**
-     * @returns {number} Current year for the copyright footer
-     */
-    currentYear() {
-      return new Date().getFullYear();
-    },
-  },
-};
+<script setup lang="ts">
+/** Default email layout with footer and container styling. */
+const currentYear = new Date().getFullYear();
 </script>

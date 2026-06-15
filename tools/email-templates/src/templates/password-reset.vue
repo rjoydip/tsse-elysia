@@ -33,8 +33,8 @@
 
     <text class="text-slate-600 leading-relaxed">
       <p>
-        This link expires in {{ expiresIn }}. If you didn't request a password reset, please ignore
-        this email or contact support if you have concerns.
+        This link expires in {{ expiresIn || "a limited time" }}. If you didn't request a password
+        reset, please ignore this email or contact support if you have concerns.
       </p>
       <p>If the button doesn't work, copy and paste this URL into your browser:</p>
       <p class="text-indigo-500 break-all">{{ resetUrl }}</p>
@@ -42,16 +42,14 @@
   </DefaultLayout>
 </template>
 
-<script>
-/**
- * Password reset email sent when a user requests a password change.
- * Contains a time-limited reset link.
- *
- * @param {string} username - The user's display name
- * @param {string} resetUrl - One-time password reset link
- * @param {string} expiresIn - Human-readable expiration duration (e.g. "1 hour")
- */
-export default {
-  props: ["username", "resetUrl", "expiresIn"],
-};
+<script setup lang="ts">
+/** Password reset email sent when a user requests a password change. */
+defineProps<{
+  /** The user's display name */
+  username: string;
+  /** One-time password reset link */
+  resetUrl: string;
+  /** Human-readable expiration duration (e.g. "1 hour") */
+  expiresIn: string;
+}>();
 </script>

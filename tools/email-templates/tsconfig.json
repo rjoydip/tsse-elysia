@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": ["node"],
+    "paths": {}
+  },
+  "include": ["src", "components", "maizzle.config.ts", "maizzle.config.production.ts"],
+  "exclude": ["node_modules", "build"]
+}

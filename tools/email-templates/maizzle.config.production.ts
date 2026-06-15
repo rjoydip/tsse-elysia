@@ -4,6 +4,8 @@ import { defineConfig } from "@maizzle/framework";
  * Production-specific Maizzle configuration.
  * Extends the base config with formatting and locked output paths.
  *
+ * Brand colors are defined via @theme in src/css/main.css (shared with base config).
+ *
  * @see https://maizzle.com/docs/development/configuration
  */
 export default defineConfig({
@@ -11,27 +13,13 @@ export default defineConfig({
   output: {
     path: "build",
   },
-  tailwind: {
-    theme: {
-      extend: {
-        colors: {
-          brand: {
-            50: "#eff6ff",
-            500: "#3b82f6",
-            600: "#2563eb",
-            700: "#1d4ed8",
-          },
-        },
-      },
-    },
-  },
+  tailwind: {},
   css: {
     inline: true,
     purge: true,
     shorthand: true,
   },
   html: {
-    format: true,
     minify: true,
   },
   plaintext: true,

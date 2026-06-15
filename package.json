@@ -70,7 +70,8 @@
     "bruno:ci": "cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/ci.yml --tags smoke -r",
     "email:dev": "bun --cwd tools/email-templates dev",
     "email:build": "bun --cwd tools/email-templates build",
-    "email:new:template": "bun --cwd tools/email-templates new:template"
+    "email:new:template": "bun --cwd tools/email-templates new:template",
+    "email:new:layout": "bun --cwd tools/email-templates new:layout"
   },
   "dependencies": {
     "@elysiajs/cron": "^1.4.2",
