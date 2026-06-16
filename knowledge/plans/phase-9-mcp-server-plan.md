@@ -486,7 +486,7 @@ Track per-organization and per-API-key:
 - [x] Create API key management routes and UI
 - [ ] Create client SDK
 - [ ] Add telemetry and usage tracking
-- [x] Run lint, fmt, typecheck
+- [x] Run lint, format, typecheck
 
 ## Future Enhancements
 

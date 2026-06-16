@@ -47,7 +47,7 @@ All AI-generated code must adhere to these standards.
 
 - **Match existing patterns**: Follow the project's code style and structure
 - **Reuse utilities**: Use existing helpers/utilities instead of duplicating code
-- **Formatting**: Always run `bun run fmt` before completing any task
+- **Formatting**: Always run `bun run format` before completing any task
 - **Linting**: Run `bun run lint:fix` to auto-fix issues
   - For markdown files, ensure proper markdown linting (`markdownlint`) is followed
   - Add new line at EOF
@@ -251,7 +251,7 @@ When generating or modifying code, the AI agent must:
 1. **Always add comments** - No uncommented code should be committed
 2. **Refactor for clarity** - Add missing comments when modifying existing code
 3. **Follow standards** - Strictly adhere to these coding guidelines
-4. **Verify changes** - Run lint, fmt, and typecheck before finishing
+4. **Verify changes** - Run lint, format, and typecheck before finishing
 5. **Security Scanning** - Be aware that Docker images are scanned by Trivy in CI. Ensure no vulnerable packages are introduced.
 6. **Keep responses concise** - Answer directly without unnecessary preamble
 
@@ -261,7 +261,7 @@ When generating or modifying code, the AI agent must:
 
 All necessary information is in [README.md](./README.md), including:
 
-- Commands (dev, build, lint, fmt, typecheck, etc.)
+- Commands (dev, build, lint, format, typecheck, etc.)
 - Tech stack overview
 - Project structure
 - Code style guidelines (formatting, linting, TypeScript, naming, imports, React patterns, error handling, CSS, validation)
@@ -285,7 +285,7 @@ bun run script:generate-bruno
 1. For any task, first check [PLANS.md](./knowledge/PLANS.md) to see if it's already planned
 2. For non-trivial tasks, create a plan using PLANS.md template
 3. Create/edit code
-4. Run `bun run fmt` to ensure formatting
+4. Run `bun run format` to ensure formatting
 5. Run `bun run lint:fix` to auto-fix issues
 6. Run `bun run typecheck` to verify types
 7. Run `bun run fallow` to check for dead code, duplicates, and complexity issues

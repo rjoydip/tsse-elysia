@@ -43,9 +43,14 @@ test-results
 
 # Vite
 .output
+dist/
+build/
 
 # Tanstack
 .tanstack
+
+# Maizzle IDE type definitions
+.maizzle/
 
 # Tilde temp directories
 ~
@@ -53,3 +58,7 @@ test-results
 .artifacts/*.com.json
 .fallow/
 pglite-data/
+
+# Maizzle email template build output
+tools/email-templates/build/
+tools/email-templates/.maizzle/

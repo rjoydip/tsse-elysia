@@ -1,0 +1,14 @@
+{
+  "name": "email-templates",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "maizzle serve",
+    "build": "maizzle build",
+    "new:template": "maizzle make:template",
+    "new:layout": "maizzle make:layout"
+  },
+  "dependencies": {
+    "@maizzle/framework": "^6.0.0"
+  }
+}

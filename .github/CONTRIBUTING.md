@@ -267,7 +267,7 @@ Before every commit, these checks run automatically:
 ```bash
 bun run lint              # Lint + format check
 bun run lint:fix          # Auto-fix lint issues
-bun run fmt               # Format code
+bun run format               # Format code
 bun run typecheck         # TypeScript check
 ```
 

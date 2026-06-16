@@ -63,6 +63,12 @@ jobs:
         with:
           operation: setup
 
+      - name: Install email template dependencies
+        run: bun install --cwd tools/email-templates --frozen-lockfile --ignore-scripts
+
+      - name: Build email templates
+        run: bun run email:build
+
       - name: Run tests (${{ matrix.runtime }})
         run: bun test --preload ./test/setup.ts --coverage --run
 
