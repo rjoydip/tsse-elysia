@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, writeFileSync, existsSync } from "fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { tmpdir } from "os";
 import { rmSync } from "fs";
-import { EmailRenderService } from "~/services/email/render.service";
+import { EmailRenderService, escapeHtml } from "~/services/email/render.service";
 
 /**
  * Unit tests for the EmailRenderService.
@@ -145,14 +145,46 @@ describe("EmailRenderService", () => {
     });
 
     it("should return 500 for file read errors", () => {
-      // Create a directory with same name to cause read error
-      writeFileSync(resolve(tempDir, "broken.html"), "valid content", "utf-8");
+      // Create a directory with the template name so readFileSync throws EISDIR
+      mkdirSync(resolve(tempDir, "broken.html"));
 
-      // Temporarily make it unreadable (Windows doesn't support chmod well)
-      // Instead, we'll test by removing the file between creation and reading
-      // This is covered by the 404 test above
       const result = service.render("broken", { x: "y" });
-      expect(result.ok).toBe(true);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(500);
+        expect(result.error).toContain("Failed to render template");
+      }
+    });
+  });
+
+  describe("escapeHtml", () => {
+    it("should escape & to &amp;", () => {
+      expect(escapeHtml("a & b")).toBe("a &amp; b");
+    });
+
+    it("should escape < to &lt;", () => {
+      expect(escapeHtml("<tag>")).toBe("&lt;tag&gt;");
+    });
+
+    it("should escape > to &gt;", () => {
+      expect(escapeHtml("a > b")).toBe("a &gt; b");
+    });
+
+    it("should escape double quotes to &quot;", () => {
+      expect(escapeHtml('say "hello"')).toBe("say &quot;hello&quot;");
+    });
+
+    it("should escape single quotes to &#039;", () => {
+      expect(escapeHtml("it's")).toBe("it&#039;s");
+    });
+
+    it("should handle strings with no special characters", () => {
+      expect(escapeHtml("hello world")).toBe("hello world");
+    });
+
+    it("should handle empty string", () => {
+      expect(escapeHtml("")).toBe("");
     });
   });
 

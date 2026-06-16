@@ -120,8 +120,12 @@ export function emailPlugin(options: EmailPluginOptions = {}): Plugin {
     },
 
     closeBundle() {
-      if (maizzleProcess && !maizzleProcess.killed) {
-        maizzleProcess.kill();
+      // Use global store if available (handles HMR re-spawn case),
+      // fall back to closure variable for first-run cleanup.
+      const process =
+        (_globalStore[MAIZZLE_PROCESS_KEY] as ChildProcess | undefined) ?? maizzleProcess;
+      if (process && !process.killed) {
+        process.kill();
       }
     },
   };

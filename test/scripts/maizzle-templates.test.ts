@@ -33,7 +33,7 @@ describe("Maizzle Email Templates", () => {
 
     it("should have @maizzle/framework in root package.json", () => {
       const rootPkg = JSON.parse(readFileSync("package.json", "utf-8"));
-      expect(rootPkg.dependencies).toHaveProperty("@maizzle/framework");
+      expect(rootPkg.devDependencies).toHaveProperty("@maizzle/framework");
     });
   });
 

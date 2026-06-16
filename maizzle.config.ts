@@ -1,3 +1,4 @@
+// fallow-ignore-next-line unused-files — consumed by Maizzle CLI, not imported by Vite
 import { defineConfig } from "@maizzle/framework";
 
 /**

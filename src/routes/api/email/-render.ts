@@ -27,7 +27,9 @@ export const emailRenderRoutes = new Elysia({
     let body: unknown;
 
     try {
-      body = await request.json();
+      // Use text() + JSON.parse() instead of json() to avoid issues with
+      // body consumption by upstream handlers (TanStack Start HTTP layer).
+      body = JSON.parse(await request.text());
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
         status: 400,

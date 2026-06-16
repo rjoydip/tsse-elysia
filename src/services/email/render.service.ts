@@ -56,13 +56,22 @@ export class EmailRenderService {
     try {
       let html = readFileSync(htmlPath, "utf-8");
 
-      // Replace {= varName =} tokens with provided data values
+      // First pass: replace provided variables with their values
       html = html.replace(/\{=\s*(\w+)\s*=\}/g, (_match, varName: string) => {
         return varName in data ? escapeHtml(data[varName]) : "";
       });
 
-      // Replace {= varName =} tokens with empty string for any remaining unmatched tokens
-      html = html.replace(/\{=\s*\w+\s*=\}/g, "");
+      // Second pass: warn about and remove any remaining unmatched tokens
+      // This catches typos in template variable names without failing silently.
+      const unmatched = html.match(/\{=\s*\w+\s*=\}/g);
+      if (unmatched) {
+        const names = [...new Set(unmatched.map((t) => t.replace(/\{=\s*|\s*=\}/g, "")))];
+        console.warn(
+          `[email-render] Template "${template}" has unmatched tokens: [${names.join(", ")}]. ` +
+            "These variables were not provided in the render data.",
+        );
+        html = html.replace(/\{=\s*\w+\s*=\}/g, "");
+      }
 
       return { ok: true, html };
     } catch (cause) {
@@ -96,21 +105,41 @@ export class EmailRenderService {
 }
 
 /**
+ * HTML entity map used for single-pass escaping.
+ */
+const htmlEntities: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#039;",
+};
+
+/**
  * Escapes HTML special characters to prevent injection attacks.
+ *
+ * Applied uniformly to all variable values, including URLs in `href`
+ * attributes. `&amp;` in an `href` is correctly interpreted by browsers
+ * as `&`, so this is safe. Data values should NOT be pre-encoded —
+ * the template system handles encoding at render time.
+ *
+ * Uses a single regex pass over the string for performance.
  *
  * @param value - Raw string value
  * @returns HTML-escaped string
  */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => htmlEntities[char]);
 }
 
 /**
  * Singleton instance of the email render service.
+ *
+ * Constructor accepts an optional `buildDir` parameter for testing:
+ * ```ts
+ * const service = new EmailRenderService(mockBuildDir);
+ * ```
+ * This follows the same DI pattern used by repositories in this project.
+ * The module-level singleton is a convenience for the controller layer.
  */
 export const emailRenderService = new EmailRenderService();
