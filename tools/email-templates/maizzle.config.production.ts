@@ -2,16 +2,16 @@ import { defineConfig } from "@maizzle/framework";
 
 /**
  * Production-specific Maizzle configuration.
- * Extends the base config with formatting and locked output paths.
- *
- * Brand colors are defined via @theme in src/css/main.css (shared with base config).
+ * Overrides the base config with production-only settings:
+ * - Separate output directory to avoid overwriting dev builds
+ * - Disables HTML formatting (redundant when minifying)
  *
  * @see https://maizzle.com/docs/development/configuration
  */
 export default defineConfig({
   content: ["src/templates/**/*.vue"],
   output: {
-    path: "build",
+    path: "build/production",
   },
   tailwind: {},
   css: {
@@ -21,6 +21,7 @@ export default defineConfig({
   },
   html: {
     minify: true,
+    format: false,
   },
   plaintext: true,
 });

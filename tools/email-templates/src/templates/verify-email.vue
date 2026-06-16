@@ -22,7 +22,7 @@
       <column class="text-center">
         <button
           href="{{ verificationUrl }}"
-          class="bg-indigo-500 text-white rounded-lg px-6 py-3 font-semibold"
+          class="bg-brand-500 text-white rounded-lg px-6 py-3 font-semibold"
         >
           Verify Email Address
         </button>
@@ -37,7 +37,7 @@
         no further action is required.
       </p>
       <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-      <p class="text-indigo-500 break-all">{{ verificationUrl }}</p>
+      <p class="text-brand-500 break-all">{{ verificationUrl }}</p>
     </text>
   </DefaultLayout>
 </template>

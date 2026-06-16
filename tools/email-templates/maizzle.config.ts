@@ -10,7 +10,8 @@ import { defineConfig } from "@maizzle/framework";
  *   - Runtime rendering: use @maizzle/framework render() to compile + send
  *     with variable substitution. See the email service in src/services/email/.
  *
- * Brand colors are defined via @theme in src/css/main.css (Tailwind v4).
+ * Brand color tokens (brand-*) are defined via @theme in src/css/main.css.
+ * Use bg-brand-500 / text-brand-500 in templates instead of hardcoded colors.
  *
  * @see https://maizzle.com/docs/development/configuration
  */

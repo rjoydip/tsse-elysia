@@ -22,7 +22,7 @@
       <column class="text-center">
         <button
           href="{{ resetUrl }}"
-          class="bg-indigo-500 text-white rounded-lg px-6 py-3 font-semibold"
+          class="bg-brand-500 text-white rounded-lg px-6 py-3 font-semibold"
         >
           Reset Password
         </button>
@@ -37,7 +37,7 @@
         reset, please ignore this email or contact support if you have concerns.
       </p>
       <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-      <p class="text-indigo-500 break-all">{{ resetUrl }}</p>
+      <p class="text-brand-500 break-all">{{ resetUrl }}</p>
     </text>
   </DefaultLayout>
 </template>

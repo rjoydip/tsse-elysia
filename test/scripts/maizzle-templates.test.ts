@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeAll } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { spawnSync } from "bun";
 
 const MAIZZLE_DIR = "tools/email-templates";
 
@@ -177,11 +178,11 @@ describe("Maizzle Email Templates", () => {
       expect(config).toContain("shorthand: true");
     });
 
-    it("should use Tailwind built-in indigo for brand colors", () => {
+    it("should use brand tokens for brand colors", () => {
       const templates = ["welcome", "verify-email", "password-reset"];
       for (const name of templates) {
         const content = readMaizzleFile(`src/templates/${name}.vue`);
-        expect(content).toContain("bg-indigo-500");
+        expect(content).toContain("bg-brand-500");
         expect(content).toContain("text-white");
       }
     });
@@ -191,11 +192,13 @@ describe("Maizzle Email Templates", () => {
       expect(config).toContain("plaintext: true");
     });
 
-    it("should validate production config parses correctly", () => {
+    it("should validate production config has production-specific values", () => {
       const config = readMaizzleFile("maizzle.config.production.ts");
       expect(config).toContain("defineConfig");
-      expect(config).toContain("minify: true");
-      expect(config).not.toContain("format: true");
+      // Production output goes to a separate directory
+      expect(config).toContain("build/production");
+      // HTML formatting disabled (redundant when minifying)
+      expect(config).toContain("format: false");
       expect(config).toContain("plaintext: true");
     });
 
@@ -209,26 +212,36 @@ describe("Maizzle Email Templates", () => {
   describe("Build output", () => {
     /**
      * Build email templates before testing build output.
-     * Since the build/ directory is gitignored, CI must run `bun run email:build`
-     * before `bun test`. For local iteration, set SKIP_BUILD=1.
+     * Auto-builds if output is missing. Set SKIP_BUILD=1 for local iteration.
      */
     beforeAll(() => {
       if (process.env.SKIP_BUILD) return;
       if (!existsSync(join(MAIZZLE_DIR, "build", "welcome.html"))) {
-        throw new Error(
-          "Email templates not built. Run `bun run email:build` first, or set SKIP_BUILD=1.",
-        );
+        const result = spawnSync(["bun", "run", "email:build"], {
+          cwd: join(import.meta.dir, "../.."),
+          env: { ...process.env, NODE_ENV: "production" },
+        });
+        if (!existsSync(join(MAIZZLE_DIR, "build", "welcome.html"))) {
+          throw new Error(
+            `Email build failed. stdout: ${result.stdout?.toString()}, stderr: ${result.stderr?.toString()}`,
+          );
+        }
       }
     });
 
-    it("should produce HTML output files", () => {
-      const templates = ["welcome", "verify-email", "password-reset"];
-      for (const name of templates) {
+    it("should produce HTML output files with template-specific content", () => {
+      const templates: Record<string, string[]> = {
+        welcome: ["<!DOCTYPE html>", "</html>", "Go to Dashboard", "TSSE"],
+        "verify-email": ["<!DOCTYPE html>", "</html>", "Verify Your Email Address", "limited time"],
+        "password-reset": ["<!DOCTYPE html>", "</html>", "Reset Your Password", "password"],
+      };
+      for (const [name, expected] of Object.entries(templates)) {
         const htmlPath = join(MAIZZLE_DIR, "build", `${name}.html`);
         expect(existsSync(htmlPath)).toBe(true);
         const html = readFileSync(htmlPath, "utf-8");
-        expect(html).toContain("<!DOCTYPE html>");
-        expect(html).toContain("</html>");
+        for (const fragment of expected) {
+          expect(html).toContain(fragment);
+        }
       }
     });
 
@@ -240,33 +253,39 @@ describe("Maizzle Email Templates", () => {
       }
     });
 
-    it("should have inline CSS in HTML output", () => {
-      const html = readMaizzleFile("build/welcome.html");
-      expect(html).toContain('style="');
+    it("should have inline CSS and email-safe HTML structure across all templates", () => {
+      const templates = ["welcome", "verify-email", "password-reset"];
+      for (const name of templates) {
+        const html = readMaizzleFile(`build/${name}.html`);
+        expect(html).toContain("<html");
+        expect(html).toContain("<head>");
+        expect(html).toContain("<meta charset");
+        expect(html).toContain('<meta name="viewport"');
+        expect(html).toContain("<!--[if mso]>");
+        expect(html).toContain("<![endif]-->");
+        expect(html).toContain('style="');
+      }
     });
 
-    it("should have email-safe HTML structure", () => {
-      const html = readMaizzleFile("build/welcome.html");
-      expect(html).toContain("<html");
-      expect(html).toContain("<head>");
-      expect(html).toContain("<meta charset");
-      expect(html).toContain('<meta name="viewport"');
-    });
-
-    it("should have MSO conditional comments for Outlook", () => {
-      const html = readMaizzleFile("build/welcome.html");
-      expect(html).toContain("<!--[if mso]>");
-      expect(html).toContain("<![endif]-->");
-    });
-
-    it("should have no unresolved Vue interpolation markers in pre-built HTML", () => {
-      const html = readMaizzleFile("build/welcome.html");
-      expect(html).not.toContain("{{ username }}");
-      expect(html).not.toContain("{{ expiresIn }}");
+    it("should have no unresolved text-content Vue interpolation markers in pre-built HTML", () => {
+      // Interpolation in text content (e.g. <p>{{ username }}</p>) is resolved
+      // by Maizzle's static build. Href attribute bindings are left as-is.
+      const templates = ["welcome", "verify-email", "password-reset"];
+      for (const name of templates) {
+        const html = readMaizzleFile(`build/${name}.html`);
+        expect(html).not.toContain("{{ username }}");
+        expect(html).not.toContain("{{ expiresIn }}");
+      }
     });
 
     it("should evaluate Vue template expressions (fallbacks, conditionals)", () => {
       const html = readMaizzleFile("build/verify-email.html");
+      expect(html).toContain("a limited time");
+      expect(html).not.toContain("expiresIn ||");
+    });
+
+    it("should render fallback text in password-reset template", () => {
+      const html = readMaizzleFile("build/password-reset.html");
       expect(html).toContain("a limited time");
       expect(html).not.toContain("expiresIn ||");
     });
