@@ -12,8 +12,8 @@ import path from "path";
  * Vue/Nunjucks {{ }} syntax which gets resolved during build.
  *
  * Build output path resolution:
- * - Development: src/email/build/
  * - Production: dist/email/ (copied by Vite plugin during build)
+ * - Development falls back to src/email/build/
  */
 export class EmailRenderService {
   private buildDir: string;
@@ -27,7 +27,7 @@ export class EmailRenderService {
       this.buildDir = buildDir;
     } else {
       const prodDir = path.resolve(process.cwd(), "dist/email");
-      const devDir = path.resolve(import.meta.dirname, "../../email/build");
+      const devDir = path.resolve(process.cwd(), "src/email/build");
       this.buildDir = existsSync(prodDir) ? prodDir : devDir;
     }
   }

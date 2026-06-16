@@ -27,7 +27,7 @@ export const emailRenderRoutes = new Elysia({
     let body: unknown;
 
     try {
-      body = await request.clone().json();
+      body = await request.json();
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
         status: 400,
