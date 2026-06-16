@@ -5,6 +5,7 @@ ignorePatterns = [
   "**/dist/**",
   "**/.{artifacts,opencode}/**",
   "k6.config.js",
+  "maizzle.config.ts"
 ]
 ignoreDependencies = ["ioredis", "portless"]
 dynamicallyLoaded = ["src/**/*.{ts,tsx}"]

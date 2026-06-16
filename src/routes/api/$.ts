@@ -16,7 +16,10 @@ import type { apiRoutes } from "./-app";
  */
 const getHandler = async ({ request }: { request: Request }) => {
   const { handle } = await import("./-app");
-  return handle({ request });
+  // Clone the request to preserve the body before passing downstream.
+  // TanStack Start may consume the body stream during H3Event setup,
+  // causing request.json() / request.text() to fail in route handlers.
+  return handle({ request: request.clone() });
 };
 
 /**
