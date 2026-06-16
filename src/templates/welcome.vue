@@ -22,13 +22,13 @@
     <spacer height="32" />
 
     <heading class="text-2xl text-slate-800 font-semibold text-center">
-      Welcome to TSSE, {{ username }}!
+      Welcome to TSSE, {= username =}!
     </heading>
 
     <spacer height="16" />
 
     <text class="text-slate-600 leading-relaxed">
-      <p>Hi {{ username }},</p>
+      <p>Hi {= username =},</p>
       <p>
         We're excited to have you on board! Your account has been successfully created and you're
         all set to explore everything TSSE has to offer.
@@ -40,7 +40,7 @@
     <row>
       <column class="text-center">
         <button
-          href="{{ dashboardUrl }}"
+          href="{= dashboardUrl =}"
           class="bg-brand-500 text-white rounded-lg px-6 py-3 font-semibold"
         >
           Go to Dashboard

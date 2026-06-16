@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import evlog from "evlog/vite";
 import { comptime } from "comptime/vite";
+import { emailPlugin } from "./plugins/vite/email";
 
 const host = import.meta.env.HOST || "localhost";
 const port = parseInt(import.meta.env.PORT || "3000", 10);
@@ -20,6 +21,7 @@ export default defineConfig(() => ({
     tanstackStart(),
     viteReact(),
     tailwindcss(),
+    emailPlugin(),
   ],
   ssr: {
     noExternal: ["drizzle-orm"],

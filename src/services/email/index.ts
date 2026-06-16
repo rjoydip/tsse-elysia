@@ -1,0 +1,1 @@
+export { EmailRenderService, emailRenderService } from "./render.service";
