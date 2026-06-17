@@ -67,7 +67,7 @@ describe("Bruno Collection Script", () => {
   });
 
   it("should have CI workflow for Bruno tests", () => {
-    const workflowPath = ".github/workflows/bruno-api.yml";
+    const workflowPath = ".github/workflows/bruno.yml";
     expect(existsSync(workflowPath)).toBe(true);
     const content = readFileSync(workflowPath, "utf-8");
     expect(content).toContain("Bruno API Tests");
@@ -76,7 +76,7 @@ describe("Bruno Collection Script", () => {
   });
 
   it("should validate CI workflow commands reference valid scripts and paths", () => {
-    const workflowPath = ".github/workflows/bruno-api.yml";
+    const workflowPath = ".github/workflows/bruno.yml";
     const workflow = readFileSync(workflowPath, "utf-8");
 
     // 1. Working directory path must exist
