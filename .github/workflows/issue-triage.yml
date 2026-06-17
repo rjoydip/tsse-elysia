@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Issue Triage
         if: steps.check.outputs.result == 'true'
-        uses: anomalyco/opencode/github@4ed4f749e644ffb5b279fb30b7b915e743d80142 # v1.17.7
+        uses: anomalyco/opencode/github@11e47f91496005aab4d7c5a2d0a7da5d2651b4ac # v1.17.8
         timeout-minutes: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
