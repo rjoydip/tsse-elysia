@@ -12,15 +12,16 @@ http:
   headers:
     - name: Content-Type
       value: application/json
-  body: json
-  json: |-
-    {
-      "template": "welcome",
-      "data": {
-        "username": "Jane",
-        "dashboardUrl": "https://example.com/dashboard"
+  body:
+    type: json
+    data: |-
+      {
+        "template": "welcome",
+        "data": {
+          "username": "Jane",
+          "dashboardUrl": "https://example.com/dashboard"
+        }
       }
-    }
 
 runtime:
   scripts:

@@ -11,11 +11,12 @@ http:
   headers:
     - name: Content-Type
       value: application/json
-  body: json
-  json: |-
-    {
-      "template": ""
-    }
+  body:
+    type: json
+    data: |-
+      {
+        "template": ""
+      }
 
 runtime:
   scripts:
