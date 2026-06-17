@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  PGLITE_DATA_DIR: ".artifacts/pglite-data-bruno"
   BRUNO_PORT: "4173"
 
 jobs:
