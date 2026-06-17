@@ -13,13 +13,22 @@ import type { apiRoutes } from "./-app";
 /**
  * Dynamically imports the Elysia handler from the server-only module.
  * This prevents Elysia (and its transitive deps like pg) from being bundled into the client.
+ *
+ * Passes the original request directly to the Elysia handler.
+ * NOTE: We avoid request.clone() here because srvx's NodeRequest.clone() triggers
+ * Readable.toWeb() to create a tee'd web stream, which doesn't work reliably in Bun.
+ * The NodeRequest.text() method falls through to readBody(this.#req) which reads from
+ * the raw Node.js IncomingMessage stream using standard data/end events.
  */
 const getHandler = async ({ request }: { request: Request }) => {
   const { handle } = await import("./-app");
-  // Clone the request to preserve the body before passing downstream.
-  // TanStack Start may consume the body stream during H3Event setup,
-  // causing request.json() / request.text() to fail in route handlers.
-  return handle({ request: request.clone() });
+
+  // NOTE: The srvx NodeRequest passed by Vinxi has: text(), json(), body, method, url, headers.
+  // If request.text() fails downstream, it's likely because readBody(this.#req) is hanging
+  // on Bun's IncomingMessage emulation (data/end events may not fire reliably).
+  // In that case, the email route's catch block will log the actual error for debugging.
+
+  return handle({ request });
 };
 
 /**

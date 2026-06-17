@@ -127,7 +127,7 @@
     "date-fns": "^4.4.0",
     "db0": "^0.3.4",
     "drizzle-orm": "^0.45.2",
-    "elysia": "^1.4.28",
+    "elysia": "^1.4.29",
     "elysia-rate-limit": "^4.6.2",
     "evlog": "^2.19.1",
     "input-otp": "^1.4.2",
@@ -153,7 +153,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.2",
+    "@electric-sql/pglite": "^0.5.3",
     "@faker-js/faker": "^10.4.0",
     "@maizzle/framework": "^6.0.1",
     "@playwright/test": "^1.61.0",
