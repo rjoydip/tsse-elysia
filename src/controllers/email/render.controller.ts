@@ -12,7 +12,13 @@ export interface RenderRequest {
  * Validates that template name and data object are provided.
  */
 export const renderEmailSchema = z.object({
-  template: z.string().min(1, "Template name is required"),
+  template: z
+    .string()
+    .min(1, "Template name is required")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Template name must only contain letters, numbers, hyphens, and underscores",
+    ),
   data: z
     .record(z.string(), z.string())
     .refine((val) => Object.keys(val).length > 0, "Data must have at least one variable"),
