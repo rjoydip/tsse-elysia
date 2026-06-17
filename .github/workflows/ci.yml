@@ -63,9 +63,6 @@ jobs:
         with:
           operation: setup
 
-      - name: Install email template dependencies
-        run: bun install --cwd tools/email-templates --frozen-lockfile --ignore-scripts
-
       - name: Build email templates
         run: bun run email:build
 
@@ -98,7 +95,20 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
+      - name: Check for Docker file changes
+        id: changed-docker
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            docker:
+              - 'docker/**'
+              - '.trivy/**'
+              - '.github/actions/docker-build-scan/**'
+              - 'package.json'
+              - 'bun.lock'
+
       - uses: ./.github/actions/docker-build-scan
+        if: steps.changed-docker.outputs.docker == 'true'
         with:
           image-tag: tsse-elysia:${{ github.sha }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}

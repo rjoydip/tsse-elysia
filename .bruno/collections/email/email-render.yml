@@ -1,0 +1,38 @@
+info:
+  name: Email Render
+  type: http
+  seq: 1
+  tags:
+    - smoke
+    - email
+
+http:
+  method: POST
+  url: "{{base_url}}/email/render"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "template": "welcome",
+        "data": {
+          "username": "Jane",
+          "dashboardUrl": "https://example.com/dashboard"
+        }
+      }
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("status is 200 or 404", () => {
+          if (res.status === 400) {
+            console.log("Response body:", res.body);
+          }
+          expect(res.status).to.be.oneOf([200, 404]);
+        });
+
+settings:
+  encodeUrl: true

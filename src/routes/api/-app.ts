@@ -24,6 +24,7 @@ import {
   recentActivityRoutes,
   overviewChartRoutes,
 } from "./dashboard/-core";
+import { emailRoutes } from "./email/-core";
 
 /**
  * Main API application instance factory.
@@ -77,6 +78,7 @@ export const createApiRoutes = () =>
     .use(analyticsRoutes)
     .use(recentActivityRoutes)
     .use(overviewChartRoutes)
+    .use(emailRoutes)
     // Evlog client ingestion endpoint for browser logs
     .use(evlogIngestEndpoint());
 

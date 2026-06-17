@@ -10,9 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DATABASE_TYPE: "sqlite"
-  SQLITE_URL: "file:.artifacts/tsse-elysia.db"
-  E2E_PORT: "4173"
+  PGLITE_DATA_DIR: ".artifacts/pglite-data-bruno"
+  BRUNO_PORT: "4173"
 
 jobs:
   bruno-tests:
@@ -24,9 +23,8 @@ jobs:
 
       - uses: ./.github/actions/setup-environment
 
-      - uses: ./.github/actions/setup-database
-        with:
-          operation: setup
+      - name: Seed isolated Bruno database
+        run: bun run bruno:seed
 
       - name: Build
         run: bun run build
@@ -34,23 +32,18 @@ jobs:
       - name: Start preview server
         env:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BASE_URL: http://localhost:${{ env.E2E_PORT }}
-          BETTER_AUTH_URL: http://localhost:${{ env.E2E_PORT }}/api/auth
+          BASE_URL: http://localhost:${{ env.BRUNO_PORT }}
+          BETTER_AUTH_URL: http://localhost:${{ env.BRUNO_PORT }}/api/auth
         run: |
-          bun run preview --port ${{ env.E2E_PORT }} --host 0.0.0.0 &
+          bun run preview --port ${{ env.BRUNO_PORT }} --host 0.0.0.0 &
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:${{ env.E2E_PORT }}/api/reference?format=json > /dev/null 2>&1; then
-              echo "Server http://localhost:${{ env.E2E_PORT }} is ready"
+            if curl -sf http://localhost:${{ env.BRUNO_PORT }}/api/reference?format=json > /dev/null 2>&1; then
+              echo "Server http://localhost:${{ env.BRUNO_PORT }} is ready"
               break
             fi
             echo "Waiting for server... ($i)"
             sleep 2
           done
-
-      - name: Seed essential users (server must be running)
-        env:
-          SEED_SERVER_URL: http://localhost:${{ env.E2E_PORT }}
-        run: bun run db:seed --prod
 
       - name: Create report directory
         run: mkdir -p reports
@@ -95,7 +88,6 @@ jobs:
         if: always()
         run: pkill -f "bun run preview" || true
 
-      - uses: ./.github/actions/setup-database
+      - name: Cleanup Bruno database
         if: always()
-        with:
-          operation: remove
+        run: bun run bruno:cleanup
