@@ -1,5 +1,5 @@
-name: Local
+name: Local Bruno (Isolated DB)
 variables:
   - name: base_url
-    value: http://localhost:3000/api
+    value: http://localhost:4174/api
     enabled: true

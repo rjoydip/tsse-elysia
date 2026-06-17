@@ -4,7 +4,7 @@ This directory contains the Bruno API testing collection for TSSE Elysia.
 
 ## Structure
 
-```
+```bash
 .bruno/
 ├── collections/
 │   ├── opencollection.yml      # Root collection definition
@@ -17,7 +17,7 @@ This directory contains the Bruno API testing collection for TSSE Elysia.
 │   ├── tasks/                  # Tasks endpoints
 │   └── users/                  # User management endpoints
 ├── environments/
-│   ├── local.yml               # Dev environment (localhost:3000)
+│   ├── local.yml               # Bruno isolated environment (localhost:4174)
 │   └── ci.yml                  # CI environment (localhost:4173)
 ├── reports/                    # Generated test reports
 ├── workspace.yml               # Bruno workspace config
@@ -63,13 +63,50 @@ Variables are set via `after-response` scripts using `bru.setVar()` and persist 
 
 ## Running
 
+All Bruno commands use an **isolated PGlite database** at `.artifacts/pglite-data-bruno/`
+so your development data is never touched:
+
+### Setup
+
 ```bash
-# All requests (dev)
-cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml -r
+# Create & seed a fresh isolated database (essential users only)
+bun run bruno:seed
+```
 
-# Smoke tests only (dev)
-cd .bruno/collections && npx @usebruno/cli run . --env-file ../environments/local.yml --tags smoke -r
+### Run tests
 
-# CI (from repo root via npm)
+```bash
+# Smoke tests only (recommended for quick validation)
+bun run bruno:smoke
+
+# All requests
+bun run bruno:run
+
+# CI (uses ci.yml env — port 4173)
 bun run bruno:ci
 ```
+
+### Server lifecycle
+
+```bash
+# Start a preview server on port 4174 using the isolated DB
+bun run bruno:server
+
+# Clean up the isolated database when done
+bun run bruno:cleanup
+```
+
+### Full workflow (quick start)
+
+```bash
+bun run bruno:seed     # fresh isolated DB at .artifacts/pglite-data-bruno
+bun run bruno:server   # start preview on :4174
+bun run bruno:smoke    # run smoke tests
+bun run bruno:cleanup  # remove isolated DB
+```
+
+### How it works
+
+Scripts set `PGLITE_DATA_DIR` internally to `.artifacts/pglite-data-bruno`,
+pointing the server to a completely separate PGlite data directory.
+The regular dev database at `.artifacts/pglite-data/` is never modified.
