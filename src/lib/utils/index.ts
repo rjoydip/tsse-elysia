@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from "cnfast";
+import { twMerge } from "cnfast";
 import { computeRange } from "~/lib/pagination/compute";
 import { COMMON_PAGINATION_RANGES_VALUES } from "~/lib/comptime/values";
 
