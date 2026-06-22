@@ -3,7 +3,7 @@
  * Provides consistent password strength indicators and validation across the app.
  */
 
-import { type ClassValue } from "clsx";
+import { type ClassValue } from "cnfast";
 
 interface PasswordRequirement {
   label: string;
